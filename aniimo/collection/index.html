@@ -38,6 +38,11 @@ const IN={};const missing=[];
 for(const c of ["keepsake","event"]){for(const k of (CATEGORIES[c]||[])){
   if(!FORMS.some(f=>keyOf(f)===k))missing.push(k);IN[k]=c;}}
 FORMS.forEach(f=>{f.category=IN[keyOf(f)]||(f.region==="special"?"event":f.region);f.oneTime=f.category==="event";f.prismana=f.form==="Prismana";});
+// Excluded forms from categories.js don't exist in the game, so drop them
+for(const k of (CATEGORIES.exclude||[])){
+  const f=FORMS.find(f=>keyOf(f)===k);
+  if(f)FORMS.splice(FORMS.indexOf(f),1);else if(!missing.includes(k))missing.push(k);
+}
 // Pick-one groups from categories.js share one tile, at the first form's place
 for(const group of (CATEGORIES.pickOne||[])){
   const found=group.map(k=>FORMS.find(f=>keyOf(f)===k));

@@ -42,4 +42,9 @@ const CATEGORIES = {
   pickOne: [
     ["Prismana Iris", "Prismana Irisal"],
   ],
+
+  // Exclude: forms the source data lists but that don't exist in the game. They're left out entirely.
+  exclude: [
+    "Somniwing", // only exists as Prismana Somniwing, a one-time event
+  ],
 };
