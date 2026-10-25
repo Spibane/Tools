@@ -19,6 +19,7 @@
 <div class="opt sub"><input type="checkbox" id="opt-prisgroup"><label for="opt-prisgroup">Group Prismana as their own category<small>Puts them together after the regions instead of with their species.</small></label></div>
 <div class="opt"><input type="checkbox" id="opt-keep"><label for="opt-keep">Include Season 1 keepsake exclusives<small>Listed in <span class="ref" tabindex="0" data-ref="keepsake">categories</span>.</small></label></div>
 <div class="opt"><input type="checkbox" id="opt-event"><label for="opt-event">Include one-time event specials<small>Listed in <span class="ref" tabindex="0" data-ref="event">categories</span>, plus any #10001+ form not listed there. Placed in Aniilog order with the rest. No duplicates possible.</small></label></div>
+<div class="opt sub"><input type="checkbox" id="opt-eventgroup"><label for="opt-eventgroup">Group event specials as their own category<small>Puts them together after the keepsakes instead of in Aniilog order.</small></label></div>
 <div class="opt"><input type="checkbox" id="opt-break"><label for="opt-break">Start each category on a new page</label></div>
 </fieldset>
 <p class="warn" id="warn" hidden></p>
@@ -41,13 +42,14 @@ const autoEvent=FORMS.filter(f=>f.region==="special"&&!IN[keyOf(f)]).map(keyOf);
 const EL={"fire": "Fire", "water": "Water", "grass": "Grass", "electric": "Lightning", "ice": "Ice", "earth": "Earth", "wind": "Wind", "light": "Light", "dark": "Dark", "none": "No element"};
 const ROWS=[4,5,6,5,4];
 const REGIONS=["breezy","whisperwake","unreleased"];
-const OPTS=[...REGIONS,"pris","prisgroup","keep","event","break"];
+const OPTS=[...REGIONS,"pris","prisgroup","keep","event","eventgroup","break"];
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function chunk(a){const o=[];for(let i=0;i<a.length;i+=24)o.push(a.slice(i,i+24));return o;}
 function render(){
   const o={};OPTS.forEach(k=>o[k]=$('opt-'+k).checked);
   $('opt-prisgroup').disabled=!o.pris;if(!o.pris)o.prisgroup=false;
+  $('opt-eventgroup').disabled=!o.event;if(!o.event)o.eventgroup=false;
   const list=FORMS.filter(f=>{
     if(f.category==='keepsake')return o.keep;
     if(f.category==='event')return o.event;
@@ -56,7 +58,7 @@ function render(){
     return true;
   });
   list.forEach((f,i)=>{
-    if(f.category==='event')f._c=f.region==='special'?'event':f.region;
+    if(f.category==='event')f._c=(o.eventgroup||f.region==='special')?'event':f.region;
     else f._c=(o.prisgroup&&f.prismana&&f.category!=='keepsake')?'prismana':f.category;
     f._i=i;
   });
