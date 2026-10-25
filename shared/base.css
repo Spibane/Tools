@@ -77,6 +77,10 @@ a { color: var(--ink); text-decoration-thickness: 2px; text-underline-offset: 3p
 .back:hover { background: var(--brand); color: #121212; }
 code { font-size: 0.92em; background: var(--surface); border: 1.5px solid var(--rim); padding: 0 4px; }
 
+/* Hub page categories: a heading over each group of project tiles */
+.category { margin-top: 28px; }
+.category h2 { margin-bottom: 10px; }
+
 /* A list of links styled like tiles, used by hub pages */
 .link-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .link-list a {
