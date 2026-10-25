@@ -17,6 +17,7 @@
 <hr class="opt-rule">
 <div class="opt"><input type="checkbox" id="opt-pris"><label for="opt-pris">Include Prismana forms<small>Placed with their species. Keepsake and event Prismana show with their own options.</small></label></div>
 <div class="opt sub"><input type="checkbox" id="opt-prisgroup"><label for="opt-prisgroup">Group Prismana as their own category<small>Puts them together after the regions instead of with their species.</small></label></div>
+<div class="opt"><input type="checkbox" id="opt-gender"><label for="opt-gender">Include gender forms<small>Shows the ♂ and ♀ forms <span class="ref" tabindex="0" data-ref="gender">listed in categories</span> as separate tiles, next to each other in Aniilog order.</small></label></div>
 <div class="opt"><input type="checkbox" id="opt-keep"><label for="opt-keep">Include Season 1 keepsake exclusives<small>Listed in <span class="ref" tabindex="0" data-ref="keepsake">categories</span>.</small></label></div>
 <div class="opt"><input type="checkbox" id="opt-event"><label for="opt-event">Include one-time event specials<small>Listed in <span class="ref" tabindex="0" data-ref="event">categories</span>, plus any #10001+ form not listed there. Placed in Aniilog order with the rest. No duplicates possible.</small></label></div>
 <div class="opt sub"><input type="checkbox" id="opt-eventgroup"><label for="opt-eventgroup">Group event specials as their own category<small>Puts them together after the keepsakes instead of in Aniilog order.</small></label></div>
@@ -55,8 +56,13 @@ const autoEvent=FORMS.filter(f=>f.region==="special"&&!IN[keyOf(f)]).map(keyOf);
 const EL={"fire": "Fire", "water": "Water", "grass": "Grass", "electric": "Lightning", "ice": "Ice", "earth": "Earth", "wind": "Wind", "light": "Light", "dark": "Dark", "none": "No element"};
 const ROWS=[4,5,6,5,4];
 const REGIONS=["breezy","whisperwake","unreleased"];
-const OPTS=[...REGIONS,"pris","prisgroup","keep","event","eventgroup","break"];
+const OPTS=[...REGIONS,"pris","prisgroup","gender","keep","event","eventgroup","break"];
+// Forms that come as both ♂ and ♀, from categories.js
+const GENDERED=CATEGORIES.genders||[];
+GENDERED.forEach(k=>{if(!FORMS.some(f=>keyOf(f)===k)&&!missing.includes(k))missing.push(k);});
 const $=id=>document.getElementById(id);
+// Text under a tile's name: the form (none for Base), plus ♂/♀ for gender forms
+const formLabel=f=>[f.form==='Base'?'':f.form,f.gender||''].filter(Boolean).join(' ');
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function chunk(a){const o=[];for(let i=0;i<a.length;i+=24)o.push(a.slice(i,i+24));return o;}
 function render(){
@@ -69,7 +75,7 @@ function render(){
     if(REGIONS.includes(f.category)&&!o[f.category])return false;
     if(f.prismana&&!o.pris)return false;
     return true;
-  });
+  }).flatMap(f=>o.gender&&GENDERED.includes(keyOf(f))?[{...f,gender:'♂'},{...f,gender:'♀'}]:[f]);
   list.forEach((f,i)=>{
     if(f.category==='event')f._c=(o.eventgroup||f.region==='special')?'event':f.region;
     else f._c=(o.prisgroup&&f.prismana&&f.category!=='keepsake')?'prismana':f.category;
@@ -89,11 +95,11 @@ function render(){
       const f=p[k];
       if(!f){c+='<li class="hex empty" aria-hidden="true"><div></div></li>';continue;}
       const base=f.form==='Base';
-      const lbl=f.name+(base?'':', '+f.form+' Form')+', '+EL[f.element]+(f.oneTime?', one-time event':'');
+      const lbl=f.name+(base?'':', '+f.form+' Form')+(f.gender?', '+(f.gender==='♂'?'male':'female'):'')+', '+EL[f.element]+(f.oneTime?', one-time event':'');
       const cls='hex e-'+f.element+(f.prismana?' pris':'')+(f.oneTime?' one':'');
-      c+='<li class="'+cls+'" title="'+esc(lbl)+'"><div><span class="n">'+esc(f.n)+'</span><span class="nm'+(f.names?' multi':'')+'">'+(f.names?f.names.map(esc).join('<br>'):esc(f.name))+'</span>'+(base?'':'<span class="f">'+esc(f.form)+'</span>')+'</div></li>';
+      c+='<li class="'+cls+'" title="'+esc(lbl)+'"><div><span class="n">'+esc(f.n)+'</span><span class="nm'+(f.names?' multi':'')+'">'+(f.names?f.names.map(esc).join('<br>'):esc(f.name))+'</span>'+(formLabel(f)?'<span class="f">'+esc(formLabel(f))+'</span>':'')+'</div></li>';
     }return '<ul class="row">'+c+'</ul>';}).join('');
-    const text=p.map((f,i)=>(i+first)+'. '+f.n+' '+f.name+(f.form==='Base'?'':' ('+f.form+' Form)')+(f.oneTime?' [one-time]':'')).join('\n');
+    const text=p.map((f,i)=>(i+first)+'. '+f.n+' '+f.name+(f.form==='Base'?'':' ('+f.form+' Form)')+(f.gender?' '+f.gender:'')+(f.oneTime?' [one-time]':'')).join('\n');
     return '<section class="page" id="page-'+(pi+1)+'" aria-labelledby="h'+(pi+1)+'"><header><h2 id="h'+(pi+1)+'">Page '+(pi+1)+'</h2><p>'+esc(cats)+', slots '+first+'–'+last+' of '+list.length+'</p><button type="button" class="copy" data-text="'+esc(text)+'">Copy this page as text</button></header><div class="comb">'+rows+'</div></section>';
   }).join('');
 }
@@ -114,6 +120,7 @@ if(missing.length){$('warn').hidden=false;$('warn').innerHTML='These <span class
 const TIPS={
   keepsake:['Season 1 keepsake exclusives (keepsake)',CATEGORIES.keepsake||[]],
   event:['One-time event specials (event)',CATEGORIES.event||[],autoEvent],
+  gender:['Gender forms (genders)',GENDERED],
   missing:['Entries with no matching form',missing]
 };
 const tipList=a=>'<ul>'+a.map(k=>'<li>'+esc(k)+(missing.includes(k)?' <em>(no match)</em>':'')+'</li>').join('')+'</ul>';
@@ -131,7 +138,7 @@ function measureText(){
   const widest=(weight,texts)=>{ctx.font=weight+' 100px "Chakra Petch"';return Math.max(...texts.map(t=>ctx.measureText(t).width))/100;};
   const root=document.documentElement.style;
   root.setProperty('--nm-em',widest(700,FORMS.flatMap(f=>f.names||[f.name])));
-  root.setProperty('--f-em',widest(400,FORMS.filter(f=>f.form!=='Base').map(f=>f.form)));
+  root.setProperty('--f-em',widest(400,FORMS.flatMap(f=>GENDERED.includes(keyOf(f))?[f,{...f,gender:'♂'},{...f,gender:'♀'}]:[f]).map(formLabel).filter(Boolean)));
 }
 document.fonts.load('700 1em "Chakra Petch"').then(()=>document.fonts.load('400 1em "Chakra Petch"')).then(measureText,measureText);
 </script></body></html>

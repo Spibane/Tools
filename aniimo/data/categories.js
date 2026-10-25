@@ -43,6 +43,13 @@ const CATEGORIES = {
     ["Prismana Iris", "Prismana Irisal"],
   ],
 
+  // Gender forms: these forms come as both ♂ and ♀. Shown as two tiles when the gender checkbox is ticked.
+  genders: [
+    "Budclaw",
+    "Mudflat Budclaw",
+    "Mudflat Shrubclaw",
+  ],
+
   // Exclude: forms the source data lists but that don't exist in the game. They're left out entirely.
   exclude: [
     "Somniwing", // only exists as Prismana Somniwing, a one-time event
