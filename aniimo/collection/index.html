@@ -1,23 +1,24 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Aniimo forms in hex pages of 24</title>
+<title>Aniimo Collection Management</title>
 <link rel="icon" href="../../shared/logo.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../../shared/base.css">
+<script src="../../shared/site.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css"></head><body><main>
 <a class="back" href="../">Back to Aniimo</a>
-<h1>Aniimo forms, 24 to a page</h1>
-<p class="intro">Base and regional forms in Aniilog order, laid out as a 4·5·6·5·4 hexagon per page. Tile color shows the element.</p>
+<h1>Aniimo Collection Management</h1>
+<p class="intro">Base and regional forms in Aniilog order, laid out as in-game boxes. Tile color shows the element.</p>
 <fieldset><legend>What to show</legend>
 <div class="opt"><input type="checkbox" id="opt-breezy"><label for="opt-breezy">Breezy Plains<small>#001–#082 and their regional forms.</small></label></div>
 <div class="opt"><input type="checkbox" id="opt-whisperwake"><label for="opt-whisperwake">Whisperwake Isles<small>#084–#093 and their regional forms.</small></label></div>
 <div class="opt"><input type="checkbox" id="opt-unreleased"><label for="opt-unreleased">Unknown<small>Aniimo not in the game yet, so their region isn’t known.</small></label></div>
 <hr class="opt-rule">
-<div class="opt"><input type="checkbox" id="opt-pris"><label for="opt-pris">Include Prismana forms<small>Placed with their species. Keepsake and event Prismana follow their own boxes.</small></label></div>
+<div class="opt"><input type="checkbox" id="opt-pris"><label for="opt-pris">Include Prismana forms<small>Placed with their species. Keepsake and event Prismana show with their own options.</small></label></div>
 <div class="opt sub"><input type="checkbox" id="opt-prisgroup"><label for="opt-prisgroup">Group Prismana as their own category<small>Puts them together after the regions instead of with their species.</small></label></div>
-<div class="opt"><input type="checkbox" id="opt-keep"><label for="opt-keep">Include Season 1 keepsake exclusives<small>Listed in categories.js.</small></label></div>
-<div class="opt"><input type="checkbox" id="opt-event"><label for="opt-event">Include one-time event specials<small>Listed in categories.js. No duplicates possible.</small></label></div>
+<div class="opt"><input type="checkbox" id="opt-keep"><label for="opt-keep">Include Season 1 keepsake exclusives<small>Listed in <span class="ref" tabindex="0" data-ref="keepsake">categories</span>.</small></label></div>
+<div class="opt"><input type="checkbox" id="opt-event"><label for="opt-event">Include one-time event specials<small>Listed in <span class="ref" tabindex="0" data-ref="event">categories</span>, plus any #10001+ form not listed there. Placed in Aniilog order with the rest. No duplicates possible.</small></label></div>
 <div class="opt"><input type="checkbox" id="opt-break"><label for="opt-break">Start each category on a new page</label></div>
 </fieldset>
 <p class="warn" id="warn" hidden></p>
@@ -26,7 +27,6 @@
 <nav aria-label="Pages" id="nav"></nav>
 <div id="pages"></div>
 </main>
-<script src="../../shared/footer.js" defer></script>
 <script src="../data/forms.js"></script>
 <script src="../data/categories.js"></script>
 <script>
@@ -36,8 +36,8 @@ const keyOf=f=>f.form==="Base"?f.name:f.form+" "+f.name;
 const IN={};const missing=[];
 for(const c of ["keepsake","event"]){for(const k of (CATEGORIES[c]||[])){
   if(!FORMS.some(f=>keyOf(f)===k))missing.push(k);IN[k]=c;}}
-FORMS.forEach(f=>{f.category=IN[keyOf(f)]||f.region;f.oneTime=f.category==="event";f.prismana=f.form==="Prismana";});
-const unlistedSpecial=FORMS.filter(f=>f.category==="special").map(keyOf);
+FORMS.forEach(f=>{f.category=IN[keyOf(f)]||(f.region==="special"?"event":f.region);f.oneTime=f.category==="event";f.prismana=f.form==="Prismana";});
+const autoEvent=FORMS.filter(f=>f.region==="special"&&!IN[keyOf(f)]).map(keyOf);
 const EL={"fire": "Fire", "water": "Water", "grass": "Grass", "electric": "Lightning", "ice": "Ice", "earth": "Earth", "wind": "Wind", "light": "Light", "dark": "Dark", "none": "No element"};
 const ROWS=[4,5,6,5,4];
 const REGIONS=["breezy","whisperwake","unreleased"];
@@ -49,19 +49,22 @@ function render(){
   const o={};OPTS.forEach(k=>o[k]=$('opt-'+k).checked);
   $('opt-prisgroup').disabled=!o.pris;if(!o.pris)o.prisgroup=false;
   const list=FORMS.filter(f=>{
-    if(f.category==='special')return false;
     if(f.category==='keepsake')return o.keep;
     if(f.category==='event')return o.event;
     if(REGIONS.includes(f.category)&&!o[f.category])return false;
     if(f.prismana&&!o.pris)return false;
     return true;
   });
-  list.forEach((f,i)=>{f._c=(o.prisgroup&&f.prismana&&f.category!=='keepsake'&&f.category!=='event')?'prismana':f.category;f._i=i;});
+  list.forEach((f,i)=>{
+    if(f.category==='event')f._c=f.region==='special'?'event':f.region;
+    else f._c=(o.prisgroup&&f.prismana&&f.category!=='keepsake')?'prismana':f.category;
+    f._i=i;
+  });
   list.sort((a,b)=>ORDER.indexOf(a._c)-ORDER.indexOf(b._c)||a._i-b._i);
   let pages=[];
   if(o.break){ORDER.forEach(c=>chunk(list.filter(f=>f._c===c)).forEach(p=>pages.push(p)));}
   else pages=chunk(list);
-  $('count').textContent=list.length+' forms over '+pages.length+' page'+(pages.length===1?'':'s')+'.'+(unlistedSpecial.length?' Not shown (#10001+, not in categories.js): '+unlistedSpecial.join(', ')+'.':'');
+  $('count').textContent=list.length+' forms over '+pages.length+' page'+(pages.length===1?'':'s')+'.';
   $('nav').innerHTML=pages.map((_,i)=>'<a href="#page-'+(i+1)+'">'+(i+1)+'</a>').join(' ');
   let slot=0;
   $('pages').innerHTML=pages.map((p,pi)=>{
@@ -91,6 +94,29 @@ $('pages').addEventListener('click',async e=>{
   catch(_){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');b.textContent='Copied';}catch(__){b.textContent='Copy failed';}a.remove();}
   setTimeout(()=>b.textContent=old,1600);
 });
-if(missing.length){$('warn').hidden=false;$('warn').textContent='These categories.js entries don’t match any form, so they aren’t shown: '+missing.join(', ')+'. Check the spelling against forms.js.';}
+if(missing.length){$('warn').hidden=false;$('warn').innerHTML='These <span class="ref" tabindex="0" data-ref="missing">categories</span> entries don’t match any form, so they aren’t shown: '+esc(missing.join(', '))+'. Check the spelling against forms.js.';}
+// Hover boxes on each categories.js mention, showing the entries that mention refers to
+const TIPS={
+  keepsake:['Season 1 keepsake exclusives (keepsake)',CATEGORIES.keepsake||[]],
+  event:['One-time event specials (event)',CATEGORIES.event||[],autoEvent],
+  missing:['Entries with no matching form',missing]
+};
+const tipList=a=>'<ul>'+a.map(k=>'<li>'+esc(k)+(missing.includes(k)?' <em>(no match)</em>':'')+'</li>').join('')+'</ul>';
+document.querySelectorAll('.ref').forEach(r=>{
+  const [title,list,extra]=TIPS[r.dataset.ref];
+  r.insertAdjacentHTML('beforeend','<span class="tip" role="tooltip"><b>'+esc(title)+'</b>'+tipList(list)+
+    (extra&&extra.length?'<b>Plus #10001+ forms not listed:</b>'+tipList(extra):'')+'</span>');
+});
+// A mention sits inside a checkbox label, so stop clicks on it from toggling the box
+document.addEventListener('click',e=>{if(e.target.closest('.ref'))e.preventDefault();});
 render();
+// Size tile text to the widest name and form name in the data, so every tile matches and nothing wraps
+function measureText(){
+  const ctx=document.createElement('canvas').getContext('2d');
+  const widest=(weight,texts)=>{ctx.font=weight+' 100px "Chakra Petch"';return Math.max(...texts.map(t=>ctx.measureText(t).width))/100;};
+  const root=document.documentElement.style;
+  root.setProperty('--nm-em',widest(700,FORMS.map(f=>f.name)));
+  root.setProperty('--f-em',widest(400,FORMS.filter(f=>f.form!=='Base').map(f=>f.form)));
+}
+document.fonts.load('700 1em "Chakra Petch"').then(()=>document.fonts.load('400 1em "Chakra Petch"')).then(measureText,measureText);
 </script></body></html>

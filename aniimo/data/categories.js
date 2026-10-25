@@ -5,9 +5,9 @@
 //   "Prismana Iris"     - the Prismana form
 //   "Highland Iris"     - a regional form (form name, then species name)
 //
-// A form listed here moves out of its region into this category, and shows
-// only when that category's checkbox is ticked. Forms numbered #10001 and up
-// show only if they're listed here.
+// A form listed here shows only when that category's checkbox is ticked.
+// Keepsakes get their own boxes; event specials stay in Aniilog order.
+// Forms numbered #10001 and up that aren't listed here count as event specials.
 //
 // Spelling must match forms.js. The page warns you about any entry it can't find.
 

@@ -1,4 +1,4 @@
-/* Aniimo hex pages, styled after Spibane's logo: logo grey, heavy black outlines,
+/* Aniimo collection page, styled after Spibane's logo: logo grey, heavy black outlines,
    and the lime-to-mint gradient as the accent. The gradient is only ever used
    for decoration or as a background behind black text, never as text on light
    backgrounds, so every text color here passes WCAG AA contrast (4.5:1+).
@@ -10,7 +10,7 @@
   --lime:#b9fc58; --mint:#48f7a3;
   --brand:linear-gradient(90deg,var(--lime),var(--mint));
   --check:#121212; --focus:#121212;
-  --stripe:color-mix(in srgb,var(--mint) 45%,var(--tile));
+  --pris-mix:45%;
   --fire:#f08a5d; --water:#4f9be0; --grass:#6dbb5c; --electric:#e6c229; --ice:#7fd1de;
   --earth:#b88a52; --wind:#57c1a0; --light:#f2d77c; --dark:#9a7bd6; --none:#a7acb7;
   --hw:clamp(46px,calc((100vw - 48px)/6.4),108px);
@@ -20,14 +20,14 @@
   --bg:#121212; --sheet:#1c1c1c; --tile:#262626;
   --ink:#ececec; --muted:#a6a6a6; --rim:#8a8a8a; --rim-one:var(--lime);
   --check:var(--lime); --focus:var(--lime);
-  --stripe:color-mix(in srgb,var(--lime) 18%,var(--tile));
+  --pris-mix:28%;
   color-scheme:dark;
 }}
 :root[data-theme="dark"]{
   --bg:#121212; --sheet:#1c1c1c; --tile:#262626;
   --ink:#ececec; --muted:#a6a6a6; --rim:#8a8a8a; --rim-one:var(--lime);
   --check:var(--lime); --focus:var(--lime);
-  --stripe:color-mix(in srgb,var(--lime) 18%,var(--tile));
+  --pris-mix:28%;
   color-scheme:dark;
 }
 .intro{color:var(--muted);max-width:60ch}
@@ -43,13 +43,24 @@ legend{font-weight:700;padding:0;margin-bottom:4px}
 .opt label{cursor:pointer;font-weight:600}
 .opt small{display:block;color:var(--muted);font-weight:400;font-size:.88rem}
 .opt input:disabled+label{opacity:.5;cursor:default}
+
+/* categories.js mentions, with a hover/focus box listing what they refer to */
+.ref{position:relative;font-weight:600;color:var(--ink);border-bottom:1.5px dotted currentColor;cursor:help}
+.ref .tip{display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:5;width:max-content;max-width:min(300px,75vw);
+  background:var(--sheet);border:2px solid var(--rim);padding:8px 12px;color:var(--ink);font-size:.85rem;font-weight:400;line-height:1.4;cursor:auto}
+.ref:hover .tip,.ref:focus .tip{display:block}
+.tip b{display:block}
+.tip b+ul{margin:2px 0 0}
+.tip ul+b{margin-top:8px}
+.tip ul{margin:0;padding-left:1.1em}
+.tip em{color:var(--muted)}
 .warn{border:3px solid var(--rim);border-left-width:10px;border-left-color:var(--mint);padding:10px 14px;margin:0 0 14px;background:var(--sheet)}
 .count{color:var(--muted);margin:0 0 12px}
 
 /* Legend and page jump */
 .legend{display:flex;flex-wrap:wrap;gap:6px 16px;color:var(--muted);font-size:.9rem;margin:0 0 16px;padding:0;list-style:none}
 .legend span{display:inline-block;width:14px;height:9px;margin-right:6px;vertical-align:1px;border:1.5px solid var(--rim)}
-.legend .sw-pris{height:13px;width:13px;background:repeating-linear-gradient(135deg,var(--tile) 0 3px,var(--stripe) 3px 6px)}
+.legend .sw-pris{height:13px;width:13px;--s:2px;background:var(--rainbow)}
 .legend .sw-one{height:13px;width:13px;border:4px solid var(--rim-one);background:transparent}
 nav{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:22px}
 nav a{min-width:36px;text-align:center;color:var(--ink);text-decoration:none;font-weight:700;padding:4px 6px 7px;
@@ -76,10 +87,22 @@ h2{margin:0;font-size:1.5rem;font-weight:700}
 .e-fire{--el:var(--fire)}.e-water{--el:var(--water)}.e-grass{--el:var(--grass)}.e-electric{--el:var(--electric)}.e-ice{--el:var(--ice)}
 .e-earth{--el:var(--earth)}.e-wind{--el:var(--wind)}.e-light{--el:var(--light)}.e-dark{--el:var(--dark)}.e-none{--el:var(--none)}
 .hex.one{background:var(--rim-one);padding:6px}
-.hex.pris>div{background:linear-gradient(var(--el) 0 33%,transparent 33%),
-  repeating-linear-gradient(135deg,var(--tile) 0 6px,var(--stripe) 6px 12px)}
+/* Prismana: rainbow stripes, softened toward the tile color so text stays readable. --s is the stripe width. */
+.hex.pris>div,.legend .sw-pris{--s:6px;--rainbow:repeating-linear-gradient(135deg,
+  color-mix(in srgb,#ff5a5a var(--pris-mix),var(--tile)) 0 var(--s),
+  color-mix(in srgb,#ffa64d var(--pris-mix),var(--tile)) var(--s) calc(var(--s)*2),
+  color-mix(in srgb,#ffe14d var(--pris-mix),var(--tile)) calc(var(--s)*2) calc(var(--s)*3),
+  color-mix(in srgb,#5ad66b var(--pris-mix),var(--tile)) calc(var(--s)*3) calc(var(--s)*4),
+  color-mix(in srgb,#4da6ff var(--pris-mix),var(--tile)) calc(var(--s)*4) calc(var(--s)*5),
+  color-mix(in srgb,#a66bff var(--pris-mix),var(--tile)) calc(var(--s)*5) calc(var(--s)*6))}
+.hex.pris>div{background:linear-gradient(var(--el) 0 33%,transparent 33%),var(--rainbow)}
+.hex.pris .f{color:var(--ink)}
 .empty{background:var(--rim);opacity:.25}
 .empty>div{background:var(--sheet)}
 .n{font-size:calc(var(--hw)*0.11);font-weight:700;color:#121212;margin-bottom:calc(var(--hw)*0.16)}
-.nm{font-size:calc(var(--hw)*0.118);font-weight:700;line-height:1.05;white-space:nowrap}
-.f{font-size:calc(var(--hw)*0.1);line-height:1.1;margin-top:3px;color:var(--muted)}
+/* Name and form text: one size for every tile, as big as the widest text allows.
+   --nm-em and --f-em are the widest name and form name in ems, measured by the page script.
+   --fit is the usable width inside the thickest-bordered (event) tile, with a little slack. */
+.comb{--fit:calc((var(--hw) - 12px)*0.94*0.985)}
+.nm{font-size:calc(var(--fit)/var(--nm-em,6.5));font-weight:700;line-height:1.05;white-space:nowrap}
+.f{font-size:min(calc(var(--fit)/var(--f-em,7)),calc(var(--fit)/var(--nm-em,6.5)*0.85));line-height:1.1;margin-top:3px;color:var(--muted);white-space:nowrap}
