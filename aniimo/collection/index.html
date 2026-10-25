@@ -38,6 +38,14 @@ const IN={};const missing=[];
 for(const c of ["keepsake","event"]){for(const k of (CATEGORIES[c]||[])){
   if(!FORMS.some(f=>keyOf(f)===k))missing.push(k);IN[k]=c;}}
 FORMS.forEach(f=>{f.category=IN[keyOf(f)]||(f.region==="special"?"event":f.region);f.oneTime=f.category==="event";f.prismana=f.form==="Prismana";});
+// Pick-one groups from categories.js share one tile, at the first form's place
+for(const group of (CATEGORIES.pickOne||[])){
+  const found=group.map(k=>FORMS.find(f=>keyOf(f)===k));
+  group.forEach((k,i)=>{if(!found[i]&&!missing.includes(k))missing.push(k);});
+  const [keep,...rest]=found.filter(Boolean);if(!rest.length)continue;
+  keep.names=[keep,...rest].map(f=>f.name);keep.n=[keep,...rest].map(f=>f.n).join('/');keep.name=keep.names.join(' / ');
+  rest.forEach(f=>FORMS.splice(FORMS.indexOf(f),1));
+}
 const autoEvent=FORMS.filter(f=>f.region==="special"&&!IN[keyOf(f)]).map(keyOf);
 const EL={"fire": "Fire", "water": "Water", "grass": "Grass", "electric": "Lightning", "ice": "Ice", "earth": "Earth", "wind": "Wind", "light": "Light", "dark": "Dark", "none": "No element"};
 const ROWS=[4,5,6,5,4];
@@ -78,7 +86,7 @@ function render(){
       const base=f.form==='Base';
       const lbl=f.name+(base?'':', '+f.form+' Form')+', '+EL[f.element]+(f.oneTime?', one-time event':'');
       const cls='hex e-'+f.element+(f.prismana?' pris':'')+(f.oneTime?' one':'');
-      c+='<li class="'+cls+'" title="'+esc(lbl)+'"><div><span class="n">'+esc(f.n)+'</span><span class="nm">'+esc(f.name)+'</span>'+(base?'':'<span class="f">'+esc(f.form)+'</span>')+'</div></li>';
+      c+='<li class="'+cls+'" title="'+esc(lbl)+'"><div><span class="n">'+esc(f.n)+'</span><span class="nm'+(f.names?' multi':'')+'">'+(f.names?f.names.map(esc).join('<br>'):esc(f.name))+'</span>'+(base?'':'<span class="f">'+esc(f.form)+'</span>')+'</div></li>';
     }return '<ul class="row">'+c+'</ul>';}).join('');
     const text=p.map((f,i)=>(i+first)+'. '+f.n+' '+f.name+(f.form==='Base'?'':' ('+f.form+' Form)')+(f.oneTime?' [one-time]':'')).join('\n');
     return '<section class="page" id="page-'+(pi+1)+'" aria-labelledby="h'+(pi+1)+'"><header><h2 id="h'+(pi+1)+'">Page '+(pi+1)+'</h2><p>'+esc(cats)+', slots '+first+'–'+last+' of '+list.length+'</p><button type="button" class="copy" data-text="'+esc(text)+'">Copy this page as text</button></header><div class="comb">'+rows+'</div></section>';
@@ -117,7 +125,7 @@ function measureText(){
   const ctx=document.createElement('canvas').getContext('2d');
   const widest=(weight,texts)=>{ctx.font=weight+' 100px "Chakra Petch"';return Math.max(...texts.map(t=>ctx.measureText(t).width))/100;};
   const root=document.documentElement.style;
-  root.setProperty('--nm-em',widest(700,FORMS.map(f=>f.name)));
+  root.setProperty('--nm-em',widest(700,FORMS.flatMap(f=>f.names||[f.name])));
   root.setProperty('--f-em',widest(400,FORMS.filter(f=>f.form!=='Base').map(f=>f.form)));
 }
 document.fonts.load('700 1em "Chakra Petch"').then(()=>document.fonts.load('400 1em "Chakra Petch"')).then(measureText,measureText);

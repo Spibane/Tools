@@ -36,4 +36,10 @@ const CATEGORIES = {
     "Prismana Fenmane",
     "Besauce",
   ],
+
+  // Pick one: a player can only own one form from each group, so each group shares one tile,
+  // placed where the first form would be.
+  pickOne: [
+    ["Prismana Iris", "Prismana Irisal"],
+  ],
 };
