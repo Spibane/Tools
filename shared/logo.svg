@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2">
+    <defs>
+        <linearGradient id="g" gradientUnits="userSpaceOnUse" x1="288" y1="420" x2="912" y2="780">
+            <stop offset="0" stop-color="#c9fd4e"/>
+            <stop offset="1" stop-color="#15f5c5"/>
+        </linearGradient>
+    </defs>
+    <g transform="matrix(3.121201,0,0,3.341457,-1594.450632,-984.816193)">
+        <path d="M703.079,294.727L869.558,384.508L869.558,564.07L703.079,653.851L536.6,564.07L536.6,384.508L703.079,294.727Z" fill="#121212"/>
+    </g>
+    <path d="M600,240L912,420L912,780L600,960L288,780L288,420Z" fill="url(#g)"/>
+    <g transform="matrix(1.2,0,0,1.2,-120,-120)">
+        <g transform="matrix(1.247077,0.72,-0.500602,0.867068,152.22141,-352.446873)">
+            <rect x="412.5" y="675" width="375" height="119.856" fill="#121212"/>
+        </g>
+        <g transform="matrix(1.247077,0.72,-0.500602,0.867068,152.008982,-352.078937)">
+            <rect x="412.5" y="405.144" width="375" height="119.856" fill="#121212"/>
+        </g>
+    </g>
+    <g transform="matrix(1.2,0,0,1.2,-120,-120)">
+        <path d="M188.638,529.768L318.542,604.768L318.542,762.5L600,925L881.458,762.5L881.458,676.016L1011.362,751.016L1011.362,837.5L600,1075L188.638,837.5L188.638,529.768ZM188.638,448.939L188.638,362.5L600,125L1011.362,362.5L1011.362,670.187L881.458,595.187L881.458,437.5L600,275L318.542,437.5L318.542,523.939L188.638,448.939Z" fill="#d8d8d8"/>
+    </g>
+</svg>

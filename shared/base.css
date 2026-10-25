@@ -1,23 +1,28 @@
-/* Site-wide basics: readable text, layout width, dark mode.
-   Projects can link this and add their own styles on top. */
+/* Site-wide basics, styled after Spibane's logo: logo grey, heavy black outlines,
+   and the lime-to-mint gradient as an accent. The gradient is only used for
+   decoration or behind black text, never as text on light backgrounds, so all
+   text passes WCAG AA contrast (4.5:1+). Projects can link this and add their
+   own styles on top. Pages using it should also load the Chakra Petch font. */
 :root {
-  --bg: #f6f8fb;
-  --surface: #ffffff;
-  --ink: #1d2733;
-  --muted: #5b6878;
-  --line: #d3dbe5;
-  --link: #1f6fbf;
-  --focus: #3d8bd9;
+  --bg: #d8d8d8;
+  --surface: #efefef;
+  --ink: #121212;
+  --muted: #4d4d4d;
+  --rim: #121212;
+  --lime: #b9fc58;
+  --mint: #48f7a3;
+  --brand: linear-gradient(90deg, var(--lime), var(--mint));
+  --focus: #121212;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #11171f;
-    --surface: #18212c;
-    --ink: #e4ebf3;
-    --muted: #9aa8b8;
-    --line: #2d3a49;
-    --link: #79b4f0;
+    --bg: #121212;
+    --surface: #1c1c1c;
+    --ink: #ececec;
+    --muted: #a6a6a6;
+    --rim: #8a8a8a;
+    --focus: var(--lime);
     color-scheme: dark;
   }
 }
@@ -27,30 +32,82 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: "Chakra Petch", system-ui, -apple-system, "Segoe UI", sans-serif;
   line-height: 1.5;
   padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
 }
 main { max-width: 760px; margin: 0 auto; padding: 32px 18px 64px; }
-h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); line-height: 1.2; margin: 0 0 0.4em; }
+h1 {
+  font-size: clamp(1.7rem, 4.4vw, 2.6rem);
+  font-weight: 700;
+  line-height: 1.05;
+  margin: 0 0 0.5em;
+  padding-bottom: 0.25em;
+  background: var(--brand) left bottom / 72px 6px no-repeat;
+}
 h2 { font-size: 1.25rem; margin: 0; }
 p { margin: 0 0 1em; }
-a { color: var(--link); }
+a { color: var(--ink); text-decoration-thickness: 2px; text-underline-offset: 3px; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .muted { color: var(--muted); }
-.back { display: inline-block; margin-bottom: 18px; }
+/* Back link, drawn as an outlined button with an arrow */
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 6px 14px 6px 10px;
+  background: var(--surface);
+  border: 2px solid var(--rim);
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+.back::before { content: "←" / ""; font-size: 1.15em; line-height: 1; }
+.back:hover { background: var(--brand); color: #121212; }
+code { font-size: 0.92em; background: var(--surface); border: 1.5px solid var(--rim); padding: 0 4px; }
 
-/* A simple list of links, used by hub pages */
-.link-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+/* A list of links styled like tiles, used by hub pages */
+.link-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .link-list a {
   display: block;
+  position: relative;
   background: var(--surface);
-  border: 1.5px solid var(--line);
-  border-radius: 14px;
-  padding: 14px 16px;
+  border: 3px solid var(--rim);
+  padding: 14px 16px 14px 24px;
   color: var(--ink);
   text-decoration: none;
 }
-.link-list a:hover { border-color: var(--link); }
-.link-list strong { display: block; font-size: 1.05rem; }
+.link-list a::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 8px;
+  background: linear-gradient(var(--lime), var(--mint));
+}
+.link-list a:hover { border-color: var(--ink); }
+.link-list a:hover::before { width: 12px; }
+.link-list strong { display: block; font-size: 1.1rem; }
 .link-list span { color: var(--muted); font-size: 0.95rem; }
+
+/* Site header (hub page) and footer (project pages). The logo lives at
+   shared/logo.svg and is also used as the favicon. */
+.site-head { display: flex; align-items: center; gap: 16px; margin-bottom: 0.5em; }
+.site-head .logo { width: clamp(56px, 12vw, 80px); height: auto; flex: none; }
+.site-head h1 { margin: 0; }
+.site-footer {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 20px 18px 32px;
+  border-top: 3px solid var(--rim);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  font-size: 0.95rem;
+}
+.site-footer a { display: inline-flex; align-items: center; gap: 10px; font-weight: 600; }
+.site-footer img { width: 32px; height: 32px; }
+.site-footer .muted { margin: 0 0 0 auto; }
+@media print { .site-footer { display: none; } }

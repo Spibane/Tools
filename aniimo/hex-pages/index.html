@@ -1,15 +1,19 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Aniimo forms in hex pages of 24</title>
+<link rel="icon" href="../../shared/logo.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../../shared/base.css">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css"></head><body><main>
-<a class="back" href="../">Aniimo</a>
+<a class="back" href="../">Back to Aniimo</a>
 <h1>Aniimo forms, 24 to a page</h1>
 <p class="intro">Base and regional forms in Aniilog order, laid out as a 4·5·6·5·4 hexagon per page. Tile color shows the element.</p>
 <fieldset><legend>What to show</legend>
-<div class="opt"><input type="checkbox" id="opt-bp"><label for="opt-bp">Breezy Plains only<small>Hides Whisperwake Isles and Aniimo not yet in the game.</small></label></div>
+<div class="opt"><input type="checkbox" id="opt-breezy"><label for="opt-breezy">Breezy Plains<small>#001–#082 and their regional forms.</small></label></div>
+<div class="opt"><input type="checkbox" id="opt-whisperwake"><label for="opt-whisperwake">Whisperwake Isles<small>#084–#093 and their regional forms.</small></label></div>
+<div class="opt"><input type="checkbox" id="opt-unreleased"><label for="opt-unreleased">Unknown<small>Aniimo not in the game yet, so their region isn’t known.</small></label></div>
+<hr class="opt-rule">
 <div class="opt"><input type="checkbox" id="opt-pris"><label for="opt-pris">Include Prismana forms<small>Placed with their species. Keepsake and event Prismana follow their own boxes.</small></label></div>
 <div class="opt sub"><input type="checkbox" id="opt-prisgroup"><label for="opt-prisgroup">Group Prismana as their own category<small>Puts them together after the regions instead of with their species.</small></label></div>
 <div class="opt"><input type="checkbox" id="opt-keep"><label for="opt-keep">Include Season 1 keepsake exclusives<small>Listed in categories.js.</small></label></div>
@@ -22,10 +26,11 @@
 <nav aria-label="Pages" id="nav"></nav>
 <div id="pages"></div>
 </main>
+<script src="../../shared/footer.js" defer></script>
 <script src="../data/forms.js"></script>
 <script src="../data/categories.js"></script>
 <script>
-const CATS={breezy:"Breezy Plains",whisperwake:"Whisperwake Isles",unreleased:"Not yet in game",prismana:"Prismana",keepsake:"Season 1 keepsakes",event:"One-time events"};
+const CATS={breezy:"Breezy Plains",whisperwake:"Whisperwake Isles",unreleased:"Unknown",prismana:"Prismana",keepsake:"Season 1 keepsakes",event:"One-time events"};
 const ORDER=["breezy","whisperwake","unreleased","prismana","keepsake","event"];
 const keyOf=f=>f.form==="Base"?f.name:f.form+" "+f.name;
 const IN={};const missing=[];
@@ -35,7 +40,8 @@ FORMS.forEach(f=>{f.category=IN[keyOf(f)]||f.region;f.oneTime=f.category==="even
 const unlistedSpecial=FORMS.filter(f=>f.category==="special").map(keyOf);
 const EL={"fire": "Fire", "water": "Water", "grass": "Grass", "electric": "Lightning", "ice": "Ice", "earth": "Earth", "wind": "Wind", "light": "Light", "dark": "Dark", "none": "No element"};
 const ROWS=[4,5,6,5,4];
-const OPTS=["bp","pris","prisgroup","keep","event","break"];
+const REGIONS=["breezy","whisperwake","unreleased"];
+const OPTS=[...REGIONS,"pris","prisgroup","keep","event","break"];
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function chunk(a){const o=[];for(let i=0;i<a.length;i+=24)o.push(a.slice(i,i+24));return o;}
@@ -46,7 +52,7 @@ function render(){
     if(f.category==='special')return false;
     if(f.category==='keepsake')return o.keep;
     if(f.category==='event')return o.event;
-    if(o.bp&&f.category!=='breezy')return false;
+    if(REGIONS.includes(f.category)&&!o[f.category])return false;
     if(f.prismana&&!o.pris)return false;
     return true;
   });
@@ -75,7 +81,8 @@ function render(){
 }
 OPTS.forEach(k=>{
   const el=$('opt-'+k);
-  try{el.checked=localStorage.getItem('opt-'+k)==='1'}catch(_){}
+  el.checked=REGIONS.includes(k);
+  try{const v=localStorage.getItem('opt-'+k);if(v!==null)el.checked=v==='1'}catch(_){}
   el.addEventListener('change',()=>{try{localStorage.setItem('opt-'+k,el.checked?'1':'0')}catch(_){}render();});
 });
 $('pages').addEventListener('click',async e=>{
