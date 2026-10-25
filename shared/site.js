@@ -2,7 +2,7 @@
 // Pages include it in <head>, right after base.css: <script src="(path to)/shared/site.js"></script>
 // Add data-credit-only to the script tag to leave out the home link (used on the hub page).
 (() => {
-  const SITE_NAME = "Tools for everything";
+  const SITE_NAME = "Spibane's Tools for Everything";
   const CREDIT = 'Made by <a href="https://github.com/Spibane">Spibane</a>';
 
   // Theme: a saved choice wins, otherwise the page follows the device setting.
