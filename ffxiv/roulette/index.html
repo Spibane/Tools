@@ -15,15 +15,15 @@
 <label class="unique"><input type="checkbox" id="unique"> Use a different job for each roulette when there are enough to go around</label>
 <ol class="results" id="results" aria-live="polite"></ol>
 </section>
-<fieldset><legend>Jobs you can be given</legend>
-<p class="hint">Untick a job you don't want to play, haven't unlocked or haven't levelled far enough. Jobs with dashed outlines (Bastion and Zephyr) aren't out yet, so they start unticked and their abbreviations are best guesses.</p>
+<fieldset><legend>Default jobs</legend>
+<p class="hint">The jobs every roulette can give you unless you set it to custom below. Untick a job you don't want to play, haven't unlocked or haven't levelled far enough. Jobs with dashed outlines (Bastion and Zephyr) aren't out yet, so they start unticked and their abbreviations are best guesses.</p>
 <div id="jobs"></div>
 <div class="job-buttons"><button type="button" id="jobs-all">Allow every released job</button></div>
 </fieldset>
-<fieldset><legend>Roulettes and their roles</legend>
-<p class="hint">Untick a roulette to leave it out of the roll, or untick a role to stop that roulette getting jobs from it.</p>
+<fieldset><legend>Roulettes</legend>
+<p class="hint">Untick a roulette to leave it out of the roll. Open one and tick Custom to choose its own roles and jobs instead of the defaults.</p>
 <div class="roulettes" id="roulettes"></div>
-<div class="job-buttons"><button type="button" id="roulettes-all">Use every roulette with every role</button></div>
+<div class="job-buttons"><button type="button" id="roulettes-all">Use every roulette with the default jobs</button></div>
 </fieldset>
 </main>
 <script>
@@ -48,18 +48,25 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 const job=id=>JOBS.find(j=>j.id===id);
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 
-// Settings: offJobs = jobs you won't be given; offRoulettes = roulettes left out;
-// offRoles = roles each roulette can't go to; unique = spread jobs out; result = the last roll;
-// seen = upcoming jobs already added to offJobs, so ticking one later sticks
-let state={offJobs:[],offRoulettes:[],offRoles:{},unique:true,result:{},seen:[]};
+// Settings: offJobs = default jobs you won't be given; offRoulettes = roulettes left out;
+// custom = roulettes with their own picks, {on, offRoles, offJobs}, kept while custom is off so ticking it again brings them back;
+// unique = spread jobs out; result = the last roll; seen = upcoming jobs already turned off, so ticking one later sticks
+let state={offJobs:[],offRoulettes:[],custom:{},unique:true,result:{},seen:[]};
 try{state=Object.assign(state,JSON.parse(localStorage.getItem('roulette')));}catch(_){}
-JOBS.filter(j=>j.upcoming&&!state.seen.includes(j.id)).forEach(j=>{state.offJobs.push(j.id);state.seen.push(j.id);});
-// DPS used to be one role; a roulette saved with it turned off keeps all three DPS roles off
-for(const roles of Object.values(state.offRoles))if(roles.includes('dps'))roles.splice(roles.indexOf('dps'),1,'melee','ranged','caster');
+// Older saves kept roles turned off per roulette (offRoles); those roulettes become custom with the default jobs.
+// DPS used to be one role, so a roulette with it turned off keeps all three DPS roles off.
+for(const [id,roles] of Object.entries(state.offRoles||{}))
+  state.custom[id]={on:true,offRoles:roles.flatMap(x=>x==='dps'?['melee','ranged','caster']:[x]),offJobs:[...state.offJobs]};
+delete state.offRoles;
+JOBS.filter(j=>j.upcoming&&!state.seen.includes(j.id)).forEach(j=>{
+  [state,...Object.values(state.custom)].forEach(s=>s.offJobs.push(j.id));
+  state.seen.push(j.id);
+});
 const save=()=>{try{localStorage.setItem('roulette',JSON.stringify(state));}catch(_){}};
 
 const active=()=>ROULETTES.filter(r=>!state.offRoulettes.includes(r.id));
-const candidates=r=>JOBS.filter(j=>!state.offJobs.includes(j.id)&&!(state.offRoles[r.id]||[]).includes(j.role));
+const customOf=r=>state.custom[r.id]&&state.custom[r.id].on?state.custom[r.id]:null;
+const candidates=r=>{const c=customOf(r);return JOBS.filter(j=>c?!c.offJobs.includes(j.id)&&!c.offRoles.includes(j.role):!state.offJobs.includes(j.id));};
 
 // Rolls the given roulettes, keeping the others as they are. With unique on, a job already
 // given out is only reused once a roulette has nothing else left. Roulettes with the fewest
@@ -87,17 +94,59 @@ function renderResults(){
   }).join(''):'<li class="result empty"><span class="muted">Every roulette is turned off. Pick some below.</span></li>';
 }
 
-function render(){
-  $('unique').checked=state.unique;
+// A job tickbox; id prefixes keep the default list and each roulette's list apart
+const jobChip=(j,on,id,disabled)=>'<label class="job'+(j.upcoming?' upcoming':'')+'" title="'+esc(j.name+(j.upcoming?' (not out yet)':''))+'">'+
+  '<input type="checkbox" class="job-pick" id="'+id+'" value="'+j.id+'"'+(on?' checked':'')+(disabled?' disabled':'')+' aria-label="'+esc(j.name)+'">'+j.id+'</label>';
+
+function renderJobs(){
   $('jobs').innerHTML=ROLES.map(role=>'<div class="job-role"><h3>'+role.name+'</h3><div class="jobs">'+
-    JOBS.filter(j=>j.role===role.id).map(j=>'<label class="job'+(j.upcoming?' upcoming':'')+'" title="'+esc(j.name+(j.upcoming?' (not out yet)':''))+'"><input type="checkbox" value="'+j.id+'"'+(state.offJobs.includes(j.id)?'':' checked')+' aria-label="'+esc(j.name)+'">'+j.id+'</label>').join('')+
+    JOBS.filter(j=>j.role===role.id).map(j=>jobChip(j,!state.offJobs.includes(j.id),'job-'+j.id)).join('')+
     '</div></div>').join('');
+}
+
+// A custom roulette's picks in a line: a role's name when its jobs match the defaults, otherwise the jobs it has.
+// When melee, ranged and caster all match, they're just DPS.
+const DPS=['melee','ranged','caster'];
+function customSummary(c){
+  const parts=ROLES.map(role=>{
+    const on=c.offRoles.includes(role.id)?[]:JOBS.filter(j=>j.role===role.id&&!c.offJobs.includes(j.id)).map(j=>j.id);
+    const def=JOBS.filter(j=>j.role===role.id&&!state.offJobs.includes(j.id)).map(j=>j.id);
+    return {role,on,matches:on.join()===def.join()};
+  });
+  const dps=parts.filter(p=>DPS.includes(p.role.id));
+  const out=dps.every(p=>p.matches)&&dps.some(p=>p.on.length)?parts.filter(p=>!DPS.includes(p.role.id)).concat({dps:true}):parts;
+  const text=out.map(p=>p.dps?'DPS':!p.on.length?'':p.matches?p.role.name:p.on.join(', ')).filter(Boolean);
+  return text.length?text.join(' - '):'No jobs';
+}
+
+// Each roulette is a dropdown. Custom ones list every role with its jobs underneath;
+// turning a role off greys its jobs out but keeps which ones you'd ticked.
+let openR=new Set();
+function renderRoulettes(){
   $('roulettes').innerHTML=ROULETTES.map(r=>{
-    const off=state.offRoulettes.includes(r.id),roles=state.offRoles[r.id]||[];
-    return '<div class="roulette'+(off?' off':'')+'" data-r="'+r.id+'"><label class="r-on"><input type="checkbox" class="use"'+(off?'':' checked')+'>'+esc(r.name)+'</label>'+
-      '<div class="r-roles">'+ROLES.map(role=>'<label class="job"><input type="checkbox" class="role-pick" value="'+role.id+'"'+(roles.includes(role.id)?'':' checked')+(off?' disabled':'')+' aria-label="'+esc(role.name+' for '+r.name)+'">'+role.name+'</label>').join('')+'</div></div>';
+    const off=state.offRoulettes.includes(r.id),c=customOf(r),n=candidates(r).length;
+    const count=n+' job'+(n===1?'':'s');
+    // Custom roulettes spell out their picks where there's room, and fall back to a count on narrow screens
+    const status=off?'Left out':c?'<span class="wide">Custom | '+esc(customSummary(c))+'</span><span class="narrow">Custom · '+count+'</span>':'Default jobs';
+    return '<div class="roulette'+(off?' off':'')+'" data-r="'+r.id+'">'+
+      '<input type="checkbox" class="use" id="use-'+r.id+'"'+(off?'':' checked')+' aria-label="'+esc('Include '+r.name+' in the roll')+'">'+
+      '<details id="r-'+r.id+'"'+(openR.has(r.id)?' open':'')+'><summary><span class="r-name">'+esc(r.name)+'</span><span class="r-status">'+status+'</span></summary><div class="r-body">'+
+      '<label class="r-custom"><input type="checkbox" class="custom" id="custom-'+r.id+'"'+(c?' checked':'')+'> Custom roles and jobs for this roulette</label>'+
+      (c?ROLES.map(role=>{
+        const roleOn=!c.offRoles.includes(role.id);
+        return '<div class="job-role'+(roleOn?'':' role-off')+'"><label class="r-role"><input type="checkbox" class="role-pick" id="role-'+r.id+'-'+role.id+'" value="'+role.id+'"'+(roleOn?' checked':'')+'>'+role.name+'</label>'+
+          '<div class="jobs">'+JOBS.filter(j=>j.role===role.id).map(j=>jobChip(j,!c.offJobs.includes(j.id),'job-'+r.id+'-'+j.id,!roleOn)).join('')+'</div></div>';
+      }).join(''):'<p class="hint">Using the default jobs above.</p>')+
+      '</div></details></div>';
   }).join('');
-  renderResults();
+}
+
+// Redraws without losing your place: the tickbox you just used keeps keyboard focus
+function render(){
+  const focus=document.activeElement&&document.activeElement.id;
+  $('unique').checked=state.unique;
+  renderJobs();renderRoulettes();renderResults();
+  if(focus&&$(focus))$(focus).focus();
 }
 
 $('roll').addEventListener('click',()=>{state.result={};roll(active().map(r=>r.id));});
@@ -105,19 +154,30 @@ $('results').addEventListener('click',e=>{if(e.target.matches('.reroll'))roll([e
 $('unique').addEventListener('change',e=>{state.unique=e.target.checked;save();});
 $('jobs').addEventListener('change',()=>{
   state.offJobs=[...$('jobs').querySelectorAll('input:not(:checked)')].map(el=>el.value);
-  save();renderResults();
+  save();render();
 });
 $('jobs-all').addEventListener('click',()=>{state.offJobs=JOBS.filter(j=>j.upcoming).map(j=>j.id);save();render();});
 $('roulettes').addEventListener('change',e=>{
   const row=e.target.closest('.roulette'),id=row.dataset.r;
   if(e.target.matches('.use'))state.offRoulettes=state.offRoulettes.filter(x=>x!==id).concat(e.target.checked?[]:[id]);
+  // The first time a roulette goes custom it starts from the default jobs
+  else if(e.target.matches('.custom'))state.custom[id]=Object.assign(state.custom[id]||{offRoles:[],offJobs:[...state.offJobs]},{on:e.target.checked});
+  else if(e.target.matches('.role-pick'))state.custom[id].offRoles=[...row.querySelectorAll('.role-pick:not(:checked)')].map(el=>el.value);
   else{
-    const roles=[...row.querySelectorAll('.role-pick:not(:checked)')].map(el=>el.value);
-    if(roles.length)state.offRoles[id]=roles;else delete state.offRoles[id];
+    const c=state.custom[id],v=e.target.value;
+    c.offJobs=c.offJobs.filter(x=>x!==v).concat(e.target.checked?[]:[v]);
   }
   save();render();
 });
-$('roulettes-all').addEventListener('click',()=>{state.offRoulettes=[];state.offRoles={};save();render();});
+$('roulettes').addEventListener('toggle',e=>{
+  const id=e.target.closest('.roulette').dataset.r;
+  if(e.target.open)openR.add(id);else openR.delete(id);
+},true);
+$('roulettes-all').addEventListener('click',()=>{
+  state.offRoulettes=[];
+  Object.values(state.custom).forEach(c=>{c.on=false;});
+  save();render();
+});
 
 render();
 </script></body></html>
