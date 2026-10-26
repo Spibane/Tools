@@ -27,6 +27,17 @@ const CATEGORIES = {
     "Prismana Sparkelf",
   ],
 
+  // Season 2 (Whisperwake Isles) keepsake exclusives
+  keepsake2: [
+    "Prismana Hypnyto",
+    "Prismana Ekrim",
+    "Hoptail",
+    "Prismana Pouchwisp",
+    "Prismana Royalby",
+    "Prismana Jeburst",
+    "Prismana Glameep",
+  ],
+
   // One-time event specials (no duplicates possible)
   event: [
     "Prismana Somniwing",

@@ -12,31 +12,33 @@
 <p class="intro">Base and regional forms in Aniilog order, laid out as in-game boxes. Tile color shows the element.</p>
 <fieldset><legend>What to show</legend>
 <div class="opt"><input type="checkbox" id="opt-breezy"><label for="opt-breezy">Breezy Plains<small>#001–#082 and their regional forms.</small></label></div>
-<div class="opt"><input type="checkbox" id="opt-whisperwake"><label for="opt-whisperwake">Whisperwake Isles<small>#084–#093 and their regional forms.</small></label></div>
+<div class="opt"><input type="checkbox" id="opt-whisperwake"><label for="opt-whisperwake">Whisperwake Isles<small>Aniimo from the Whisperwake Isles and their regional forms. Not numbered until the game confirms the numbers.</small></label></div>
 <div class="opt"><input type="checkbox" id="opt-unreleased"><label for="opt-unreleased">Unknown<small>Aniimo not in the game yet, so their region isn’t known.</small></label></div>
 <hr class="opt-rule">
 <div class="opt"><input type="checkbox" id="opt-pris"><label for="opt-pris">Include Prismana forms<small>Placed with their species. Keepsake and event Prismana show with their own options.</small></label></div>
 <div class="opt sub"><input type="checkbox" id="opt-prisgroup"><label for="opt-prisgroup">Group Prismana as their own category<small>Puts them together after the regions instead of with their species.</small></label></div>
-<div class="opt"><input type="checkbox" id="opt-gender"><label for="opt-gender">Include gender forms<small>Shows the ♂ and ♀ forms <span class="ref" tabindex="0" data-ref="gender">listed in categories</span> as separate tiles, next to each other in Aniilog order.</small></label></div>
-<div class="opt"><input type="checkbox" id="opt-keep"><label for="opt-keep">Include Season 1 keepsake exclusives<small>Listed in <span class="ref" tabindex="0" data-ref="keepsake">categories</span>.</small></label></div>
-<div class="opt"><input type="checkbox" id="opt-event"><label for="opt-event">Include one-time event specials<small>Listed in <span class="ref" tabindex="0" data-ref="event">categories</span>, plus any #10001+ form not listed there. Placed in Aniilog order with the rest. No duplicates possible.</small></label></div>
+<div class="opt"><input type="checkbox" id="opt-gender"><label for="opt-gender"><span class="ref" data-ref="gender">Include gender forms</span><small>Shows the ♂ and ♀ forms as separate tiles, next to each other in Aniilog order.</small></label></div>
+<div class="opt"><input type="checkbox" id="opt-keep"><label for="opt-keep"><span class="ref" data-ref="keepsake">Include Season 1 keepsake exclusives</span></label></div>
+<div class="opt"><input type="checkbox" id="opt-keep2"><label for="opt-keep2"><span class="ref" data-ref="keepsake2">Include Season 2 keepsake exclusives</span></label></div>
+<div class="opt"><input type="checkbox" id="opt-event"><label for="opt-event"><span class="ref" data-ref="event">Include one-time event specials</span><small>Also includes any #10001+ form. Placed in Aniilog order with the rest. No duplicates possible.</small></label></div>
 <div class="opt sub"><input type="checkbox" id="opt-eventgroup"><label for="opt-eventgroup">Group event specials as their own category<small>Puts them together after the keepsakes instead of in Aniilog order.</small></label></div>
 <div class="opt"><input type="checkbox" id="opt-break"><label for="opt-break">Start each category on a new page</label></div>
+<div class="opt sub"><input type="checkbox" id="opt-joinregions"><label for="opt-joinregions">Keep regions together<small>Breezy Plains, Whisperwake Isles and Unknown share pages. Other categories still start a new page.</small></label></div>
 </fieldset>
 <p class="warn" id="warn" hidden></p>
 <p class="count" id="count" aria-live="polite"></p>
-<ul class="legend"><li><span style="background:var(--fire)"></span>Fire</li><li><span style="background:var(--water)"></span>Water</li><li><span style="background:var(--grass)"></span>Grass</li><li><span style="background:var(--electric)"></span>Lightning</li><li><span style="background:var(--ice)"></span>Ice</li><li><span style="background:var(--earth)"></span>Earth</li><li><span style="background:var(--wind)"></span>Wind</li><li><span style="background:var(--light)"></span>Light</li><li><span style="background:var(--dark)"></span>Dark</li><li><span style="background:var(--none)"></span>No element</li><li><span class="sw-pris"></span>Prismana</li><li><span class="sw-one"></span>One-time event</li></ul>
+<ul class="legend"><li><span style="background:var(--fire)"></span>Fire</li><li><span style="background:var(--water)"></span>Water</li><li><span style="background:var(--grass)"></span>Grass</li><li><span style="background:var(--electric)"></span>Lightning</li><li><span style="background:var(--ice)"></span>Ice</li><li><span style="background:var(--earth)"></span>Earth</li><li><span style="background:var(--wind)"></span>Wind</li><li><span style="background:var(--light)"></span>Light</li><li><span style="background:var(--dark)"></span>Dark</li><li><span style="background:var(--none)"></span>No element</li><li><span style="background:var(--unknown)"></span>Element unknown</li><li><span class="sw-two"></span>Two elements</li><li><span class="sw-pris"></span>Prismana</li><li><span class="sw-one"></span>One-time event</li></ul>
 <nav aria-label="Pages" id="nav"></nav>
 <div id="pages"></div>
 </main>
 <script src="../data/forms.js"></script>
 <script src="../data/categories.js"></script>
 <script>
-const CATS={breezy:"Breezy Plains",whisperwake:"Whisperwake Isles",unreleased:"Unknown",prismana:"Prismana",keepsake:"Season 1 keepsakes",event:"One-time events"};
-const ORDER=["breezy","whisperwake","unreleased","prismana","keepsake","event"];
+const CATS={breezy:"Breezy Plains",whisperwake:"Whisperwake Isles",unreleased:"Unknown",prismana:"Prismana",keepsake:"Season 1 keepsakes",keepsake2:"Season 2 keepsakes",event:"One-time events"};
+const ORDER=["breezy","whisperwake","unreleased","prismana","keepsake","keepsake2","event"];
 const keyOf=f=>f.form==="Base"?f.name:f.form+" "+f.name;
 const IN={};const missing=[];
-for(const c of ["keepsake","event"]){for(const k of (CATEGORIES[c]||[])){
+for(const c of ["keepsake","keepsake2","event"]){for(const k of (CATEGORIES[c]||[])){
   if(!FORMS.some(f=>keyOf(f)===k))missing.push(k);IN[k]=c;}}
 FORMS.forEach(f=>{f.category=IN[keyOf(f)]||(f.region==="special"?"event":f.region);f.oneTime=f.category==="event";f.prismana=f.form==="Prismana";});
 // Excluded forms from categories.js don't exist in the game, so drop them
@@ -53,10 +55,10 @@ for(const group of (CATEGORIES.pickOne||[])){
   rest.forEach(f=>FORMS.splice(FORMS.indexOf(f),1));
 }
 const autoEvent=FORMS.filter(f=>f.region==="special"&&!IN[keyOf(f)]).map(keyOf);
-const EL={"fire": "Fire", "water": "Water", "grass": "Grass", "electric": "Lightning", "ice": "Ice", "earth": "Earth", "wind": "Wind", "light": "Light", "dark": "Dark", "none": "No element"};
+const EL={"fire": "Fire", "water": "Water", "grass": "Grass", "electric": "Lightning", "ice": "Ice", "earth": "Earth", "wind": "Wind", "light": "Light", "dark": "Dark", "none": "No element", "unknown": "Element unknown"};
 const ROWS=[4,5,6,5,4];
 const REGIONS=["breezy","whisperwake","unreleased"];
-const OPTS=[...REGIONS,"pris","prisgroup","gender","keep","event","eventgroup","break"];
+const OPTS=[...REGIONS,"pris","prisgroup","gender","keep","keep2","event","eventgroup","break","joinregions"];
 // Forms that come as both ♂ and ♀, from categories.js
 const GENDERED=CATEGORIES.genders||[];
 GENDERED.forEach(k=>{if(!FORMS.some(f=>keyOf(f)===k)&&!missing.includes(k))missing.push(k);});
@@ -69,8 +71,10 @@ function render(){
   const o={};OPTS.forEach(k=>o[k]=$('opt-'+k).checked);
   $('opt-prisgroup').disabled=!o.pris;if(!o.pris)o.prisgroup=false;
   $('opt-eventgroup').disabled=!o.event;if(!o.event)o.eventgroup=false;
+  $('opt-joinregions').disabled=!o.break;
   const list=FORMS.filter(f=>{
     if(f.category==='keepsake')return o.keep;
+    if(f.category==='keepsake2')return o.keep2;
     if(f.category==='event')return o.event;
     if(REGIONS.includes(f.category)&&!o[f.category])return false;
     if(f.prismana&&!o.pris)return false;
@@ -78,12 +82,16 @@ function render(){
   }).flatMap(f=>o.gender&&GENDERED.includes(keyOf(f))?[{...f,gender:'♂'},{...f,gender:'♀'}]:[f]);
   list.forEach((f,i)=>{
     if(f.category==='event')f._c=(o.eventgroup||f.region==='special')?'event':f.region;
-    else f._c=(o.prisgroup&&f.prismana&&f.category!=='keepsake')?'prismana':f.category;
+    else f._c=(o.prisgroup&&f.prismana&&!f.category.startsWith('keepsake'))?'prismana':f.category;
     f._i=i;
   });
   list.sort((a,b)=>ORDER.indexOf(a._c)-ORDER.indexOf(b._c)||a._i-b._i);
   let pages=[];
-  if(o.break){ORDER.forEach(c=>chunk(list.filter(f=>f._c===c)).forEach(p=>pages.push(p)));}
+  if(o.break){
+    // With "Keep regions together", the regions count as one category for page breaks
+    const grp=c=>o.joinregions&&REGIONS.includes(c)?'regions':c;
+    [...new Set(ORDER.map(grp))].forEach(g=>chunk(list.filter(f=>grp(f._c)===g)).forEach(p=>pages.push(p)));
+  }
   else pages=chunk(list);
   $('count').textContent=list.length+' forms over '+pages.length+' page'+(pages.length===1?'':'s')+'.';
   $('nav').innerHTML=pages.map((_,i)=>'<a href="#page-'+(i+1)+'">'+(i+1)+'</a>').join(' ');
@@ -95,8 +103,8 @@ function render(){
       const f=p[k];
       if(!f){c+='<li class="hex empty" aria-hidden="true"><div></div></li>';continue;}
       const base=f.form==='Base';
-      const lbl=f.name+(base?'':', '+f.form+' Form')+(f.gender?', '+(f.gender==='♂'?'male':'female'):'')+', '+EL[f.element]+(f.oneTime?', one-time event':'');
-      const cls='hex e-'+f.element+(f.prismana?' pris':'')+(f.oneTime?' one':'');
+      const lbl=f.name+(base?'':', '+f.form+' Form')+(f.gender?', '+(f.gender==='♂'?'male':'female'):'')+', '+EL[f.element]+(f.element2?' and '+EL[f.element2]:'')+(f.oneTime?', one-time event':'');
+      const cls='hex e-'+f.element+(f.element2?' e2-'+f.element2:'')+(f.prismana?' pris':'')+(f.oneTime?' one':'');
       c+='<li class="'+cls+'" title="'+esc(lbl)+'"><div><span class="n">'+esc(f.n)+'</span><span class="nm'+(f.names?' multi':'')+'">'+(f.names?f.names.map(esc).join('<br>'):esc(f.name))+'</span>'+(formLabel(f)?'<span class="f">'+esc(formLabel(f))+'</span>':'')+'</div></li>';
     }return '<ul class="row">'+c+'</ul>';}).join('');
     const text=p.map((f,i)=>(i+first)+'. '+f.n+' '+f.name+(f.form==='Base'?'':' ('+f.form+' Form)')+(f.gender?' '+f.gender:'')+(f.oneTime?' [one-time]':'')).join('\n');
@@ -119,6 +127,7 @@ if(missing.length){$('warn').hidden=false;$('warn').innerHTML='These <span class
 // Hover boxes on each categories.js mention, showing the entries that mention refers to
 const TIPS={
   keepsake:['Season 1 keepsake exclusives (keepsake)',CATEGORIES.keepsake||[]],
+  keepsake2:['Season 2 keepsake exclusives (keepsake2)',CATEGORIES.keepsake2||[]],
   event:['One-time event specials (event)',CATEGORIES.event||[],autoEvent],
   gender:['Gender forms (genders)',GENDERED],
   missing:['Entries with no matching form',missing]
@@ -129,8 +138,8 @@ document.querySelectorAll('.ref').forEach(r=>{
   r.insertAdjacentHTML('beforeend','<span class="tip" role="tooltip"><b>'+esc(title)+'</b>'+tipList(list)+
     (extra&&extra.length?'<b>Plus #10001+ forms not listed:</b>'+tipList(extra):'')+'</span>');
 });
-// A mention sits inside a checkbox label, so stop clicks on it from toggling the box
-document.addEventListener('click',e=>{if(e.target.closest('.ref'))e.preventDefault();});
+// The hover box sits inside a checkbox label, so stop clicks inside it from toggling the box
+document.addEventListener('click',e=>{if(e.target.closest('.tip'))e.preventDefault();});
 render();
 // Size tile text to the widest name and form name in the data, so every tile matches and nothing wraps
 function measureText(){

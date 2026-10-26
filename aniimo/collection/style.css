@@ -12,7 +12,7 @@
   --check:#121212; --focus:#121212;
   --pris-mix:45%;
   --fire:#f08a5d; --water:#4f9be0; --grass:#6dbb5c; --electric:#e6c229; --ice:#7fd1de;
-  --earth:#b88a52; --wind:#57c1a0; --light:#f2d77c; --dark:#9a7bd6; --none:#a7acb7;
+  --earth:#b88a52; --wind:#57c1a0; --light:#f2d77c; --dark:#9a7bd6; --none:#a7acb7; --unknown:#e1e3e8;
   --hw:clamp(46px,calc((100vw - 48px)/6.4),108px);
   color-scheme:light;
 }
@@ -49,6 +49,9 @@ legend{font-weight:700;padding:0;margin-bottom:4px}
 .ref .tip{display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:5;width:max-content;max-width:min(300px,75vw);
   background:var(--sheet);border:2px solid var(--rim);padding:8px 12px;color:var(--ink);font-size:.85rem;font-weight:400;line-height:1.4;cursor:auto}
 .ref:hover .tip,.ref:focus .tip{display:block}
+/* On a toggle's main line the mention is the label itself: it still ticks the box, and the box also opens on keyboard focus */
+.opt .ref{cursor:pointer}
+.opt input:focus-visible+label .tip{display:block}
 .tip b{display:block}
 .tip b+ul{margin:2px 0 0}
 .tip ul+b{margin-top:8px}
@@ -83,9 +86,15 @@ h2{margin:0;font-size:1.5rem;font-weight:700}
 .row+.row{margin-top:calc(var(--hw)*-0.256)}
 .hex{width:var(--hw);height:calc(var(--hw)*1.1547);clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:var(--rim);padding:2.5px}
 .hex>div{width:100%;height:100%;clip-path:inherit;display:flex;flex-direction:column;align-items:center;
-  padding:0 3%;text-align:center;background:linear-gradient(var(--el) 0 33%,var(--tile) 33%)}
+  padding:0 3%;text-align:center;
+  /* The colored band: one element fills it; with two, the left half is the first and the right half the second */
+  --band:linear-gradient(90deg,var(--el) 50%,var(--el2,var(--el)) 50%) 0 0/100% 33% no-repeat;
+  background:var(--band),var(--tile)}
 .e-fire{--el:var(--fire)}.e-water{--el:var(--water)}.e-grass{--el:var(--grass)}.e-electric{--el:var(--electric)}.e-ice{--el:var(--ice)}
-.e-earth{--el:var(--earth)}.e-wind{--el:var(--wind)}.e-light{--el:var(--light)}.e-dark{--el:var(--dark)}.e-none{--el:var(--none)}
+.e-earth{--el:var(--earth)}.e-wind{--el:var(--wind)}.e-light{--el:var(--light)}.e-dark{--el:var(--dark)}.e-none{--el:var(--none)}.e-unknown{--el:var(--unknown)}
+.e2-fire{--el2:var(--fire)}.e2-water{--el2:var(--water)}.e2-grass{--el2:var(--grass)}.e2-electric{--el2:var(--electric)}.e2-ice{--el2:var(--ice)}
+.e2-earth{--el2:var(--earth)}.e2-wind{--el2:var(--wind)}.e2-light{--el2:var(--light)}.e2-dark{--el2:var(--dark)}.e2-none{--el2:var(--none)}.e2-unknown{--el2:var(--unknown)}
+.legend .sw-two{background:linear-gradient(90deg,var(--fire) 50%,var(--water) 50%)}
 .hex.one{background:var(--rim-one);padding:6px}
 /* Prismana: rainbow stripes, softened toward the tile color so text stays readable. --s is the stripe width. */
 .hex.pris>div,.legend .sw-pris{--s:6px;--rainbow:repeating-linear-gradient(135deg,
@@ -95,7 +104,7 @@ h2{margin:0;font-size:1.5rem;font-weight:700}
   color-mix(in srgb,#5ad66b var(--pris-mix),var(--tile)) calc(var(--s)*3) calc(var(--s)*4),
   color-mix(in srgb,#4da6ff var(--pris-mix),var(--tile)) calc(var(--s)*4) calc(var(--s)*5),
   color-mix(in srgb,#a66bff var(--pris-mix),var(--tile)) calc(var(--s)*5) calc(var(--s)*6))}
-.hex.pris>div{background:linear-gradient(var(--el) 0 33%,transparent 33%),var(--rainbow)}
+.hex.pris>div{background:var(--band),var(--rainbow)}
 .hex.pris .f{color:var(--ink)}
 .empty{background:var(--rim);opacity:.25}
 .empty>div{background:var(--sheet)}
