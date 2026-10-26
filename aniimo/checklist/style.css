@@ -1,4 +1,4 @@
-/* Aniimo region checklists, styled like the collection page: logo grey, heavy outlines,
+/* Aniimo collection checklists, styled like the collection page: logo grey, heavy outlines,
    and the lime-to-mint gradient only as decoration or behind black text.
    Loaded after shared/base.css. */
 
@@ -70,6 +70,17 @@ select{font:inherit;font-size:.95rem;color:var(--ink);background:var(--tile);bor
   #ffadad 0 var(--s),#ffd3a6 var(--s) calc(var(--s)*2),#fff0a6 calc(var(--s)*2) calc(var(--s)*3),
   #ade9b5 calc(var(--s)*3) calc(var(--s)*4),#a6d2ff calc(var(--s)*4) calc(var(--s)*5),#d2b5ff calc(var(--s)*5) calc(var(--s)*6))}
 .note{margin:4px 0 0;color:var(--muted);font-size:.85rem;line-height:1.35}
+/* All-forms list: one line per place the form turns up */
+.where{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:4px}
+.where li{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;font-size:.88rem}
+.where .need{margin:0}
+.where .note{flex-basis:100%;margin:0}
+.place{color:var(--muted)}
+.region.all .rows{margin-top:4px}
+/* List mode switch */
+.opt.mode{align-items:center;gap:6px 22px}
+.opt.mode span{display:inline-flex;align-items:center;gap:10px}
+.opt.mode input{margin:0}
 
 /* The four ticks */
 .boxes{display:flex;gap:4px}
@@ -78,12 +89,16 @@ select{font:inherit;font-size:.95rem;color:var(--ink);background:var(--tile);bor
 .box:has(input:checked){color:var(--ink)}
 /* Greyed out: this form can't have it */
 .box.off{opacity:.35;cursor:not-allowed}
-.box.off input{cursor:not-allowed}
-@media (max-width:560px){
+.box.off input{cursor:not-allowed}@media (max-width:560px){
   .row{grid-template-columns:8px 1fr}
   .boxes{grid-column:2;justify-content:space-between}
-  .box{flex:1;flex-direction:row;justify-content:center;gap:6px;border:1.5px solid var(--rim);padding:6px 2px;min-height:40px}
+  .boxes{gap:4px}
+  .box{flex:1 1 0;min-width:0;flex-direction:row;justify-content:center;gap:6px;border:1.5px solid var(--rim);padding:6px 2px;min-height:40px}
   .meter{width:72px}
+}
+/* Very narrow phones: each label goes under its box so all four fit */
+@media (max-width:400px){
+  .box{flex-direction:column;gap:2px;padding:4px 2px}
 }
 
 /* Backups */

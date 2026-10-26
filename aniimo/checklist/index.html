@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Aniimo Region Checklists</title>
+<title>Aniimo Collection Checklists</title>
 <link rel="icon" href="../../shared/logo.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../../shared/base.css">
 <script src="../../shared/site.js"></script>
@@ -8,9 +8,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css"></head><body><main>
 <a class="back" href="../">Back to Aniimo</a>
-<h1>Aniimo Region Checklists</h1>
-<p class="intro">Every form that spawns in the wild, by region and sub-region. Mark what’s in your collection. A form that spawns in more than one place is marked everywhere at once. Your collection is saved in this browser.</p>
+<h1>Aniimo Collection Checklists</h1>
+<p class="intro">Every form, by region and sub-region or as one list in Aniilog order, with ♂ and ♀ gender forms listed separately and keepsake and event exclusives in their own section. Mark what’s in your collection. A form that spawns in more than one place is marked everywhere at once. Your collection is saved in this browser.</p>
 <fieldset><legend>What to show</legend>
+<div class="opt mode" role="radiogroup" aria-label="List"><span><input type="radio" name="mode" id="mode-region" value="region" checked><label for="mode-region">By region</label></span>
+<span><input type="radio" name="mode" id="mode-all" value="all"><label for="mode-all">All forms in Aniilog order</label></span></div>
 <div class="opt"><label for="opt-need">Only forms that need</label>
 <select id="opt-need"><option value="">Anything</option><option value="none">Nothing special</option><option value="Rain">Rain</option><option value="Thunderstorm">Thunderstorm</option><option value="Snow">Snow</option><option value="Night">Night</option><option value="Prismana Flow">Prismana Flow</option><option value="Quest">Quest</option><option value="Title">Title</option></select></div>
 <div class="opt"><input type="checkbox" id="opt-hide"><label for="opt-hide">Hide forms I own<small>Percentages still count every form.</small></label></div>
@@ -29,30 +31,63 @@
 <script src="../data/spawns.js"></script>
 <script>
 const REGION_NAMES={breezy:"Breezy Plains",whisperwake:"Whisperwake Isles"};
-const BOXES=[["own","Own"],["perfect","Perfect"],["alpha","Alpha"],["umbra","Umbra"]];
+const BOXES=[["own","Own"],["perfect","Perfect"],["alpha","Alpha"],["umbra","Umbral"]];
 const SYMBOL={"Rain":"☂","Thunderstorm":"⚡","Rain or thunderstorm":"☂","Snow":"❄","Night":"☾","Prismana Flow":"✦"};
 const keyOf=f=>f.form==="Base"?f.name:f.form+" "+f.name;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,'-');
 const BY_KEY=new Map(FORMS.map(f=>[keyOf(f),f]));
+const ORDER=new Map(FORMS.map((f,i)=>[keyOf(f),i]));
 const missing=[];
-// Keepsake and event forms from categories.js can't be caught in the wild, so they're left off
-const NOT_WILD=new Set(["keepsake","keepsake2","event","exclude"].flatMap(c=>CATEGORIES[c]||[]));
+const known=k=>{if(BY_KEY.has(k))return true;if(!missing.includes(k))missing.push(k);return false;};
+// Excluded forms from categories.js don't exist in the game
+const EXCLUDE=new Set(CATEGORIES.exclude||[]);
+EXCLUDE.forEach(known);
+// Pick-one groups from categories.js share one row, under the first form's name, since a player can only own one
+const PICKED=new Set();
+for(const group of (CATEGORIES.pickOne||[])){
+  const [keep,...rest]=group.filter(known);if(!rest.length)continue;
+  const fs=[keep,...rest].map(k=>BY_KEY.get(k));
+  BY_KEY.set(keep,{...fs[0],name:fs.map(f=>f.name).join(' / '),n:fs.map(f=>f.n).join('/')});
+  rest.forEach(k=>PICKED.add(k));
+}
+// Gender forms from categories.js get a ♂ row and a ♀ row, next to each other
+const GENDERED=(CATEGORIES.genders||[]).filter(known);
+GENDERED.forEach(k=>['♂','♀'].forEach((g,i)=>{BY_KEY.set(k+' '+g,{...BY_KEY.get(k),gender:g});ORDER.set(k+' '+g,ORDER.get(k)+(i+1)/10);}));
+const expand=row=>GENDERED.includes(row.form)?['♂','♀'].map(g=>({...row,form:row.form+' '+g})):[row];
+const byOrder=(a,b)=>ORDER.get(a.form)-ORDER.get(b.form);
+
+// Keepsake and event exclusives from categories.js, plus #10001+ forms not listed there, which count as events.
+// They can't be caught in the wild, so they're left off the regions and get their own section.
+const EXCLUSIVE=[["keepsake","Season 1 keepsakes","Season 1 keepsake","Only from Season 1 keepsakes."],
+  ["keepsake2","Season 2 keepsakes","Season 2 keepsake","Only from Season 2 keepsakes."],
+  ["event","One-time events","One-time event","Only from one-time events. No duplicates possible."]];
+const LISTED=new Set(EXCLUSIVE.flatMap(([c])=>CATEGORIES[c]||[]));
+const autoEvent=FORMS.filter(f=>f.region==="special"&&!LISTED.has(keyOf(f))).map(keyOf);
+const skip=k=>EXCLUDE.has(k)||PICKED.has(k)||LISTED.has(k)||autoEvent.includes(k);
 
 // Build each region's sub-regions: the wild spawns from spawns.js, then the region's other forms from forms.js
 const REGIONS=Object.keys(REGION_NAMES).map(r=>{
-  const subs=(SPAWNS[r]||[]).map(s=>({name:s.name,levels:s.levels,rows:s.rows.filter(row=>{
-    if(!BY_KEY.has(row.form)){if(!missing.includes(row.form))missing.push(row.form);return false;}
-    return !NOT_WILD.has(row.form);
-  })}));
-  const wild=new Set(subs.flatMap(s=>s.rows.map(row=>row.form)));
-  const rest=FORMS.filter(f=>f.region===r&&!wild.has(keyOf(f))&&!NOT_WILD.has(keyOf(f))).map(f=>({form:keyOf(f)}));
+  const subs=(SPAWNS[r]||[]).map(s=>({name:s.name,place:s.name,levels:s.levels,
+    rows:s.rows.filter(row=>known(row.form)&&!skip(row.form)).flatMap(expand)}));
+  const wild=new Set((SPAWNS[r]||[]).flatMap(s=>s.rows.map(row=>row.form)));
+  const rest=FORMS.map(keyOf).filter(k=>BY_KEY.get(k).region===r&&!wild.has(k)&&!skip(k)).map(k=>({form:k})).flatMap(expand);
   if(rest.length)subs.push(subs.length
-    ?{name:"Not found in the wild",note:"Get these by evolving, hatching or switching forms with a Morph Orb.",rows:rest}
-    :{name:"Sub-region not known yet",note:"Sub-region spawn data isn’t out yet.",rows:rest});
+    ?{name:"Not found in the wild",place:"Not found in the wild in "+REGION_NAMES[r],note:"Get these by evolving, hatching or switching forms with a Morph Orb.",rows:rest}
+    :{name:"Sub-region not known yet",place:REGION_NAMES[r]+", sub-region not known yet",note:"Sub-region spawn data isn’t out yet.",rows:rest});
   return {id:r,name:REGION_NAMES[r],subs};
 });
+REGIONS.push({id:"exclusive",name:"Exclusives",subs:EXCLUSIVE.map(([c,name,place,note])=>({name,place,note,
+  rows:[...(CATEGORIES[c]||[]),...(c==="event"?autoEvent:[])].filter(k=>known(k)&&!PICKED.has(k)).map(k=>({form:k})).flatMap(expand).sort(byOrder)}))
+  .filter(s=>s.rows.length)});
+// For the all-forms list: every form once, in Aniilog order, with each place it turns up and what it needs there
+const PLACES=new Map();
+REGIONS.forEach(r=>r.subs.forEach(s=>s.rows.forEach(row=>{
+  if(!PLACES.has(row.form))PLACES.set(row.form,[]);
+  PLACES.get(row.form).push({place:s.place,need:row.need,note:row.note});
+})));
+const ALL=[...PLACES.keys()].sort((a,b)=>ORDER.get(a)-ORDER.get(b));
 
 // Collection: one entry per form, so a form is marked in every sub-region it spawns in
 let collection={};
@@ -71,7 +106,7 @@ function setBox(k,b,on){
 let open={};
 try{open=JSON.parse(localStorage.getItem('checklist-open'))||{};}catch(_){}
 const pct=(n,d)=>d?Math.floor(n/d*100):0;
-// Each box counts out of the forms that can have it, so Umbra leaves out Prismana forms
+// Each box counts out of the forms that can have it, so Umbral leaves out Prismana forms
 function stats(keys){
   const o={total:keys.length};
   BOXES.forEach(([b])=>{const able=keys.filter(k=>canHave(BY_KEY.get(k),b));o[b]=able.filter(k=>has(k,b)).length;o[b+'Of']=able.length;});
@@ -85,24 +120,42 @@ function needHTML(row){
   const cls=t=>t==='Prismana Flow'?' flow':SYMBOL[t]?' wx':'';
   return '<div class="need">'+tags.map(t=>'<span class="chip'+cls(t)+'">'+(SYMBOL[t]?'<span aria-hidden="true">'+SYMBOL[t]+'</span> ':'')+esc(t)+'</span>').join('')+'</div>';
 }
-// A box is unavailable when the form can't have it: Umbra where forms.js says umbral: false,
-// and Alpha on Prismana forms, which can't be Alpha for now
-const canHave=(f,b)=>!(b==='umbra'&&f.umbral===false)&&!(b==='alpha'&&f.form==='Prismana');
+// A box is unavailable when the form can't have it. Prismana forms can't be Alpha or Umbral for now,
+// one-off specials (#10001+ and one-time event forms) can't be Alpha, and forms.js marks others with umbral: false.
+const EVENT_FORMS=new Set(CATEGORIES.event||[]);
+const special=f=>f.region==='special'||EVENT_FORMS.has(keyOf(f));
+const canHave=(f,b)=>b==='alpha'?!(f.form==='Prismana'||special(f)):b==='umbra'?!(f.form==='Prismana'||f.umbral===false):true;
+// In the all-forms list a row shows where the form turns up and what it needs there.
+// Places that need the same thing share a line.
+function placesHTML(places){
+  const groups=new Map();
+  places.forEach(p=>{const g=JSON.stringify([p.need||[],p.note||'']);if(!groups.has(g))groups.set(g,{...p,names:[]});groups.get(g).names.push(p.place);});
+  return '<ul class="where">'+[...groups.values()].map(p=>'<li><span class="place">'+esc(p.names.join(', '))+'</span>'+needHTML(p)+
+    (p.note?'<p class="note">'+esc(p.note)+'</p>':'')+'</li>').join('')+'</ul>';
+}
 function rowHTML(row){
   const f=BY_KEY.get(row.form),k=row.form;
-  const name=f.name+(f.form==='Base'?'':' <span class="form">'+esc(f.form)+' Form</span>');
-  const plain=f.name+(f.form==='Base'?'':', '+f.form+' Form');
+  const name=esc(f.name)+(f.form==='Base'?'':' <span class="form">'+esc(f.form)+' Form</span>')+(f.gender?' <span class="form">'+f.gender+'</span>':'');
+  const plain=f.name+(f.form==='Base'?'':', '+f.form+' Form')+(f.gender?', '+(f.gender==='♂'?'male':'female'):'');
   return '<li class="row'+(has(k,'own')?' owned':'')+'" data-key="'+esc(k)+'">'+
     '<span class="sw e-'+f.element+(f.element2?' e2-'+f.element2:'')+'" aria-hidden="true"></span>'+
     '<div class="who"><span class="n">'+esc(f.n==='—'?'':'#'+f.n)+'</span> <b>'+name+'</b>'+
-    needHTML(row)+(row.note?'<p class="note">'+esc(row.note)+'</p>':'')+'</div>'+
+    (row.places?placesHTML(row.places):needHTML(row)+(row.note?'<p class="note">'+esc(row.note)+'</p>':''))+'</div>'+
     '<div class="boxes">'+BOXES.map(([b,l])=>canHave(f,b)
       ?'<label class="box"><input type="checkbox" data-box="'+b+'"'+(has(k,b)?' checked':'')+' aria-label="'+esc(l+': '+plain)+'"><span aria-hidden="true">'+l+'</span></label>'
       :'<label class="box off" title="'+esc(plain+' can’t be '+l)+'"><input type="checkbox" disabled aria-label="'+esc(l+': '+plain+', not possible')+'"><span aria-hidden="true">'+l+'</span></label>').join('')+'</div></li>';
 }
 function render(){
   const need=$('opt-need').value,hide=$('opt-hide').checked;
-  const show=row=>(!hide||!has(row.form,'own'))&&(!need||(need==='none'?!(row.need||[]).length:(row.need||[]).some(t=>t.toLowerCase().includes(need.toLowerCase()))));// "Rain" also finds "Rain or thunderstorm"
+  const needs=tags=>!need||(need==='none'?!(tags||[]).length:(tags||[]).some(t=>t.toLowerCase().includes(need.toLowerCase())));// "Rain" also finds "Rain or thunderstorm"
+  const show=row=>(!hide||!has(row.form,'own'))&&(row.places?row.places.some(p=>needs(p.need)):needs(row.need));
+  if($('mode-all').checked){
+    const rows=ALL.map(k=>({form:k,places:PLACES.get(k)})),s=stats(ALL),vis=rows.filter(show);
+    $('regions').innerHTML='<section class="region all" id="all-forms" aria-labelledby="all-h"><header><h2 id="all-h">All forms</h2>'+bar(s,'All forms')+
+      '<p class="counts">'+ALL.length+' forms · '+counts(s)+'</p></header>'+
+      (vis.length?'<ul class="rows">'+vis.map(rowHTML).join('')+'</ul>':'<p class="sub-note">No forms match these options.</p>')+'</section>';
+    return;
+  }
   const html=REGIONS.map(r=>{
     const all=[...new Set(r.subs.flatMap(s=>s.rows.map(row=>row.form)))],rs=stats(all);
     // With a requirement picked, sub-regions (and regions) with no matches are left out
@@ -125,7 +178,7 @@ $('regions').addEventListener('change',e=>{
   const box=e.target.closest('input[data-box]');if(!box)return;
   setBox(box.closest('.row').dataset.key,box.dataset.box,box.checked);
   // Redraw, keeping keyboard focus on the same box
-  const k=box.closest('.row').dataset.key,b=box.dataset.box,sub=box.closest('.sub').id;
+  const k=box.closest('.row').dataset.key,b=box.dataset.box,sub=box.closest('.sub,.all').id;
   render();
   const again=[...document.querySelectorAll('#'+sub+' .row')].find(r=>r.dataset.key===k);
   if(again)again.querySelector('[data-box="'+b+'"]').focus();
@@ -140,6 +193,11 @@ $('regions').addEventListener('toggle',e=>{
   try{const v=localStorage.getItem(id);if(v!==null)el[prop]=prop==='checked'?v==='1':v;}catch(_){}
   el.addEventListener('change',()=>{try{localStorage.setItem(id,prop==='checked'?(el.checked?'1':'0'):el.value);}catch(_){}render();});
 });
+// List mode: by region, or every form in one list
+try{if(localStorage.getItem('opt-mode')==='all')$('mode-all').checked=true;}catch(_){}
+document.querySelectorAll('input[name="mode"]').forEach(el=>el.addEventListener('change',()=>{
+  try{localStorage.setItem('opt-mode',el.value);}catch(_){}render();
+}));
 
 // Back up and restore the collection as a file
 const msg=t=>{$('save-msg').textContent=t;};
@@ -164,6 +222,6 @@ $('reset').addEventListener('click',()=>{
   collection={};save();render();msg('Collection cleared.');
 });
 
-if(missing.length){$('warn').hidden=false;$('warn').textContent='These spawns.js entries don’t match any form, so they aren’t shown: '+missing.join(', ')+'. Check the spelling against forms.js.';}
+if(missing.length){$('warn').hidden=false;$('warn').textContent='These spawns.js or categories.js entries don’t match any form, so they aren’t shown: '+missing.join(', ')+'. Check the spelling against forms.js.';}
 render();
 </script></body></html>

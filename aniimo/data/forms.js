@@ -14,7 +14,8 @@
 //              (not yet in game), special (#10001 and up)
 //   umbral   - optional, false for forms that can never be Umbral (every Prismana form, and
 //              the one-off specials), from AniimoTools' per-form Umbral data. Left out when the
-//              form can be Umbral or it isn't known yet.
+//              form can be Umbral or it isn't known yet. Set by hand for Sparkelf, which AniimoTools
+//              lists as never Umbral but can be.
 //
 // Whisperwake numbers stay "—" until the region is out and the game confirms them.
 // The beta numbers fan sites list aren't reliable. Until then, Whisperwake forms keep
@@ -268,7 +269,7 @@ const FORMS = [
   {"n": "10002", "name": "Dazmand", "element": "electric", "form": "Base", "region": "special"},
   {"n": "10003", "name": "Fulmintis", "element": "electric", "form": "Base", "region": "special"},
   {"n": "10003", "name": "Fulmintis", "element": "electric", "element2": "light", "form": "Prismana", "umbral": false, "region": "special"},
-  {"n": "11001", "name": "Sparkelf", "element": "fire", "form": "Base", "umbral": false, "region": "special"},
+  {"n": "11001", "name": "Sparkelf", "element": "fire", "form": "Base", "region": "special"},
   {"n": "11001", "name": "Sparkelf", "element": "fire", "form": "Prismana", "umbral": false, "region": "special"},
   {"n": "99996", "name": "Lunara", "element": "light", "form": "Base", "umbral": false, "region": "special"},
   {"n": "99998", "name": "Helion", "element": "light", "form": "Base", "umbral": false, "region": "special"}

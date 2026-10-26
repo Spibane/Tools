@@ -52,6 +52,7 @@ const CATEGORIES = {
   // placed where the first form would be.
   pickOne: [
     ["Prismana Iris", "Prismana Irisal"],
+    ["Lunara", "Helion"],
   ],
 
   // Gender forms: these forms come as both ♂ and ♀. Shown as two tiles when the gender checkbox is ticked.
