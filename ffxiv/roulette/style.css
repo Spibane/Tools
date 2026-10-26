@@ -22,6 +22,7 @@ legend{font-weight:700;padding:0;margin-bottom:4px}
 .job{display:inline-flex;align-items:center;gap:6px;background:var(--tile);border:2px solid var(--rim);padding:3px 9px 3px 6px;font-weight:600;font-size:.9rem;cursor:pointer}
 .job input{width:17px;height:17px;margin:0;accent-color:var(--check)}
 .job:not(:has(input:checked)){opacity:.55;text-decoration:line-through}
+.job.upcoming{border-style:dashed}
 .job-buttons{margin-top:10px}
 
 /* One row per roulette: turn it on, then pick its roles */
@@ -51,7 +52,9 @@ button.roll:hover{background:var(--tile);color:var(--ink);border-color:var(--rim
 .role{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:0 6px;border:2px solid #121212;color:#121212}
 .role-tank{background:#8ab4ff}
 .role-healer{background:#8fe08a}
-.role-dps{background:#ff9a9a}
+.role-melee{background:#ff9a9a}
+.role-ranged{background:#ffb889}
+.role-caster{background:#e3a6ff}
 @media (max-width:560px){
   .result{grid-template-columns:1fr auto}
   .r-job{grid-column:1;grid-row:2}

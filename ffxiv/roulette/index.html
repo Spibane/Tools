@@ -16,9 +16,9 @@
 <ol class="results" id="results" aria-live="polite"></ol>
 </section>
 <fieldset><legend>Jobs you can be given</legend>
-<p class="hint">Untick a job you don't want to play, haven't unlocked or haven't levelled far enough.</p>
+<p class="hint">Untick a job you don't want to play, haven't unlocked or haven't levelled far enough. Jobs with dashed outlines (Bastion and Zephyr) aren't out yet, so they start unticked and their abbreviations are best guesses.</p>
 <div id="jobs"></div>
-<div class="job-buttons"><button type="button" id="jobs-all">Allow every job</button></div>
+<div class="job-buttons"><button type="button" id="jobs-all">Allow every released job</button></div>
 </fieldset>
 <fieldset><legend>Roulettes and their roles</legend>
 <p class="hint">Untick a roulette to leave it out of the roll, or untick a role to stop that roulette getting jobs from it.</p>
@@ -27,14 +27,15 @@
 </fieldset>
 </main>
 <script>
-const ROLES=[{id:'tank',name:'Tank'},{id:'healer',name:'Healer'},{id:'dps',name:'DPS'}];
-// Every job that can queue for roulettes (Blue Mage can't, so it's left out)
+const ROLES=[{id:'tank',name:'Tank'},{id:'healer',name:'Healer'},{id:'melee',name:'Melee'},{id:'ranged',name:'Ranged'},{id:'caster',name:'Caster'}];
+// Every job that can queue for roulettes (Blue Mage can't, so it's left out).
+// upcoming: true marks a job that isn't out yet; it starts unticked, and its abbreviation is a guess.
 const JOBS=[
-  {id:'PLD',name:'Paladin',role:'tank'},{id:'WAR',name:'Warrior',role:'tank'},{id:'DRK',name:'Dark Knight',role:'tank'},{id:'GNB',name:'Gunbreaker',role:'tank'},
+  {id:'PLD',name:'Paladin',role:'tank'},{id:'WAR',name:'Warrior',role:'tank'},{id:'DRK',name:'Dark Knight',role:'tank'},{id:'GNB',name:'Gunbreaker',role:'tank'},{id:'BSN',name:'Bastion',role:'tank',upcoming:true},
   {id:'WHM',name:'White Mage',role:'healer'},{id:'SCH',name:'Scholar',role:'healer'},{id:'AST',name:'Astrologian',role:'healer'},{id:'SGE',name:'Sage',role:'healer'},
-  {id:'MNK',name:'Monk',role:'dps'},{id:'DRG',name:'Dragoon',role:'dps'},{id:'NIN',name:'Ninja',role:'dps'},{id:'SAM',name:'Samurai',role:'dps'},{id:'RPR',name:'Reaper',role:'dps'},{id:'VPR',name:'Viper',role:'dps'},
-  {id:'BRD',name:'Bard',role:'dps'},{id:'MCH',name:'Machinist',role:'dps'},{id:'DNC',name:'Dancer',role:'dps'},
-  {id:'BLM',name:'Black Mage',role:'dps'},{id:'SMN',name:'Summoner',role:'dps'},{id:'RDM',name:'Red Mage',role:'dps'},{id:'PCT',name:'Pictomancer',role:'dps'}
+  {id:'MNK',name:'Monk',role:'melee'},{id:'DRG',name:'Dragoon',role:'melee'},{id:'NIN',name:'Ninja',role:'melee'},{id:'SAM',name:'Samurai',role:'melee'},{id:'RPR',name:'Reaper',role:'melee'},{id:'VPR',name:'Viper',role:'melee'},
+  {id:'BRD',name:'Bard',role:'ranged'},{id:'MCH',name:'Machinist',role:'ranged'},{id:'DNC',name:'Dancer',role:'ranged'},{id:'ZPR',name:'Zephyr',role:'ranged',upcoming:true},
+  {id:'BLM',name:'Black Mage',role:'caster'},{id:'SMN',name:'Summoner',role:'caster'},{id:'RDM',name:'Red Mage',role:'caster'},{id:'PCT',name:'Pictomancer',role:'caster'}
 ];
 // In Duty Finder order. The ids are used to save your choices, so rename with care.
 const ROULETTES=[
@@ -48,9 +49,13 @@ const job=id=>JOBS.find(j=>j.id===id);
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 
 // Settings: offJobs = jobs you won't be given; offRoulettes = roulettes left out;
-// offRoles = roles each roulette can't go to; unique = spread jobs out; result = the last roll
-let state={offJobs:[],offRoulettes:[],offRoles:{},unique:true,result:{}};
+// offRoles = roles each roulette can't go to; unique = spread jobs out; result = the last roll;
+// seen = upcoming jobs already added to offJobs, so ticking one later sticks
+let state={offJobs:[],offRoulettes:[],offRoles:{},unique:true,result:{},seen:[]};
 try{state=Object.assign(state,JSON.parse(localStorage.getItem('roulette')));}catch(_){}
+JOBS.filter(j=>j.upcoming&&!state.seen.includes(j.id)).forEach(j=>{state.offJobs.push(j.id);state.seen.push(j.id);});
+// DPS used to be one role; a roulette saved with it turned off keeps all three DPS roles off
+for(const roles of Object.values(state.offRoles))if(roles.includes('dps'))roles.splice(roles.indexOf('dps'),1,'melee','ranged','caster');
 const save=()=>{try{localStorage.setItem('roulette',JSON.stringify(state));}catch(_){}};
 
 const active=()=>ROULETTES.filter(r=>!state.offRoulettes.includes(r.id));
@@ -85,7 +90,7 @@ function renderResults(){
 function render(){
   $('unique').checked=state.unique;
   $('jobs').innerHTML=ROLES.map(role=>'<div class="job-role"><h3>'+role.name+'</h3><div class="jobs">'+
-    JOBS.filter(j=>j.role===role.id).map(j=>'<label class="job" title="'+esc(j.name)+'"><input type="checkbox" value="'+j.id+'"'+(state.offJobs.includes(j.id)?'':' checked')+' aria-label="'+esc(j.name)+'">'+j.id+'</label>').join('')+
+    JOBS.filter(j=>j.role===role.id).map(j=>'<label class="job'+(j.upcoming?' upcoming':'')+'" title="'+esc(j.name+(j.upcoming?' (not out yet)':''))+'"><input type="checkbox" value="'+j.id+'"'+(state.offJobs.includes(j.id)?'':' checked')+' aria-label="'+esc(j.name)+'">'+j.id+'</label>').join('')+
     '</div></div>').join('');
   $('roulettes').innerHTML=ROULETTES.map(r=>{
     const off=state.offRoulettes.includes(r.id),roles=state.offRoles[r.id]||[];
@@ -102,7 +107,7 @@ $('jobs').addEventListener('change',()=>{
   state.offJobs=[...$('jobs').querySelectorAll('input:not(:checked)')].map(el=>el.value);
   save();renderResults();
 });
-$('jobs-all').addEventListener('click',()=>{state.offJobs=[];save();render();});
+$('jobs-all').addEventListener('click',()=>{state.offJobs=JOBS.filter(j=>j.upcoming).map(j=>j.id);save();render();});
 $('roulettes').addEventListener('change',e=>{
   const row=e.target.closest('.roulette'),id=row.dataset.r;
   if(e.target.matches('.use'))state.offRoulettes=state.offRoulettes.filter(x=>x!==id).concat(e.target.checked?[]:[id]);
