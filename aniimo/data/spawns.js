@@ -17,6 +17,8 @@
 // Breezy Plains source: MetaBot region pages (metabot.gg/en/aniimo/regions/), datamined from
 // game build 1.0.3634150, checked 25 October 2026. Every Prismana form listed under a region's
 // "Prismana here" counts as a Prismana Flow spawn there.
+// Added by hand: Prismana Pawney in Russet Highlands during Prismana Flow. MetaBot leaves it out,
+// but it's seen there in game, and AniimoTools' map lists it for that region's Prismana Flow.
 // MetaBot uses the game's internal form names; renamed to match forms.js:
 // Mountain Woods = Timberline, Rainstorm = Rainfall, Sea of Flowers = Flowerfield.
 //
@@ -260,6 +262,7 @@ const SPAWNS = {
       {form: "Helmut"},
       {form: "Snowfield Helmut", need: ["Snow"]},
       {form: "Timberline Helmut", need: ["Quest"], note: "Spawns after completing the quest [Secret of the Golden Helmet]."},
+      {form: "Prismana Pawney", need: ["Prismana Flow"]},
       {form: "Rookey"},
       {form: "Snowfield Rookey", need: ["Snow"], note: "Near Sanctum: First Sight."},
       {form: "Timberline Rookey", need: ["Other"], note: "Refreshes after completing \"The Secret of the Golden Helmet.\""},

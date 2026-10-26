@@ -77,6 +77,12 @@ select{font:inherit;font-size:.95rem;color:var(--ink);background:var(--tile);bor
 .where .note{flex-basis:100%;margin:0}
 .place{color:var(--muted)}
 .region.all .rows{margin-top:4px}
+.opt.need-opt{align-items:center}
+/* Collection filters: a title, then one small dropdown per box */
+.opt.marked{align-items:center;gap:6px 16px}
+.opt-title{flex-basis:100%;font-weight:600}
+.opt.marked span:not(.opt-title){display:inline-flex;align-items:center;gap:6px}
+.opt.marked label{font-weight:400}
 /* List mode switch */
 .opt.mode{align-items:center;gap:6px 22px}
 .opt.mode span{display:inline-flex;align-items:center;gap:10px}

@@ -13,9 +13,13 @@
 <fieldset><legend>What to show</legend>
 <div class="opt mode" role="radiogroup" aria-label="List"><span><input type="radio" name="mode" id="mode-region" value="region" checked><label for="mode-region">By region</label></span>
 <span><input type="radio" name="mode" id="mode-all" value="all"><label for="mode-all">All forms in Aniilog order</label></span></div>
-<div class="opt"><label for="opt-need">Only forms that need</label>
+<div class="opt need-opt"><label for="opt-need">Only forms that need</label>
 <select id="opt-need"><option value="">Anything</option><option value="none">Nothing special</option><option value="Rain">Rain</option><option value="Thunderstorm">Thunderstorm</option><option value="Snow">Snow</option><option value="Night">Night</option><option value="Prismana Flow">Prismana Flow</option><option value="Quest">Quest</option><option value="Title">Title</option></select></div>
-<div class="opt"><input type="checkbox" id="opt-hide"><label for="opt-hide">Hide forms I own<small>Percentages still count every form.</small></label></div>
+<div class="opt marked"><span class="opt-title">Only forms marked<small>Percentages still count every form.</small></span>
+<span><label for="opt-own">Own</label><select id="opt-own"><option value="">Any</option><option value="yes">Yes</option><option value="no">No</option></select></span>
+<span><label for="opt-perfect">Perfect</label><select id="opt-perfect"><option value="">Any</option><option value="yes">Yes</option><option value="no">No</option></select></span>
+<span><label for="opt-alpha">Alpha</label><select id="opt-alpha"><option value="">Any</option><option value="yes">Yes</option><option value="no">No</option></select></span>
+<span><label for="opt-umbra">Umbral</label><select id="opt-umbra"><option value="">Any</option><option value="yes">Yes</option><option value="no">No</option></select></span></div>
 </fieldset>
 <p class="warn" id="warn" hidden></p>
 <div id="regions"></div>
@@ -146,9 +150,13 @@ function rowHTML(row){
       :'<label class="box off" title="'+esc(plain+' can’t be '+l)+'"><input type="checkbox" disabled aria-label="'+esc(l+': '+plain+', not possible')+'"><span aria-hidden="true">'+l+'</span></label>').join('')+'</div></li>';
 }
 function render(){
-  const need=$('opt-need').value,hide=$('opt-hide').checked;
+  const need=$('opt-need').value;
   const needs=tags=>!need||(need==='none'?!(tags||[]).length:(tags||[]).some(t=>t.toLowerCase().includes(need.toLowerCase())));// "Rain" also finds "Rain or thunderstorm"
-  const show=row=>(!hide||!has(row.form,'own'))&&(row.places?row.places.some(p=>needs(p.need)):needs(row.need));
+  // Collection filters: each box can be required marked (yes) or unmarked (no). Forms that can't have a box are left out.
+  const marked=BOXES.map(([b])=>[b,$('opt-'+b).value]).filter(([,v])=>v);
+  const fits=k=>marked.every(([b,v])=>canHave(BY_KEY.get(k),b)&&has(k,b)===(v==='yes'));
+  const filtered=need||marked.length;
+  const show=row=>fits(row.form)&&(row.places?row.places.some(p=>needs(p.need)):needs(row.need));
   if($('mode-all').checked){
     const rows=ALL.map(k=>({form:k,places:PLACES.get(k)})),s=stats(ALL),vis=rows.filter(show);
     $('regions').innerHTML='<section class="region all" id="all-forms" aria-labelledby="all-h"><header><h2 id="all-h">All forms</h2>'+bar(s,'All forms')+
@@ -158,10 +166,10 @@ function render(){
   }
   const html=REGIONS.map(r=>{
     const all=[...new Set(r.subs.flatMap(s=>s.rows.map(row=>row.form)))],rs=stats(all);
-    // With a requirement picked, sub-regions (and regions) with no matches are left out
+    // With any filter in use, sub-regions (and regions) with no matches are left out
     const subs=r.subs.map(s=>{
       const id=r.id+'-'+slug(s.name),ss=stats(s.rows.map(row=>row.form)),vis=s.rows.filter(show);
-      if(need&&!vis.length)return '';
+      if(filtered&&!vis.length)return '';
       return '<details class="sub" id="'+id+'"'+(open[id]?' open':'')+'><summary><span class="sub-name">'+esc(s.name)+
         (s.levels?'<small>Lv '+esc(s.levels)+'</small>':'')+'</span>'+bar(ss,s.name)+'<span class="counts">'+counts(ss)+'</span></summary>'+
         (s.note?'<p class="sub-note">'+esc(s.note)+'</p>':'')+
@@ -188,10 +196,12 @@ $('regions').addEventListener('toggle',e=>{
   if(e.target.open)open[e.target.id]=1;else delete open[e.target.id];
   try{localStorage.setItem('checklist-open',JSON.stringify(open));}catch(_){}
 },true);
-['opt-need','opt-hide'].forEach(id=>{
-  const el=$(id),prop=el.type==='checkbox'?'checked':'value';
-  try{const v=localStorage.getItem(id);if(v!==null)el[prop]=prop==='checked'?v==='1':v;}catch(_){}
-  el.addEventListener('change',()=>{try{localStorage.setItem(id,prop==='checked'?(el.checked?'1':'0'):el.value);}catch(_){}render();});
+// The old "Hide forms I own" checkbox becomes Own: No
+try{if(localStorage.getItem('opt-hide')==='1'&&localStorage.getItem('opt-own')===null)localStorage.setItem('opt-own','no');localStorage.removeItem('opt-hide');}catch(_){}
+['opt-need',...BOXES.map(([b])=>'opt-'+b)].forEach(id=>{
+  const el=$(id);
+  try{const v=localStorage.getItem(id);if(v!==null)el.value=v;}catch(_){}
+  el.addEventListener('change',()=>{try{localStorage.setItem(id,el.value);}catch(_){}render();});
 });
 // List mode: by region, or every form in one list
 try{if(localStorage.getItem('opt-mode')==='all')$('mode-all').checked=true;}catch(_){}
