@@ -127,7 +127,10 @@ code { font-size: 0.92em; background: var(--surface); border: 1.5px solid var(--
 .site-footer a { display: inline-flex; align-items: center; gap: 10px; font-weight: 600; }
 .site-footer img { width: 32px; height: 32px; }
 .site-footer .muted { margin: 0 0 0 auto; }
-.theme-toggle {
+.footer-tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.backup-msg { flex-basis: 100%; }
+.backup-msg:empty { display: none; }
+.site-footer button {
   font: inherit;
   font-size: 0.9rem;
   font-weight: 600;
@@ -137,5 +140,5 @@ code { font-size: 0.92em; background: var(--surface); border: 1.5px solid var(--
   padding: 3px 12px;
   cursor: pointer;
 }
-.theme-toggle:hover { background: var(--brand); color: #121212; }
+.site-footer button:hover { background: var(--brand); color: #121212; }
 @media print { .site-footer { display: none; } }
