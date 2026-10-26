@@ -18,20 +18,36 @@ legend{font-weight:700;padding:0;margin-bottom:4px}
 /* Job and role toggles */
 .job-role{margin-bottom:8px}
 .job-role h3{font-size:.85rem;font-weight:600;color:var(--muted);margin:0 0 4px}
-.jobs,.r-roles{display:flex;flex-wrap:wrap;gap:6px}
+.jobs{display:flex;flex-wrap:wrap;gap:6px}
 .job{display:inline-flex;align-items:center;gap:6px;background:var(--tile);border:2px solid var(--rim);padding:3px 9px 3px 6px;font-weight:600;font-size:.9rem;cursor:pointer}
 .job input{width:17px;height:17px;margin:0;accent-color:var(--check)}
 .job:not(:has(input:checked)){opacity:.55;text-decoration:line-through}
+.role-off .job:not(:has(input:checked)){opacity:1}
 .job.upcoming{border-style:dashed}
 .job-buttons{margin-top:10px}
 
-/* One row per roulette: turn it on, then pick its roles */
+/* One row per roulette: a tickbox to use it, and a dropdown for its custom roles and jobs */
 .roulettes{display:grid;gap:6px}
-.roulette{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 14px;background:var(--sheet);border:2px solid var(--rim);padding:6px 10px}
-.r-on{display:flex;align-items:center;gap:8px;font-weight:700;cursor:pointer}
-.r-on input{width:18px;height:18px;margin:0;accent-color:var(--check)}
-.roulette.off .r-on{color:var(--muted);text-decoration:line-through}
-.roulette.off .r-roles{visibility:hidden}
+.roulette{display:grid;grid-template-columns:auto 1fr;gap:0 10px;align-items:start;background:var(--sheet);border:2px solid var(--rim);padding:4px 10px}
+.roulette>.use{width:18px;height:18px;margin:9px 0 0;accent-color:var(--check);cursor:pointer}
+.roulette summary{display:flex;flex-wrap:wrap;align-items:center;gap:2px 12px;padding:6px 0;cursor:pointer;list-style:none}
+.roulette summary::-webkit-details-marker{display:none}
+.roulette summary::before{content:"▸" / "";font-size:.9em;width:1em;flex:none}
+.roulette details[open] summary::before{content:"▾" / ""}
+.r-name{font-weight:700;flex:1 1 10em}
+.roulette summary:hover .r-name{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
+.r-status{font-size:.85rem;color:var(--muted)}
+.r-status .narrow{display:none}
+@media (max-width:560px){.r-status .wide{display:none}.r-status .narrow{display:inline}}
+.roulette.off .r-name{color:var(--muted);text-decoration:line-through}
+.r-body{padding:2px 0 10px 1em}
+.r-custom,.r-role{display:inline-flex;align-items:center;gap:8px;font-weight:600;cursor:pointer}
+.r-custom{margin-bottom:10px}
+.r-role{font-size:.9rem;margin-bottom:4px}
+.r-custom input,.r-role input{width:18px;height:18px;margin:0;accent-color:var(--check)}
+.r-body .hint{margin:0}
+.job-role.role-off .jobs{opacity:.45}
+.job:has(input:disabled){cursor:default}
 
 /* The roll */
 .rolls{background:var(--sheet);border:3px solid var(--rim);padding:0 12px 12px;margin-bottom:26px}
