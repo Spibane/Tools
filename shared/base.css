@@ -13,6 +13,7 @@
   --mint: #48f7a3;
   --brand: linear-gradient(90deg, var(--lime), var(--mint));
   --focus: #121212;
+  --hex: var(--hex-light); /* background texture tiles, built by site.js */
   color-scheme: light;
 }
 /* Dark theme: follows the device setting unless the footer switch picked one (data-theme on <html>) */
@@ -24,6 +25,7 @@
     --muted: #a6a6a6;
     --rim: #8a8a8a;
     --focus: var(--lime);
+    --hex: var(--hex-dark);
     color-scheme: dark;
   }
 }
@@ -34,13 +36,17 @@
   --muted: #a6a6a6;
   --rim: #8a8a8a;
   --focus: var(--lime);
+  --hex: var(--hex-dark);
   color-scheme: dark;
 }
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
-  background: var(--bg);
+  background-color: var(--bg);
+  /* Without site.js these are unset and the page is plain --bg */
+  background-image: var(--hex, none);
+  background-size: var(--hex-size, auto);
   color: var(--ink);
   font-family: "Chakra Petch", system-ui, -apple-system, "Segoe UI", sans-serif;
   line-height: 1.5;
