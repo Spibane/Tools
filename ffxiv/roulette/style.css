@@ -1,0 +1,60 @@
+/* FFXIV roulette job picker, styled like the relic checklists: logo grey, heavy outlines,
+   and the lime-to-mint gradient only as decoration or behind black text.
+   Loaded after shared/base.css. */
+
+:root{--sheet:#efefef; --tile:#ffffff; --check:#121212}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--sheet:#1c1c1c; --tile:#262626; --check:var(--lime)}}
+:root[data-theme="dark"]{--sheet:#1c1c1c; --tile:#262626; --check:var(--lime)}
+.intro{color:var(--muted);max-width:60ch}
+button{font:inherit;font-size:.9rem;font-weight:600;color:var(--ink);border:2px solid var(--rim);background:var(--tile);padding:4px 12px;cursor:pointer}
+button:hover{background:var(--brand);color:#121212;border-color:#121212}
+
+/* Options */
+fieldset{position:relative;border:0;padding:4px 0 4px 18px;margin:0 0 18px}
+fieldset::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:linear-gradient(var(--lime),var(--mint))}
+legend{font-weight:700;padding:0;margin-bottom:4px}
+.hint{color:var(--muted);font-size:.9rem;margin:0 0 8px}
+
+/* Job and role toggles */
+.job-role{margin-bottom:8px}
+.job-role h3{font-size:.85rem;font-weight:600;color:var(--muted);margin:0 0 4px}
+.jobs,.r-roles{display:flex;flex-wrap:wrap;gap:6px}
+.job{display:inline-flex;align-items:center;gap:6px;background:var(--tile);border:2px solid var(--rim);padding:3px 9px 3px 6px;font-weight:600;font-size:.9rem;cursor:pointer}
+.job input{width:17px;height:17px;margin:0;accent-color:var(--check)}
+.job:not(:has(input:checked)){opacity:.55;text-decoration:line-through}
+.job-buttons{margin-top:10px}
+
+/* One row per roulette: turn it on, then pick its roles */
+.roulettes{display:grid;gap:6px}
+.roulette{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 14px;background:var(--sheet);border:2px solid var(--rim);padding:6px 10px}
+.r-on{display:flex;align-items:center;gap:8px;font-weight:700;cursor:pointer}
+.r-on input{width:18px;height:18px;margin:0;accent-color:var(--check)}
+.roulette.off .r-on{color:var(--muted);text-decoration:line-through}
+.roulette.off .r-roles{visibility:hidden}
+
+/* The roll */
+.rolls{background:var(--sheet);border:3px solid var(--rim);padding:0 12px 12px;margin-bottom:26px}
+.rolls::before{content:"";display:block;height:6px;margin:0 -12px 14px;background:var(--brand)}
+.roll-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-bottom:8px}
+.rolls h2{font-size:1.5rem}
+button.roll{font-size:1.1rem;font-weight:700;padding:8px 22px;border:3px solid #121212;background:var(--brand);color:#121212}
+button.roll:hover{background:var(--tile);color:var(--ink);border-color:var(--rim)}
+.unique{display:flex;align-items:center;gap:10px;margin:0 0 12px;font-size:.9rem;font-weight:600;cursor:pointer}
+.unique input{width:18px;height:18px;margin:0;flex:none;accent-color:var(--check)}
+.results{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.result{display:grid;grid-template-columns:12em 1fr auto;align-items:center;gap:4px 12px;background:var(--tile);border:2px solid var(--rim);padding:8px 10px}
+.r-name{font-weight:700}
+.r-job{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font-size:1.05rem}
+.result.empty .r-job{font-size:.9rem}
+.stale{font-size:.85rem;color:var(--muted)}
+/* Role tags in the game's colours, with a black outline so the text always reads */
+.role{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:0 6px;border:2px solid #121212;color:#121212}
+.role-tank{background:#8ab4ff}
+.role-healer{background:#8fe08a}
+.role-dps{background:#ff9a9a}
+@media (max-width:560px){
+  .result{grid-template-columns:1fr auto}
+  .r-job{grid-column:1;grid-row:2}
+  .reroll{grid-column:2;grid-row:1/3}
+}
+@media print{fieldset,.back,.reroll,button.roll,.unique{display:none}}

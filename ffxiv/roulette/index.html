@@ -1,0 +1,118 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FFXIV Roulette Job Picker</title>
+<link rel="icon" href="../../shared/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../shared/base.css">
+<script src="../../shared/site.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css"></head><body><main>
+<a class="back" href="../">Back to Final Fantasy XIV</a>
+<h1>Roulette Job Picker</h1>
+<p class="intro">Picks a random job for each of your daily duty roulettes. Choose which jobs you're happy to play and which roles each roulette can go to, then roll. Your choices and last roll are saved in this browser.</p>
+<section class="rolls" aria-labelledby="rolls-h">
+<div class="roll-head"><h2 id="rolls-h">Your roulettes</h2><button type="button" class="roll" id="roll">Roll jobs</button></div>
+<label class="unique"><input type="checkbox" id="unique"> Use a different job for each roulette when there are enough to go around</label>
+<ol class="results" id="results" aria-live="polite"></ol>
+</section>
+<fieldset><legend>Jobs you can be given</legend>
+<p class="hint">Untick a job you don't want to play, haven't unlocked or haven't levelled far enough.</p>
+<div id="jobs"></div>
+<div class="job-buttons"><button type="button" id="jobs-all">Allow every job</button></div>
+</fieldset>
+<fieldset><legend>Roulettes and their roles</legend>
+<p class="hint">Untick a roulette to leave it out of the roll, or untick a role to stop that roulette getting jobs from it.</p>
+<div class="roulettes" id="roulettes"></div>
+<div class="job-buttons"><button type="button" id="roulettes-all">Use every roulette with every role</button></div>
+</fieldset>
+</main>
+<script>
+const ROLES=[{id:'tank',name:'Tank'},{id:'healer',name:'Healer'},{id:'dps',name:'DPS'}];
+// Every job that can queue for roulettes (Blue Mage can't, so it's left out)
+const JOBS=[
+  {id:'PLD',name:'Paladin',role:'tank'},{id:'WAR',name:'Warrior',role:'tank'},{id:'DRK',name:'Dark Knight',role:'tank'},{id:'GNB',name:'Gunbreaker',role:'tank'},
+  {id:'WHM',name:'White Mage',role:'healer'},{id:'SCH',name:'Scholar',role:'healer'},{id:'AST',name:'Astrologian',role:'healer'},{id:'SGE',name:'Sage',role:'healer'},
+  {id:'MNK',name:'Monk',role:'dps'},{id:'DRG',name:'Dragoon',role:'dps'},{id:'NIN',name:'Ninja',role:'dps'},{id:'SAM',name:'Samurai',role:'dps'},{id:'RPR',name:'Reaper',role:'dps'},{id:'VPR',name:'Viper',role:'dps'},
+  {id:'BRD',name:'Bard',role:'dps'},{id:'MCH',name:'Machinist',role:'dps'},{id:'DNC',name:'Dancer',role:'dps'},
+  {id:'BLM',name:'Black Mage',role:'dps'},{id:'SMN',name:'Summoner',role:'dps'},{id:'RDM',name:'Red Mage',role:'dps'},{id:'PCT',name:'Pictomancer',role:'dps'}
+];
+// In Duty Finder order. The ids are used to save your choices, so rename with care.
+const ROULETTES=[
+  {id:'expert',name:'Expert'},{id:'levelcap',name:'Level Cap Dungeons'},{id:'high',name:'High-level Dungeons'},
+  {id:'leveling',name:'Leveling'},{id:'trials',name:'Trials'},{id:'msq',name:'Main Scenario'},{id:'guildhests',name:'Guildhests'},
+  {id:'alliance',name:'Alliance Raids'},{id:'normal',name:'Normal Raids'},{id:'mentor',name:'Mentor'},{id:'frontline',name:'Frontline'}
+];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const job=id=>JOBS.find(j=>j.id===id);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+
+// Settings: offJobs = jobs you won't be given; offRoulettes = roulettes left out;
+// offRoles = roles each roulette can't go to; unique = spread jobs out; result = the last roll
+let state={offJobs:[],offRoulettes:[],offRoles:{},unique:true,result:{}};
+try{state=Object.assign(state,JSON.parse(localStorage.getItem('roulette')));}catch(_){}
+const save=()=>{try{localStorage.setItem('roulette',JSON.stringify(state));}catch(_){}};
+
+const active=()=>ROULETTES.filter(r=>!state.offRoulettes.includes(r.id));
+const candidates=r=>JOBS.filter(j=>!state.offJobs.includes(j.id)&&!(state.offRoles[r.id]||[]).includes(j.role));
+
+// Rolls the given roulettes, keeping the others as they are. With unique on, a job already
+// given out is only reused once a roulette has nothing else left. Roulettes with the fewest
+// options go first so they don't lose their only job to one with plenty of choice.
+function roll(ids){
+  const taken=new Set(state.unique?Object.entries(state.result).filter(([id])=>!ids.includes(id)).map(([,j])=>j):[]);
+  ids.map(id=>ROULETTES.find(r=>r.id===id)).sort((a,b)=>candidates(a).length-candidates(b).length).forEach(r=>{
+    const all=candidates(r).map(j=>j.id),fresh=all.filter(j=>!taken.has(j));
+    if(!all.length){delete state.result[r.id];return;}
+    const j=pick(state.unique&&fresh.length?fresh:all);
+    state.result[r.id]=j;taken.add(j);
+  });
+  save();renderResults();
+}
+
+function renderResults(){
+  const rs=active();
+  $('results').innerHTML=rs.length?rs.map(r=>{
+    const j=job(state.result[r.id]),fits=j&&candidates(r).includes(j),none=!candidates(r).length;
+    return '<li class="result'+(j?'':' empty')+'"><span class="r-name">'+esc(r.name)+'</span>'+
+      '<span class="r-job">'+(none?'<span class="muted">No job fits. Allow another role or job below.</span>':
+        j?'<span class="role role-'+j.role+'">'+esc(ROLES.find(x=>x.id===j.role).name)+'</span><b>'+esc(j.name)+'</b>'+(fits?'':' <span class="stale">no longer allowed, roll again</span>'):
+        '<span class="muted">Not rolled yet</span>')+'</span>'+
+      (none?'':'<button type="button" class="reroll" data-r="'+r.id+'" aria-label="'+esc('Roll again for '+r.name)+'">Roll again</button>')+'</li>';
+  }).join(''):'<li class="result empty"><span class="muted">Every roulette is turned off. Pick some below.</span></li>';
+}
+
+function render(){
+  $('unique').checked=state.unique;
+  $('jobs').innerHTML=ROLES.map(role=>'<div class="job-role"><h3>'+role.name+'</h3><div class="jobs">'+
+    JOBS.filter(j=>j.role===role.id).map(j=>'<label class="job" title="'+esc(j.name)+'"><input type="checkbox" value="'+j.id+'"'+(state.offJobs.includes(j.id)?'':' checked')+' aria-label="'+esc(j.name)+'">'+j.id+'</label>').join('')+
+    '</div></div>').join('');
+  $('roulettes').innerHTML=ROULETTES.map(r=>{
+    const off=state.offRoulettes.includes(r.id),roles=state.offRoles[r.id]||[];
+    return '<div class="roulette'+(off?' off':'')+'" data-r="'+r.id+'"><label class="r-on"><input type="checkbox" class="use"'+(off?'':' checked')+'>'+esc(r.name)+'</label>'+
+      '<div class="r-roles">'+ROLES.map(role=>'<label class="job"><input type="checkbox" class="role-pick" value="'+role.id+'"'+(roles.includes(role.id)?'':' checked')+(off?' disabled':'')+' aria-label="'+esc(role.name+' for '+r.name)+'">'+role.name+'</label>').join('')+'</div></div>';
+  }).join('');
+  renderResults();
+}
+
+$('roll').addEventListener('click',()=>{state.result={};roll(active().map(r=>r.id));});
+$('results').addEventListener('click',e=>{if(e.target.matches('.reroll'))roll([e.target.dataset.r]);});
+$('unique').addEventListener('change',e=>{state.unique=e.target.checked;save();});
+$('jobs').addEventListener('change',()=>{
+  state.offJobs=[...$('jobs').querySelectorAll('input:not(:checked)')].map(el=>el.value);
+  save();renderResults();
+});
+$('jobs-all').addEventListener('click',()=>{state.offJobs=[];save();render();});
+$('roulettes').addEventListener('change',e=>{
+  const row=e.target.closest('.roulette'),id=row.dataset.r;
+  if(e.target.matches('.use'))state.offRoulettes=state.offRoulettes.filter(x=>x!==id).concat(e.target.checked?[]:[id]);
+  else{
+    const roles=[...row.querySelectorAll('.role-pick:not(:checked)')].map(el=>el.value);
+    if(roles.length)state.offRoles[id]=roles;else delete state.offRoles[id];
+  }
+  save();render();
+});
+$('roulettes-all').addEventListener('click',()=>{state.offRoulettes=[];state.offRoles={};save();render();});
+
+render();
+</script></body></html>
