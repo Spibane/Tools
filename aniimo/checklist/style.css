@@ -1,0 +1,98 @@
+/* Aniimo region checklists, styled like the collection page: logo grey, heavy outlines,
+   and the lime-to-mint gradient only as decoration or behind black text.
+   Loaded after shared/base.css. */
+
+:root{
+  --sheet:#efefef; --tile:#ffffff; --check:#121212;
+  /* Element colors, the same as collection/style.css */
+  --fire:#f08a5d; --water:#4f9be0; --grass:#6dbb5c; --electric:#e6c229; --ice:#7fd1de;
+  --earth:#b88a52; --wind:#57c1a0; --light:#f2d77c; --dark:#9a7bd6; --none:#a7acb7; --unknown:#e1e3e8;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--sheet:#1c1c1c; --tile:#262626; --check:var(--lime)}}
+:root[data-theme="dark"]{--sheet:#1c1c1c; --tile:#262626; --check:var(--lime)}
+.intro{color:var(--muted);max-width:60ch}
+
+/* Options */
+fieldset{position:relative;border:0;padding:4px 0 4px 18px;margin:0 0 18px}
+fieldset::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:linear-gradient(var(--lime),var(--mint))}
+legend{font-weight:700;padding:0;margin-bottom:4px}
+.opt{display:flex;flex-wrap:wrap;align-items:flex-start;gap:6px 10px;margin:8px 0}
+.opt input{width:19px;height:19px;margin:3px 0 0;accent-color:var(--check);flex:none}
+.opt label{cursor:pointer;font-weight:600}
+.opt small{display:block;color:var(--muted);font-weight:400;font-size:.88rem}
+select{font:inherit;font-size:.95rem;color:var(--ink);background:var(--tile);border:2px solid var(--rim);padding:2px 6px}
+.warn{border:3px solid var(--rim);border-left-width:10px;border-left-color:var(--mint);padding:10px 14px;margin:0 0 14px;background:var(--sheet)}
+
+/* Regions */
+.region{background:var(--sheet);border:3px solid var(--rim);padding:0 12px 14px;margin-bottom:22px}
+.region::before{content:"";display:block;height:6px;margin:0 -12px 14px;background:var(--brand)}
+.region>header{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;padding:0 4px 12px}
+.region h2{font-size:1.5rem}
+.region>header .counts{flex-basis:100%;margin:0}
+.counts{color:var(--muted);font-size:.88rem}
+
+/* Percent and its bar */
+.pct{display:inline-flex;align-items:center;gap:8px}
+.pct-n{font-weight:700;min-width:3.2em;text-align:right}
+.meter{display:inline-block;width:96px;height:10px;border:2px solid var(--rim);background:var(--tile)}
+.meter span{display:block;height:100%;background:var(--brand)}
+
+/* Sub-regions */
+.sub{border-top:2px solid var(--rim)}
+.sub summary{display:flex;flex-wrap:wrap;align-items:center;gap:2px 14px;padding:10px 4px;cursor:pointer;list-style:none}
+.sub summary::-webkit-details-marker{display:none}
+.sub summary::before{content:"▸" / "";font-size:.9em;width:1em;flex:none}
+.sub[open] summary::before{content:"▾" / ""}
+.sub summary:hover .sub-name{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
+.sub-name{font-weight:700;font-size:1.1rem;flex:1 1 12em}
+.sub-name small{font-weight:400;color:var(--muted);font-size:.85rem;margin-left:8px}
+.sub summary .counts{flex-basis:100%;padding-left:calc(1em + 14px)}
+.sub-note{color:var(--muted);margin:0 4px 10px}
+
+/* Rows */
+.rows{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:6px}
+.row{display:grid;grid-template-columns:8px 1fr auto;gap:4px 12px;align-items:start;background:var(--tile);border:2px solid var(--rim);padding:8px 10px 8px 0}
+.row.owned{border-color:color-mix(in srgb,var(--rim) 45%,transparent)}
+.row.owned b{text-decoration:line-through;text-decoration-thickness:1.5px;text-decoration-color:var(--muted)}
+.sw{align-self:stretch;margin:-8px 0;background:linear-gradient(var(--el) 50%,var(--el2,var(--el)) 50%)}
+.e-fire{--el:var(--fire)}.e-water{--el:var(--water)}.e-grass{--el:var(--grass)}.e-electric{--el:var(--electric)}.e-ice{--el:var(--ice)}
+.e-earth{--el:var(--earth)}.e-wind{--el:var(--wind)}.e-light{--el:var(--light)}.e-dark{--el:var(--dark)}.e-none{--el:var(--none)}.e-unknown{--el:var(--unknown)}
+.e2-fire{--el2:var(--fire)}.e2-water{--el2:var(--water)}.e2-grass{--el2:var(--grass)}.e2-electric{--el2:var(--electric)}.e2-ice{--el2:var(--ice)}
+.e2-earth{--el2:var(--earth)}.e2-wind{--el2:var(--wind)}.e2-light{--el2:var(--light)}.e2-dark{--el2:var(--dark)}.e2-none{--el2:var(--none)}.e2-unknown{--el2:var(--unknown)}
+.who{min-width:0}
+.n{color:var(--muted);font-size:.85rem;font-variant-numeric:tabular-nums}
+.form{font-weight:400}
+.need{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.chip{font-size:.8rem;font-weight:600;line-height:1.3;border:1.5px solid var(--rim);padding:0 6px}
+.chip.wx{background:var(--brand);color:#121212;border-color:#121212}
+/* Prismana Flow: the rainbow stripes from the collection page's Prismana tiles */
+.chip.flow{--s:5px;color:#121212;border-color:#121212;background:repeating-linear-gradient(135deg,
+  #ffadad 0 var(--s),#ffd3a6 var(--s) calc(var(--s)*2),#fff0a6 calc(var(--s)*2) calc(var(--s)*3),
+  #ade9b5 calc(var(--s)*3) calc(var(--s)*4),#a6d2ff calc(var(--s)*4) calc(var(--s)*5),#d2b5ff calc(var(--s)*5) calc(var(--s)*6))}
+.note{margin:4px 0 0;color:var(--muted);font-size:.85rem;line-height:1.35}
+
+/* The four ticks */
+.boxes{display:flex;gap:4px}
+.box{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:52px;padding:3px 2px;cursor:pointer;font-size:.75rem;font-weight:600;color:var(--muted)}
+.box input{width:20px;height:20px;margin:0;accent-color:var(--check);cursor:pointer}
+.box:has(input:checked){color:var(--ink)}
+/* Greyed out: this form can't have it */
+.box.off{opacity:.35;cursor:not-allowed}
+.box.off input{cursor:not-allowed}
+@media (max-width:560px){
+  .row{grid-template-columns:8px 1fr}
+  .boxes{grid-column:2;justify-content:space-between}
+  .box{flex:1;flex-direction:row;justify-content:center;gap:6px;border:1.5px solid var(--rim);padding:6px 2px;min-height:40px}
+  .meter{width:72px}
+}
+
+/* Backups */
+.saves{margin-top:28px}
+.saves h2{margin-bottom:6px}
+.save-row{display:flex;flex-wrap:wrap;gap:8px}
+.save-row button,.save-row .button{font:inherit;font-size:.9rem;font-weight:600;color:var(--ink);border:2px solid var(--rim);background:var(--tile);padding:4px 12px;cursor:pointer}
+.save-row button:hover,.save-row .button:hover{background:var(--brand);color:#121212;border-color:#121212}
+/* The file picker is hidden but still takes keyboard focus, which shows on its label */
+.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+.vh:focus-visible+.button{outline:3px solid var(--focus);outline-offset:2px}
+@media print{fieldset,.saves,.back{display:none}.sub{break-inside:avoid-page}}

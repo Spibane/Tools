@@ -1,0 +1,169 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aniimo Region Checklists</title>
+<link rel="icon" href="../../shared/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../shared/base.css">
+<script src="../../shared/site.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css"></head><body><main>
+<a class="back" href="../">Back to Aniimo</a>
+<h1>Aniimo Region Checklists</h1>
+<p class="intro">Every form that spawns in the wild, by region and sub-region. Mark what’s in your collection. A form that spawns in more than one place is marked everywhere at once. Your collection is saved in this browser.</p>
+<fieldset><legend>What to show</legend>
+<div class="opt"><label for="opt-need">Only forms that need</label>
+<select id="opt-need"><option value="">Anything</option><option value="none">Nothing special</option><option value="Rain">Rain</option><option value="Thunderstorm">Thunderstorm</option><option value="Snow">Snow</option><option value="Night">Night</option><option value="Prismana Flow">Prismana Flow</option><option value="Quest">Quest</option><option value="Title">Title</option></select></div>
+<div class="opt"><input type="checkbox" id="opt-hide"><label for="opt-hide">Hide forms I own<small>Percentages still count every form.</small></label></div>
+</fieldset>
+<p class="warn" id="warn" hidden></p>
+<div id="regions"></div>
+<section class="saves" aria-labelledby="saves-h"><h2 id="saves-h">Back up your collection</h2>
+<p class="muted">Your collection lives in this browser only. Save it to a file to move it to another device or keep it safe.</p>
+<div class="save-row"><button type="button" id="export">Save collection to a file</button>
+<input type="file" id="import" class="vh" accept=".json,application/json"><label class="button" for="import">Load collection from a file</label>
+<button type="button" id="reset">Clear collection</button></div>
+<p class="muted" id="save-msg" aria-live="polite"></p></section>
+</main>
+<script src="../data/forms.js"></script>
+<script src="../data/categories.js"></script>
+<script src="../data/spawns.js"></script>
+<script>
+const REGION_NAMES={breezy:"Breezy Plains",whisperwake:"Whisperwake Isles"};
+const BOXES=[["own","Own"],["perfect","Perfect"],["alpha","Alpha"],["umbra","Umbra"]];
+const SYMBOL={"Rain":"☂","Thunderstorm":"⚡","Rain or thunderstorm":"☂","Snow":"❄","Night":"☾","Prismana Flow":"✦"};
+const keyOf=f=>f.form==="Base"?f.name:f.form+" "+f.name;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+const BY_KEY=new Map(FORMS.map(f=>[keyOf(f),f]));
+const missing=[];
+// Keepsake and event forms from categories.js can't be caught in the wild, so they're left off
+const NOT_WILD=new Set(["keepsake","keepsake2","event","exclude"].flatMap(c=>CATEGORIES[c]||[]));
+
+// Build each region's sub-regions: the wild spawns from spawns.js, then the region's other forms from forms.js
+const REGIONS=Object.keys(REGION_NAMES).map(r=>{
+  const subs=(SPAWNS[r]||[]).map(s=>({name:s.name,levels:s.levels,rows:s.rows.filter(row=>{
+    if(!BY_KEY.has(row.form)){if(!missing.includes(row.form))missing.push(row.form);return false;}
+    return !NOT_WILD.has(row.form);
+  })}));
+  const wild=new Set(subs.flatMap(s=>s.rows.map(row=>row.form)));
+  const rest=FORMS.filter(f=>f.region===r&&!wild.has(keyOf(f))&&!NOT_WILD.has(keyOf(f))).map(f=>({form:keyOf(f)}));
+  if(rest.length)subs.push(subs.length
+    ?{name:"Not found in the wild",note:"Get these by evolving, hatching or switching forms with a Morph Orb.",rows:rest}
+    :{name:"Sub-region not known yet",note:"Sub-region spawn data isn’t out yet.",rows:rest});
+  return {id:r,name:REGION_NAMES[r],subs};
+});
+
+// Collection: one entry per form, so a form is marked in every sub-region it spawns in
+let collection={};
+try{collection=JSON.parse(localStorage.getItem('checklist'))||{};}catch(_){}
+const save=()=>{try{localStorage.setItem('checklist',JSON.stringify(collection));}catch(_){}};
+const has=(k,b)=>!!(collection[k]&&collection[k][b]);
+function setBox(k,b,on){
+  const t=collection[k]||(collection[k]={});
+  if(on){t[b]=true;if(b!=='own')t.own=true;if(b==='umbra')t.perfect=true;}// Umbral Aniimo always have Perfect potential
+  else if(b==='own')delete collection[k];// Unchecking Own clears the rest of the row
+  else delete t[b];
+  if(collection[k]&&!Object.keys(collection[k]).length)delete collection[k];
+  save();
+}
+
+let open={};
+try{open=JSON.parse(localStorage.getItem('checklist-open'))||{};}catch(_){}
+const pct=(n,d)=>d?Math.floor(n/d*100):0;
+// Each box counts out of the forms that can have it, so Umbra leaves out Prismana forms
+function stats(keys){
+  const o={total:keys.length};
+  BOXES.forEach(([b])=>{const able=keys.filter(k=>canHave(BY_KEY.get(k),b));o[b]=able.filter(k=>has(k,b)).length;o[b+'Of']=able.length;});
+  return o;
+}
+const bar=(s,label)=>'<span class="pct"><span class="pct-n">'+pct(s.own,s.total)+'%</span><span class="meter" role="img" aria-label="'+esc(label)+' '+pct(s.own,s.total)+'% owned"><span style="width:'+pct(s.own,s.total)+'%"></span></span></span>';
+const counts=s=>BOXES.map(([b,l])=>l+' '+s[b]+'/'+s[b+'Of']).join(' · ');
+function needHTML(row){
+  const tags=row.need||[];
+  if(!tags.length)return '';
+  const cls=t=>t==='Prismana Flow'?' flow':SYMBOL[t]?' wx':'';
+  return '<div class="need">'+tags.map(t=>'<span class="chip'+cls(t)+'">'+(SYMBOL[t]?'<span aria-hidden="true">'+SYMBOL[t]+'</span> ':'')+esc(t)+'</span>').join('')+'</div>';
+}
+// A box is unavailable when the form can't have it: Umbra where forms.js says umbral: false,
+// and Alpha on Prismana forms, which can't be Alpha for now
+const canHave=(f,b)=>!(b==='umbra'&&f.umbral===false)&&!(b==='alpha'&&f.form==='Prismana');
+function rowHTML(row){
+  const f=BY_KEY.get(row.form),k=row.form;
+  const name=f.name+(f.form==='Base'?'':' <span class="form">'+esc(f.form)+' Form</span>');
+  const plain=f.name+(f.form==='Base'?'':', '+f.form+' Form');
+  return '<li class="row'+(has(k,'own')?' owned':'')+'" data-key="'+esc(k)+'">'+
+    '<span class="sw e-'+f.element+(f.element2?' e2-'+f.element2:'')+'" aria-hidden="true"></span>'+
+    '<div class="who"><span class="n">'+esc(f.n==='—'?'':'#'+f.n)+'</span> <b>'+name+'</b>'+
+    needHTML(row)+(row.note?'<p class="note">'+esc(row.note)+'</p>':'')+'</div>'+
+    '<div class="boxes">'+BOXES.map(([b,l])=>canHave(f,b)
+      ?'<label class="box"><input type="checkbox" data-box="'+b+'"'+(has(k,b)?' checked':'')+' aria-label="'+esc(l+': '+plain)+'"><span aria-hidden="true">'+l+'</span></label>'
+      :'<label class="box off" title="'+esc(plain+' can’t be '+l)+'"><input type="checkbox" disabled aria-label="'+esc(l+': '+plain+', not possible')+'"><span aria-hidden="true">'+l+'</span></label>').join('')+'</div></li>';
+}
+function render(){
+  const need=$('opt-need').value,hide=$('opt-hide').checked;
+  const show=row=>(!hide||!has(row.form,'own'))&&(!need||(need==='none'?!(row.need||[]).length:(row.need||[]).some(t=>t.toLowerCase().includes(need.toLowerCase()))));// "Rain" also finds "Rain or thunderstorm"
+  const html=REGIONS.map(r=>{
+    const all=[...new Set(r.subs.flatMap(s=>s.rows.map(row=>row.form)))],rs=stats(all);
+    // With a requirement picked, sub-regions (and regions) with no matches are left out
+    const subs=r.subs.map(s=>{
+      const id=r.id+'-'+slug(s.name),ss=stats(s.rows.map(row=>row.form)),vis=s.rows.filter(show);
+      if(need&&!vis.length)return '';
+      return '<details class="sub" id="'+id+'"'+(open[id]?' open':'')+'><summary><span class="sub-name">'+esc(s.name)+
+        (s.levels?'<small>Lv '+esc(s.levels)+'</small>':'')+'</span>'+bar(ss,s.name)+'<span class="counts">'+counts(ss)+'</span></summary>'+
+        (s.note?'<p class="sub-note">'+esc(s.note)+'</p>':'')+
+        (vis.length?'<ul class="rows">'+vis.map(rowHTML).join('')+'</ul>':'<p class="sub-note">Nothing to show with these options.</p>')+'</details>';
+    }).join('');
+    if(!subs)return '';
+    return '<section class="region" aria-labelledby="'+r.id+'-h"><header><h2 id="'+r.id+'-h">'+esc(r.name)+'</h2>'+bar(rs,r.name)+
+      '<p class="counts">'+all.length+' forms · '+counts(rs)+'</p></header>'+subs+'</section>';
+  }).join('');
+  $('regions').innerHTML=html||'<p class="warn">No forms match these options.</p>';
+}
+
+$('regions').addEventListener('change',e=>{
+  const box=e.target.closest('input[data-box]');if(!box)return;
+  setBox(box.closest('.row').dataset.key,box.dataset.box,box.checked);
+  // Redraw, keeping keyboard focus on the same box
+  const k=box.closest('.row').dataset.key,b=box.dataset.box,sub=box.closest('.sub').id;
+  render();
+  const again=[...document.querySelectorAll('#'+sub+' .row')].find(r=>r.dataset.key===k);
+  if(again)again.querySelector('[data-box="'+b+'"]').focus();
+});
+$('regions').addEventListener('toggle',e=>{
+  if(!e.target.matches('.sub'))return;
+  if(e.target.open)open[e.target.id]=1;else delete open[e.target.id];
+  try{localStorage.setItem('checklist-open',JSON.stringify(open));}catch(_){}
+},true);
+['opt-need','opt-hide'].forEach(id=>{
+  const el=$(id),prop=el.type==='checkbox'?'checked':'value';
+  try{const v=localStorage.getItem(id);if(v!==null)el[prop]=prop==='checked'?v==='1':v;}catch(_){}
+  el.addEventListener('change',()=>{try{localStorage.setItem(id,prop==='checked'?(el.checked?'1':'0'):el.value);}catch(_){}render();});
+});
+
+// Back up and restore the collection as a file
+const msg=t=>{$('save-msg').textContent=t;};
+$('export').addEventListener('click',()=>{
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify({checklist:collection},null,1)],{type:'application/json'}));
+  a.download='aniimo-region-collection.json';a.click();URL.revokeObjectURL(a.href);
+  msg('Saved '+Object.keys(collection).length+' forms from your collection.');
+});
+$('import').addEventListener('change',async e=>{
+  const file=e.target.files[0];if(!file)return;e.target.value='';
+  try{
+    const data=JSON.parse(await file.text()).checklist;
+    if(!data||typeof data!=='object')throw 0;
+    collection={};
+    for(const [k,t] of Object.entries(data))BOXES.forEach(([b])=>{if(t&&t[b]===true)(collection[k]||(collection[k]={}))[b]=true;});
+    save();render();msg('Loaded '+Object.keys(collection).length+' forms into your collection.');
+  }catch(_){msg('That file isn’t a collection backup.');}
+});
+$('reset').addEventListener('click',()=>{
+  if(!confirm('Clear your whole collection on this page? Save it to a file first if you might want it back.'))return;
+  collection={};save();render();msg('Collection cleared.');
+});
+
+if(missing.length){$('warn').hidden=false;$('warn').textContent='These spawns.js entries don’t match any form, so they aren’t shown: '+missing.join(', ')+'. Check the spelling against forms.js.';}
+render();
+</script></body></html>
