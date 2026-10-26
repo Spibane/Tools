@@ -1,0 +1,231 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FFXIV Relic Step Checklists</title>
+<link rel="icon" href="../../shared/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../shared/base.css">
+<script src="../../shared/site.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css"></head><body><main>
+<a class="back" href="../">Back to Final Fantasy XIV</a>
+<h1>Relic Step Checklists</h1>
+<p class="intro">Everything you need to finish each relic step on every weapon at once. Items bought with currency are grouped under it, with how much you still have to spend. Enter how many of an item you have, or tick it once you have them all. Your progress is saved in this browser.</p>
+<fieldset><legend>Relic</legend>
+<div class="opt relic-pick" id="relic-pick" role="radiogroup" aria-label="Relic"></div>
+</fieldset>
+<fieldset><legend>Weapons to count</legend>
+<p class="hint">Untick a job you don't play or have already finished, and every total below changes to match.</p>
+<div class="jobs" id="jobs"></div>
+<div class="job-buttons"><button type="button" id="jobs-all">Count every weapon</button></div>
+</fieldset>
+<div id="steps"></div>
+<section class="saves" aria-labelledby="saves-h"><h2 id="saves-h">Back up your progress</h2>
+<p class="muted">Your progress lives in this browser only. Save it to a file to move it to another device or keep it safe.</p>
+<div class="save-row"><button type="button" id="export">Save progress to a file</button>
+<input type="file" id="import" class="vh" accept=".json,application/json"><label class="button" for="import">Load progress from a file</label>
+<button type="button" id="reset">Clear progress</button></div>
+<p class="muted" id="save-msg" aria-live="polite"></p></section>
+</main>
+<script>
+// Each data file adds one relic line: RELIC_DATA.push({id, expansion, name, weapons, steps}).
+//   weapons: [{id:"PLD", job:"Paladin", label:"weapon name"}], one per piece that goes through the steps
+//   steps:   [{name, quest, start, note, items, weaponItems, itemsSkip, sources}], in order
+//     name        the stage the weapon reaches after the step (also used to save progress, so rename with care)
+//     items       what every weapon needs: {name, qty (per weapon), buy:{currency, price, vendor}, source, perRelic}
+//                 leave out buy when it can't be bought; perRelic: true means needed once for the whole line
+//     weaponItems extra items for some weapons only, keyed by weapon id
+//     itemsSkip   weapon ids that don't take the shared items
+// Steps with nothing to turn in use items: [] and say what you do in note.
+const RELIC_DATA=[];
+</script>
+<script src="../data/relics/arr.js"></script>
+<script src="../data/relics/hw.js"></script>
+<script src="../data/relics/sb.js"></script>
+<script src="../data/relics/shb.js"></script>
+<script src="../data/relics/ew.js"></script>
+<script src="../data/relics/dt.js"></script>
+<script>
+// How much of a currency you can hold at once, shown so you know to buy as you go
+const CAPS={"Allagan Tomestone of Poetics":2000,"Allagan Tomestone of Mathematics":2000,"Grand Company Seal":90000};
+const CAP_NOTE={"Grand Company Seal":" once you reach the top Grand Company rank"};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const num=n=>n.toLocaleString('en-US');
+const chip=id=>id.replace(/-/g,' ');
+
+// Progress: have = how many of each item you hold, per step; done = steps finished;
+// skip = weapons left out of the totals, per relic
+let state={have:{},done:{},skip:{}};
+try{state=Object.assign(state,JSON.parse(localStorage.getItem('relics')));}catch(_){}
+const save=()=>{try{localStorage.setItem('relics',JSON.stringify(state));}catch(_){}};
+let open={};
+try{open=JSON.parse(localStorage.getItem('relics-open'))||{};}catch(_){}
+let relic=RELIC_DATA[0];
+try{relic=RELIC_DATA.find(r=>r.id===localStorage.getItem('relics-pick'))||relic;}catch(_){}
+
+const counted=r=>r.weapons.filter(w=>!(state.skip[r.id]||[]).includes(w.id));
+const stepKey=(r,s)=>r.id+'/'+s.name;
+
+// One line per item for a step: the per-weapon amount times the weapons counted,
+// plus items only some weapons need. perRelic items are needed once for the whole line.
+// Weapons in itemsSkip don't take the shared items (like the Zodiac shield, which mostly upgrades with the sword).
+function linesFor(r,s){
+  const ws=counted(r),lines=new Map();
+  const add=(it,qty,w)=>{
+    if(!lines.has(it.name))lines.set(it.name,{...it,need:0,for:[],shared:false});
+    const l=lines.get(it.name);l.need+=qty;if(w)l.for.push(w);else l.shared=true;
+  };
+  const sharing=ws.filter(w=>!(s.itemsSkip||[]).includes(w.id)).length;
+  if(sharing)(s.items||[]).forEach(it=>add(it,it.perRelic?it.qty:it.qty*sharing));
+  ws.forEach(w=>((s.weaponItems||{})[w.id]||[]).forEach(it=>add(it,it.qty,chip(w.id))));
+  return [...lines.values()].map(l=>l.shared?{...l,for:[]}:l);
+}
+// Bought items sit under their currency; everything else goes under Other items
+function groupsFor(lines){
+  const groups=new Map();
+  lines.forEach(l=>{
+    const g=l.buy?l.buy.currency:'';
+    if(!groups.has(g))groups.set(g,[]);
+    groups.get(g).push(l);
+  });
+  return [...groups.entries()].sort((a,b)=>(a[0]==='')-(b[0]===''));
+}
+const haveOf=(k,name)=>(state.have[k]||{})[name]||0;
+
+let uid=0;
+function lineHTML(k,l){
+  const have=haveOf(k,l.name),plain=num(l.need)+' '+l.name,id='got-'+(++uid);
+  const meta=[];
+  if(l.perRelic)meta.push('Once for the whole line, not per weapon');
+  if(l.for.length)meta.push('For '+l.for.join(', '));
+  if(l.buy)meta.push(num(l.buy.price)+' each'+(l.buy.vendor?' from '+l.buy.vendor:''));
+  if(l.source)meta.push(l.source);
+  return '<li class="line" data-name="'+esc(l.name)+'" data-need="'+l.need+'" data-price="'+(l.buy?l.buy.price:0)+'">'+
+    '<input type="checkbox" class="got" id="'+id+'"'+(have>=l.need?' checked':'')+' aria-label="'+esc('Have all '+plain)+'">'+
+    '<div class="what"><label for="'+id+'"><span class="qty">'+num(l.need)+'</span> × <b>'+esc(l.name)+'</b></label>'+
+    (meta.length?'<p class="meta">'+meta.map(esc).join(' · ')+'</p>':'')+'</div>'+
+    '<div class="have"><label>Have <input type="number" min="0" inputmode="numeric" value="'+(have||'')+'" placeholder="0" aria-label="'+esc('How many '+l.name+' you have')+'"></label>'+
+    '<span class="left"></span></div></li>';
+}
+
+function stepHTML(r,s,i){
+  const k=stepKey(r,s),lines=linesFor(r,s),done=!!state.done[k];
+  // A step opens by default when it's the first one you haven't finished
+  const first=r.steps.findIndex(x=>!state.done[stepKey(r,x)])===i;
+  const isOpen=k in open?open[k]:first;
+  const body=lines.length?groupsFor(lines).map(([cur,ls])=>'<div class="group" data-cur="'+esc(cur)+'">'+
+      '<h4>'+(cur?esc(cur)+'<span class="spend"></span>':lines.some(l=>l.buy)?'Other items':'Items')+'</h4>'+
+      (cur&&CAPS[cur]?'<p class="cap">You can hold up to '+num(CAPS[cur])+' at a time'+(CAP_NOTE[cur]||'')+', so buy as you go.</p>':'')+
+      '<ul class="lines">'+ls.map(l=>lineHTML(k,l)).join('')+'</ul></div>').join('')
+    :'<p class="none">No items needed for this step.</p>';
+  return '<details class="step'+(done?' finished':'')+'" data-k="'+esc(k)+'"'+(isOpen?' open':'')+'><summary>'+
+    '<span class="step-name"><small>Step '+(i+1)+'</small>'+esc(s.name)+'</span><span class="status"></span></summary>'+
+    '<div class="step-body">'+
+    (s.quest||s.start?'<p class="quest">'+(s.quest?'<b>'+esc(s.quest)+'</b>':'')+(s.start?' · starts with '+esc(s.start):'')+'</p>':'')+
+    (s.note?'<p class="note">'+esc(s.note)+'</p>':'')+body+
+    '<label class="finish"><input type="checkbox" class="done"'+(done?' checked':'')+'> I’ve finished this step on every weapon</label>'+
+    (s.sources&&s.sources.length?'<p class="sources">Sources: '+s.sources.map((u,j)=>'<a href="'+esc(u)+'" rel="noopener">'+(j+1)+'</a>').join(' ')+'</p>':'')+
+    '</div></details>';
+}
+
+// Works out the numbers that change as you type, straight from the page, so typing never redraws the list
+function refresh(stepEl){
+  let got=0,total=0;
+  stepEl.querySelectorAll('.group').forEach(g=>{
+    let spend=0,all=0;
+    g.querySelectorAll('.line').forEach(li=>{
+      const need=+li.dataset.need,price=+li.dataset.price;
+      const have=haveOf(stepEl.dataset.k,li.dataset.name),short=Math.max(0,need-have);
+      li.classList.toggle('got',!short);
+      li.querySelector('.got').checked=!short;
+      li.querySelector('.left').textContent=short?num(short)+' to go':'Got them all';
+      spend+=short*price;all+=need*price;total++;if(!short)got++;
+    });
+    const sp=g.querySelector('.spend');
+    if(sp)sp.textContent=spend?num(spend)+' left to spend of '+num(all):'All bought ('+num(all)+')';
+  });
+  const st=stepEl.querySelector('.status'),done=stepEl.classList.contains('finished');
+  st.className='status'+(done?' is-done':!total||got===total?' is-ready':'');
+  st.innerHTML=done?'Done':!total?'Nothing to buy':got===total?'Ready':
+    got+' of '+total+' ready<span class="meter" aria-hidden="true"><span style="width:'+Math.floor(got/total*100)+'%"></span></span>';
+}
+
+function render(){
+  $('relic-pick').innerHTML=RELIC_DATA.map(r=>'<span><input type="radio" name="relic" id="relic-'+r.id+'" value="'+r.id+'"'+(r===relic?' checked':'')+'>'+
+    '<label for="relic-'+r.id+'">'+esc(r.expansion)+'<small>'+esc(r.name)+'</small></label></span>').join('');
+  const skip=state.skip[relic.id]||[];
+  $('jobs').innerHTML=relic.weapons.map(w=>'<label class="job" title="'+esc(w.job+(w.label?', '+w.label:''))+'"><input type="checkbox" value="'+esc(w.id)+'"'+(skip.includes(w.id)?'':' checked')+'>'+esc(chip(w.id))+'</label>').join('');
+  const n=counted(relic).length;
+  $('steps').innerHTML='<section class="relic"><header><h2>'+esc(relic.name)+'</h2><p class="counts">'+esc(relic.expansion)+' · '+relic.steps.length+' steps · counting '+n+' of '+relic.weapons.length+' weapons</p></header>'+
+    relic.steps.map((s,i)=>stepHTML(relic,s,i)).join('')+'</section>';
+  document.querySelectorAll('.step').forEach(refresh);
+}
+
+$('relic-pick').addEventListener('change',e=>{
+  relic=RELIC_DATA.find(r=>r.id===e.target.value);
+  try{localStorage.setItem('relics-pick',relic.id);}catch(_){}
+  render();
+});
+$('jobs').addEventListener('change',()=>{
+  state.skip[relic.id]=[...$('jobs').querySelectorAll('input:not(:checked)')].map(el=>el.value);
+  save();render();
+});
+$('jobs-all').addEventListener('click',()=>{delete state.skip[relic.id];save();render();});
+
+function setHave(stepEl,name,v){
+  const k=stepEl.dataset.k,h=state.have[k]||(state.have[k]={});
+  if(v>0)h[name]=v;else delete h[name];
+  if(!Object.keys(h).length)delete state.have[k];
+  save();refresh(stepEl);
+}
+$('steps').addEventListener('input',e=>{
+  if(e.target.type!=='number')return;
+  setHave(e.target.closest('.step'),e.target.closest('.line').dataset.name,Math.max(0,Math.floor(+e.target.value||0)));
+});
+$('steps').addEventListener('change',e=>{
+  const stepEl=e.target.closest('.step');
+  // Ticking an item fills in the full amount; unticking clears it
+  if(e.target.matches('.got')){
+    const li=e.target.closest('.line');
+    setHave(stepEl,li.dataset.name,e.target.checked?+li.dataset.need:0);
+    li.querySelector('input[type=number]').value=e.target.checked?li.dataset.need:'';
+  }else if(e.target.matches('.done')){
+    if(e.target.checked)state.done[stepEl.dataset.k]=true;else delete state.done[stepEl.dataset.k];
+    stepEl.classList.toggle('finished',e.target.checked);
+    save();refresh(stepEl);
+  }
+});
+$('steps').addEventListener('toggle',e=>{
+  if(!e.target.matches('.step'))return;
+  open[e.target.dataset.k]=e.target.open;
+  try{localStorage.setItem('relics-open',JSON.stringify(open));}catch(_){}
+},true);
+
+// Back up and restore progress as a file
+const msg=t=>{$('save-msg').textContent=t;};
+$('export').addEventListener('click',()=>{
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify({relics:state},null,1)],{type:'application/json'}));
+  a.download='ffxiv-relic-progress.json';a.click();URL.revokeObjectURL(a.href);
+  msg('Saved your relic progress.');
+});
+$('import').addEventListener('change',async e=>{
+  const file=e.target.files[0];if(!file)return;e.target.value='';
+  try{
+    const data=JSON.parse(await file.text()).relics;
+    if(!data||typeof data!=='object')throw 0;
+    state={have:{},done:{},skip:{}};
+    for(const [k,h] of Object.entries(data.have||{}))for(const [name,v] of Object.entries(h||{}))
+      if(Number.isInteger(v)&&v>0)(state.have[k]||(state.have[k]={}))[name]=v;
+    for(const k of Object.keys(data.done||{}))if(data.done[k]===true)state.done[k]=true;
+    for(const [r,ids] of Object.entries(data.skip||{}))if(Array.isArray(ids))state.skip[r]=ids.filter(x=>typeof x==='string');
+    save();render();msg('Loaded your relic progress.');
+  }catch(_){msg('That file isn’t a relic progress backup.');}
+});
+$('reset').addEventListener('click',()=>{
+  if(!confirm('Clear all your relic progress on this page? Save it to a file first if you might want it back.'))return;
+  state={have:{},done:{},skip:{}};save();render();msg('Progress cleared.');
+});
+
+render();
+</script></body></html>
