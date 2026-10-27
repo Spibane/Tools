@@ -12,6 +12,7 @@
 <p class="intro">Picks a random job for each of your daily duty roulettes. Choose which jobs you're happy to play and which roles each roulette can go to, then roll. Your choices and last roll are saved in this browser.</p>
 <section class="rolls" aria-labelledby="rolls-h">
 <div class="roll-head"><h2 id="rolls-h">Your roulettes</h2><button type="button" class="roll" id="roll">Roll jobs</button></div>
+<p class="progress" id="progress"></p>
 <label class="unique"><input type="checkbox" id="unique"> Use a different job for each roulette when there are enough to go around</label>
 <ol class="results" id="results" aria-live="polite"></ol>
 </section>
@@ -50,8 +51,9 @@ const pick=a=>a[Math.floor(Math.random()*a.length)];
 
 // Settings: offJobs = default jobs you won't be given; offRoulettes = roulettes left out;
 // custom = roulettes with their own picks, {on, offRoles, offJobs}, kept while custom is off so ticking it again brings them back;
-// unique = spread jobs out; result = the last roll; seen = upcoming jobs already turned off, so ticking one later sticks
-let state={offJobs:[],offRoulettes:[],custom:{},unique:true,result:{},seen:[]};
+// unique = spread jobs out; result = the last roll; seen = upcoming jobs already turned off, so ticking one later sticks;
+// done = when each roulette was marked done, which counts until the next daily reset
+let state={offJobs:[],offRoulettes:[],custom:{},unique:true,result:{},seen:[],done:{}};
 try{state=Object.assign(state,JSON.parse(localStorage.getItem('roulette')));}catch(_){}
 // Older saves kept roles turned off per roulette (offRoles); those roulettes become custom with the default jobs.
 // DPS used to be one role, so a roulette with it turned off keeps all three DPS roles off.
@@ -65,6 +67,15 @@ JOBS.filter(j=>j.upcoming&&!state.seen.includes(j.id)).forEach(j=>{
 const save=()=>{try{localStorage.setItem('roulette',JSON.stringify(state));}catch(_){}};
 
 const active=()=>ROULETTES.filter(r=>!state.offRoulettes.includes(r.id));
+
+// Roulette bonuses reset every day at 15:00 UTC
+const lastReset=()=>{const d=new Date();d.setUTCHours(15,0,0,0);if(d>Date.now())d.setUTCDate(d.getUTCDate()-1);return +d;};
+const isDone=id=>(state.done[id]||0)>=lastReset();
+function progressText(){
+  const rs=active(),done=rs.filter(r=>isDone(r.id)).length,left=lastReset()+864e5-Date.now();
+  const h=Math.floor(left/36e5),m=Math.floor(left%36e5/6e4);
+  return (rs.length?(done===rs.length?'All '+rs.length+' completed today':done+' of '+rs.length+' completed today')+' · ':'')+'Resets in '+(h?h+'h ':'')+m+'m';
+}
 const customOf=r=>state.custom[r.id]&&state.custom[r.id].on?state.custom[r.id]:null;
 const candidates=r=>{const c=customOf(r);return JOBS.filter(j=>c?!c.offJobs.includes(j.id)&&!c.offRoles.includes(j.role):!state.offJobs.includes(j.id));};
 
@@ -82,15 +93,19 @@ function roll(ids){
   save();renderResults();
 }
 
+let shownReset=lastReset();
 function renderResults(){
   const rs=active();
+  shownReset=lastReset();
+  $('progress').textContent=progressText();
   $('results').innerHTML=rs.length?rs.map(r=>{
-    const j=job(state.result[r.id]),fits=j&&candidates(r).includes(j),none=!candidates(r).length;
-    return '<li class="result'+(j?'':' empty')+'"><span class="r-name">'+esc(r.name)+'</span>'+
+    const j=job(state.result[r.id]),fits=j&&candidates(r).includes(j),none=!candidates(r).length,done=isDone(r.id);
+    return '<li class="result'+(j?'':' empty')+(done?' done':'')+'"><span class="r-name">'+esc(r.name)+'</span>'+
       '<span class="r-job">'+(none?'<span class="muted">No job fits. Allow another role or job below.</span>':
-        j?'<span class="role role-'+j.role+'">'+esc(ROLES.find(x=>x.id===j.role).name)+'</span><b>'+esc(j.name)+'</b>'+(fits?'':' <span class="stale">no longer allowed, roll again</span>'):
+        j?'<span class="role role-'+j.role+'">'+esc(ROLES.find(x=>x.id===j.role).name)+'</span><b>'+esc(j.name)+'</b>'+(fits?'':' <span class="stale">no longer allowed, reroll it</span>'):
         '<span class="muted">Not rolled yet</span>')+'</span>'+
-      (none?'':'<button type="button" class="reroll" data-r="'+r.id+'" aria-label="'+esc('Roll again for '+r.name)+'">Roll again</button>')+'</li>';
+      '<span class="r-buttons">'+(none||done?'':'<button type="button" class="reroll" data-r="'+r.id+'" aria-label="'+esc('Reroll '+r.name)+'">Reroll</button>')+
+      '<button type="button" class="mark" data-r="'+r.id+'" aria-pressed="'+done+'" aria-label="'+esc(r.name+' completed today')+'">'+(done?'✓ Completed':'Done')+'</button></span></li>';
   }).join(''):'<li class="result empty"><span class="muted">Every roulette is turned off. Pick some below.</span></li>';
 }
 
@@ -149,8 +164,23 @@ function render(){
   if(focus&&$(focus))$(focus).focus();
 }
 
-$('roll').addEventListener('click',()=>{state.result={};roll(active().map(r=>r.id));});
-$('results').addEventListener('click',e=>{if(e.target.matches('.reroll'))roll([e.target.dataset.r]);});
+// Roulettes you've already done today keep the job you did them on
+$('roll').addEventListener('click',()=>{
+  const ids=active().filter(r=>!isDone(r.id)).map(r=>r.id);
+  ids.forEach(id=>delete state.result[id]);
+  roll(ids);
+});
+$('results').addEventListener('click',e=>{
+  const id=e.target.dataset.r;
+  if(e.target.matches('.reroll'))roll([id]);
+  else if(e.target.matches('.mark')){
+    if(isDone(id))delete state.done[id];else state.done[id]=Date.now();
+    save();renderResults();
+    document.querySelector('.mark[data-r="'+id+'"]').focus();
+  }
+});
+// Keeps the countdown current, and clears the done marks once the daily reset passes
+setInterval(()=>{if(lastReset()!==shownReset)renderResults();else $('progress').textContent=progressText();},30000);
 $('unique').addEventListener('change',e=>{state.unique=e.target.checked;save();});
 $('jobs').addEventListener('change',()=>{
   state.offJobs=[...$('jobs').querySelectorAll('input:not(:checked)')].map(el=>el.value);
