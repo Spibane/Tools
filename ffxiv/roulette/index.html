@@ -52,8 +52,8 @@ const pick=a=>a[Math.floor(Math.random()*a.length)];
 // Settings: offJobs = default jobs you won't be given; offRoulettes = roulettes left out;
 // custom = roulettes with their own picks, {on, offRoles, offJobs}, kept while custom is off so ticking it again brings them back;
 // unique = spread jobs out; result = the last roll; seen = upcoming jobs already turned off, so ticking one later sticks;
-// done = when each roulette was marked done, which counts until the next daily reset
-let state={offJobs:[],offRoulettes:[],custom:{},unique:true,result:{},seen:[],done:{}};
+// done = when each roulette was marked done, which counts until the next daily reset; locked = roulettes Roll jobs leaves alone
+let state={offJobs:[],offRoulettes:[],custom:{},unique:true,result:{},seen:[],done:{},locked:[]};
 try{state=Object.assign(state,JSON.parse(localStorage.getItem('roulette')));}catch(_){}
 // Older saves kept roles turned off per roulette (offRoles); those roulettes become custom with the default jobs.
 // DPS used to be one role, so a roulette with it turned off keeps all three DPS roles off.
@@ -93,6 +93,10 @@ function roll(ids){
   save();renderResults();
 }
 
+// Padlock icons for the lock button, drawn in the text colour
+const padlock=shackle=>'<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="'+shackle+'"/><rect x="2.5" y="7" width="11" height="8" fill="currentColor" stroke="none"/></svg>';
+const LOCKED=padlock('M4.5 7V4.5a3.5 3.5 0 0 1 7 0V7'),UNLOCKED=padlock('M4.5 7V4.5a3.5 3.5 0 0 1 7 0');
+
 let shownReset=lastReset();
 function renderResults(){
   const rs=active();
@@ -100,12 +104,15 @@ function renderResults(){
   $('progress').textContent=progressText();
   $('results').innerHTML=rs.length?rs.map(r=>{
     const j=job(state.result[r.id]),fits=j&&candidates(r).includes(j),none=!candidates(r).length,done=isDone(r.id);
-    return '<li class="result'+(j?'':' empty')+(done?' done':'')+'"><span class="r-name">'+esc(r.name)+'</span>'+
+    const locked=state.locked.includes(r.id);
+    return '<li class="result'+(j?'':' empty')+(done?' done':'')+(locked?' locked':'')+'"><span class="r-name">'+esc(r.name)+'</span>'+
       '<span class="r-job">'+(none?'<span class="muted">No job fits. Allow another role or job below.</span>':
         j?'<span class="role role-'+j.role+'">'+esc(ROLES.find(x=>x.id===j.role).name)+'</span><b>'+esc(j.name)+'</b>'+(fits?'':' <span class="stale">no longer allowed, reroll it</span>'):
         '<span class="muted">Not rolled yet</span>')+'</span>'+
-      '<span class="r-buttons">'+(none||done?'':'<button type="button" class="reroll" data-r="'+r.id+'" aria-label="'+esc('Reroll '+r.name)+'">Reroll</button>')+
-      '<button type="button" class="mark" data-r="'+r.id+'" aria-pressed="'+done+'" aria-label="'+esc(r.name+' completed today')+'">'+(done?'✓ Completed':'Done')+'</button></span></li>';
+      '<span class="r-buttons">'+(none||done?'':'<button type="button" class="reroll" data-r="'+r.id+'"'+(locked?' disabled':'')+' aria-label="'+esc('Reroll '+r.name)+'">Reroll</button>')+
+      '<button type="button" class="mark" data-r="'+r.id+'" aria-pressed="'+done+'" aria-label="'+esc(r.name+' completed today')+'">'+(done?'✓ Completed':'Done')+'</button>'+
+      // Completed roulettes only keep their Completed button; Roll jobs already skips them
+      (done?'':'<button type="button" class="lock" data-r="'+r.id+'" aria-pressed="'+locked+'" aria-label="'+esc('Lock '+r.name)+'" title="'+(locked?'Unlock':'Lock')+'">'+(locked?LOCKED:UNLOCKED)+'</button>')+'</span></li>';
   }).join(''):'<li class="result empty"><span class="muted">Every roulette is turned off. Pick some below.</span></li>';
 }
 
@@ -164,19 +171,22 @@ function render(){
   if(focus&&$(focus))$(focus).focus();
 }
 
-// Roulettes you've already done today keep the job you did them on
+// Roulettes you've already done today, or locked, keep the job they have
 $('roll').addEventListener('click',()=>{
-  const ids=active().filter(r=>!isDone(r.id)).map(r=>r.id);
+  const ids=active().filter(r=>!isDone(r.id)&&!state.locked.includes(r.id)).map(r=>r.id);
   ids.forEach(id=>delete state.result[id]);
   roll(ids);
 });
 $('results').addEventListener('click',e=>{
-  const id=e.target.dataset.r;
-  if(e.target.matches('.reroll'))roll([id]);
-  else if(e.target.matches('.mark')){
-    if(isDone(id))delete state.done[id];else state.done[id]=Date.now();
+  const b=e.target.closest('button');if(!b)return;
+  const id=b.dataset.r;
+  if(b.matches('.reroll'))roll([id]);
+  else if(b.matches('.mark,.lock')){
+    const which=b.matches('.mark')?'mark':'lock';
+    if(which==='mark'){if(isDone(id))delete state.done[id];else state.done[id]=Date.now();}
+    else state.locked=state.locked.filter(x=>x!==id).concat(state.locked.includes(id)?[]:[id]);
     save();renderResults();
-    document.querySelector('.mark[data-r="'+id+'"]').focus();
+    document.querySelector('.'+which+'[data-r="'+id+'"]').focus();
   }
 });
 // Keeps the countdown current, and clears the done marks once the daily reset passes

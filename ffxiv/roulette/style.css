@@ -69,6 +69,12 @@ button.roll:hover{background:var(--tile);color:var(--ink);border-color:var(--rim
 .result.done .r-name{text-decoration:line-through;text-decoration-thickness:2px}
 .mark[aria-pressed="true"]{background:var(--brand);color:#121212;border-color:#121212}
 .mark[aria-pressed="true"]:hover{background:var(--tile);color:var(--ink);border-color:var(--rim)}
+/* Lock: an open padlock, or a closed one on an inverted button, and Reroll greyed out */
+.lock{display:inline-flex;align-items:center;justify-content:center;padding:4px 8px}
+.lock svg{display:block}
+.lock[aria-pressed="true"]{background:var(--ink);color:var(--tile);border-color:var(--ink)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button:disabled:hover{background:var(--tile);color:var(--ink);border-color:var(--rim)}
 .r-name{font-weight:700}
 .r-job{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font-size:1.05rem}
 .result.empty .r-job{font-size:.9rem}
@@ -81,8 +87,9 @@ button.roll:hover{background:var(--tile);color:var(--ink);border-color:var(--rim
 .role-ranged{background:#ffb889}
 .role-caster{background:#e3a6ff}
 @media (max-width:560px){
-  .result{grid-template-columns:1fr auto}
-  .r-job{grid-column:1;grid-row:2}
-  .r-buttons{grid-column:2;grid-row:1/3;flex-direction:column;align-items:stretch}
+  .result{grid-template-columns:1fr}
+  .r-buttons{justify-content:flex-start;margin-top:4px}
+  .r-buttons button{flex:1 1 auto}
+  .r-buttons .lock{flex:0 0 auto}
 }
 @media print{fieldset,.back,.r-buttons,button.roll,.unique{display:none}}
