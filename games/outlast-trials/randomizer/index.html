@@ -1,0 +1,126 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Outlast Trials Trial Randomizer</title>
+<link rel="stylesheet" href="../../../shared/base.css">
+<script src="../../../shared/site.js"></script>
+<link rel="stylesheet" href="style.css"></head><body><main>
+<a class="back" href="../">Back to The Outlast Trials</a>
+<h1>Trial Randomizer</h1>
+<p class="intro">Rolls a random trial or MK-Challenge.</p>
+<section class="rolls panel" aria-labelledby="rolls-h">
+<div class="roll-head"><h2 id="rolls-h">Your trial</h2><button type="button" class="roll" id="roll">Roll trial</button></div>
+<label class="toggle"><input type="checkbox" id="use-played"> Leave out played trials</label>
+<ol class="results" id="results" aria-live="polite"></ol>
+<div class="played" id="played" hidden>
+<p class="played-list" id="played-list"></p>
+<button type="button" id="played-reset">Reset played</button>
+</div>
+</section>
+<div id="kinds"></div>
+</main>
+<script>
+const KINDS=[{id:'trial',name:'Trial',title:'Trials'},{id:'mk',name:'MK-Challenge',title:'MK-Challenges'}];
+const ASSETS=[{id:'coyle',name:'Leland Coyle'},{id:'gooseberry',name:'Mother Gooseberry'},{id:'franco',name:'Franco Barbi'},
+  {id:'kress',name:'Otto and Arora Kress'},{id:'liliya',name:'Liliya Bogomolova'},{id:'any',name:'Any Prime Asset'},{id:'other',name:'Other'}];
+// Every trial and MK-Challenge as of Season 7.1 (October 2026), by Prime Asset. Event versions are these
+// with extra modifiers, so they aren't listed separately. Rebirth and Escape! start off.
+// The ids are used to save your choices, so rename with care.
+const LIST={
+  trial:{
+    coyle:['Kill the Snitch','Locksock the Warden','Vindicate the Guilty'],
+    gooseberry:['Cleanse the Orphans','Grind the Bad Apples','Pervert the Futterman'],
+    franco:['Liquidate the Union','Pleasure the Prosecutor','Poison the Medicine'],
+    kress:['Kill the Politician','Silence the Idol'],
+    liliya:['Despoil the Auction'],
+    other:['Rebirth','Escape!']
+  },
+  mk:{
+    coyle:['Bribe the Judges','Cancel the Autopsy','Destroy the Evidence','Eliminate the Past','Escape the Courthouse','Fuel the Release',
+      'Release the Prisoners','Sabotage the Lockdown','Seize the Narcotics','Sentence the Prosecuted','Teach the Police Officer','Tilt the Scales of Justice'],
+    gooseberry:['Beguile the Children','Compel the Children','Crush the Sex Toys','Deface the Futtermans','Drill the Futterman','Feed the Children',
+      'Flatten the Foreman','Foster the Orphans','Fumigate the Factory','Gather the Children of God','Incinerate the Sex Toys','Open the Gates',
+      'Punish the Miscreants','Redeem Your Freedom','Reunite the Family','Sanitize the Factory','Shutdown the Factory','Win the Truth'],
+    franco:['Cook the Informant','Disrupt the Neighborhood','Eliminate the Legacy','Empty the Vault','Get Out the Vote','Kidnap the Mistress',
+      'Poison the Cattle','Spread the Disease','Stash the Contraband','Traffick the Product'],
+    kress:['Cancel the Broadcast','Change the Program','Fabricate the Scandal','Fund the Campaign','Investigate the Minotaur'],
+    liliya:['Incinerate the Relic','Solve the Murder'],
+    any:['Escape the Lies']
+  }
+};
+const DEFAULT_OFF=['rebirth','escape-'];
+const slug=n=>n.toLowerCase().replace(/[^a-z]+/g,'-');
+const TRIALS=KINDS.flatMap(k=>ASSETS.flatMap(a=>(LIST[k.id][a.id]||[]).map(n=>({name:n,id:slug(n),kind:k.id,asset:a.id}))));
+const trial=id=>TRIALS.find(t=>t.id===id);
+const kindTag=t=>'<span class="role kind-'+t.kind+'">'+KINDS.find(k=>k.id===t.kind).name+'</span>';
+
+// Settings: off = trials left out of rolls; played = trials marked as played;
+// usePlayed = leave played trials out of rolls; result = the last roll;
+// seen = default-off trials already turned off once, so ticking one later sticks
+let state={off:[],played:[],usePlayed:true,result:null,seen:[]};
+state=Object.assign(state,store.load('outlast'));
+DEFAULT_OFF.filter(id=>!state.seen.includes(id)).forEach(id=>{state.off.push(id);state.seen.push(id);});
+const save=()=>store.save('outlast',state);
+save();
+
+const played=t=>state.usePlayed&&state.played.includes(t.id);
+const candidates=()=>TRIALS.filter(t=>!state.off.includes(t.id)&&!played(t));
+
+// Rolls a new trial, avoiding the current one while there's anything else
+function roll(){
+  const all=candidates(),fresh=all.filter(t=>t.id!==state.result);
+  state.result=all.length?pick(fresh.length?fresh:all).id:null;
+  save();renderResults();
+}
+
+function renderResults(){
+  const t=trial(state.result),fits=t&&candidates().includes(t),none=!candidates().length;
+  $('results').innerHTML='<li class="result'+(t?'':' empty')+'"><span class="r-pick">'+
+    (t?kindTag(t)+'<b>'+esc(t.name)+'</b>'+(fits?'':' <span class="stale">'+(played(t)?'played':'left out')+', reroll</span>'):
+      '<span class="muted">'+(none?'No trial left':'Not rolled yet')+'</span>')+'</span>'+
+    '<span class="r-buttons">'+(state.usePlayed&&fits?'<button type="button" class="mark" aria-label="'+esc('Mark '+t.name+' as played')+'">Played</button>':'')+'</span></li>';
+  // Counts against the ticked trials only
+  const on=TRIALS.filter(t=>!state.off.includes(t.id)),list=state.played.map(trial).filter(t=>on.includes(t));
+  $('played').hidden=!state.usePlayed||!list.length;
+  $('played-list').innerHTML='<b>Played ('+list.length+' of '+on.length+'):</b> '+list.map(t=>esc(t.name)).join(', ');
+  $('kinds').querySelectorAll('.trial').forEach(el=>el.classList.toggle('is-played',played(trial(el.querySelector('input').value))));
+}
+
+function renderCounts(){
+  KINDS.forEach(k=>{
+    const all=TRIALS.filter(t=>t.kind===k.id);
+    $('count-'+k.id).textContent=all.filter(t=>!state.off.includes(t.id)).length+' of '+all.length+' on.';
+  });
+}
+
+// One list per kind, grouped by Prime Asset
+function render(){
+  $('use-played').checked=state.usePlayed;
+  $('kinds').innerHTML=KINDS.map(k=>'<fieldset data-k="'+k.id+'"><legend>'+k.title+'</legend><p class="hint" id="count-'+k.id+'"></p>'+
+    ASSETS.filter(a=>LIST[k.id][a.id]).map(a=>'<div class="pill-group"><h3>'+a.name+'</h3><div class="pills">'+
+      TRIALS.filter(t=>t.kind===k.id&&t.asset===a.id).map(t=>'<label class="trial pill"><input type="checkbox" value="'+t.id+'"'+(state.off.includes(t.id)?'':' checked')+'>'+esc(t.name)+'</label>').join('')+
+    '</div></div>').join('')+
+    '<div class="button-row"><button type="button" class="all">All</button> <button type="button" class="none">None</button></div></fieldset>').join('');
+  renderCounts();renderResults();
+}
+
+$('roll').addEventListener('click',roll);
+$('results').addEventListener('click',e=>{
+  if(e.target.matches('.mark')){state.played.push(state.result);save();renderResults();}
+});
+$('use-played').addEventListener('change',e=>{state.usePlayed=e.target.checked;save();renderResults();});
+$('played-reset').addEventListener('click',()=>{state.played=[];save();renderResults();});
+$('kinds').addEventListener('change',()=>{
+  state.off=[...$('kinds').querySelectorAll('.trial input:not(:checked)')].map(el=>el.value);
+  save();renderCounts();renderResults();
+});
+// All and None only change their own list
+$('kinds').addEventListener('click',e=>{
+  if(!e.target.matches('.all,.none'))return;
+  const ids=TRIALS.filter(t=>t.kind===e.target.closest('fieldset').dataset.k).map(t=>t.id);
+  state.off=state.off.filter(id=>!ids.includes(id)).concat(e.target.matches('.none')?ids:[]);
+  save();render();
+});
+
+render();
+backups({what:'trial settings',keys:['outlast'],file:'outlast-trials-settings.json'});
+</script></body></html>
