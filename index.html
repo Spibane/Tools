@@ -4,9 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Tools for Everything</title>
-<link rel="icon" href="shared/logo.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared/base.css">
 <script src="shared/site.js" data-credit-only></script>
 </head>
@@ -26,50 +23,17 @@
       <li><a href="marvel-rivals/"><strong>Marvel Rivals</strong><span>Tools for Marvel Rivals</span></a></li>
     </ul>
   </section>
-  <section class="backup" aria-labelledby="backup-h">
-    <h2 id="backup-h">Back up everything</h2>
-    <p class="muted">Every tool saves your progress and settings in this browser only. Save them all to one file to move them to another device or keep them safe.</p>
-    <div class="backup-row">
-      <button type="button" id="backup-save">Save all progress</button>
-      <button type="button" id="backup-load">Load all progress</button>
-      <input type="file" id="backup-file" accept=".json,application/json" hidden>
-    </div>
-    <p class="muted" id="backup-msg" aria-live="polite"></p>
-  </section>
+  <section class="saves"></section>
   <p class="privacy muted"><strong>Privacy:</strong> No accounts, ads, analytics or tracking, and no data is collected. Your settings, like light or dark mode and page options, are saved only in your own browser and never leave your device. Use “Save all progress” above to back them up to a file, and “Load all progress” to restore them on another device. The site is hosted on GitHub Pages and loads its font from Google Fonts, so those services see standard request details such as your IP address.</p>
 </main>
 <script>
-// Backup: every tool saves to this site's localStorage, so one file holds everything.
-// The file is {site, saved, data: {key: value}}; loading it replaces all saved data.
-const BACKUP_SITE = "spibane-tools";
-const $ = id => document.getElementById(id);
-const msg = t => { $("backup-msg").textContent = t; };
-// A load reloads the page, so its message is carried across in sessionStorage
-try { msg(sessionStorage.getItem("backup-msg") || ""); sessionStorage.removeItem("backup-msg"); } catch (_) {}
-$("backup-save").addEventListener("click", () => {
-  try {
-    const data = {};
-    for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); data[k] = localStorage.getItem(k); }
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([JSON.stringify({ site: BACKUP_SITE, saved: new Date().toISOString(), data }, null, 1)], { type: "application/json" }));
-    a.download = "spibane-tools-backup.json"; a.click(); URL.revokeObjectURL(a.href);
-    msg(`Saved everything from every tool (${Object.keys(data).length} items) to a file.`);
-  } catch (_) { msg("Couldn’t read your saved data in this browser."); }
-});
-$("backup-load").addEventListener("click", () => $("backup-file").click());
-$("backup-file").addEventListener("change", async e => {
-  const file = e.target.files[0]; e.target.value = "";
-  if (!file) return;
-  if (!confirm("Replace everything saved on every page of this site with this backup? Save your current progress first if you might want it back.")) return;
-  try {
-    const { site, data } = JSON.parse(await file.text());
-    if (site !== BACKUP_SITE || !data || typeof data !== "object") throw 0;
-    const entries = Object.entries(data).filter(([, v]) => typeof v === "string");
-    localStorage.clear();
-    for (const [k, v] of entries) localStorage.setItem(k, v);
-    try { sessionStorage.setItem("backup-msg", "Loaded your backup into every tool."); } catch (_) {}
-    location.reload();
-  } catch (_) { msg("That file isn’t a backup from this site."); }
+// The site-wide backup: every tool saves to this site's localStorage, so one file holds everything
+backups({
+  title: "Back up everything",
+  intro: "Every tool saves your progress and settings in this browser only. Save them all to one file to move them to another device or keep them safe. Each tool also has its own Save and Load buttons.",
+  save: "Save all progress",
+  load: "Load all progress",
+  file: "spibane-tools-backup.json",
 });
 </script>
 </body>

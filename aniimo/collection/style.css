@@ -1,53 +1,21 @@
-/* Aniimo collection page, styled after Spibane's logo: logo grey, heavy black outlines,
-   and the lime-to-mint gradient as the accent. The gradient is only ever used
-   for decoration or as a background behind black text, never as text on light
-   backgrounds, so every text color here passes WCAG AA contrast (4.5:1+).
-   Loaded after shared/base.css. */
+/* Aniimo collection page, laid out as in-game boxes. Panels, buttons and option groups come from shared/base.css,
+   and element colors and .opt toggles from aniimo.css. Loaded after both. */
 
-:root{
-  --bg:#d8d8d8; --sheet:#efefef; --tile:#ffffff;
-  --ink:#121212; --muted:#4d4d4d; --rim:#121212; --rim-one:#121212;
-  --lime:#b9fc58; --mint:#48f7a3;
-  --brand:linear-gradient(90deg,var(--lime),var(--mint));
-  --check:#121212; --focus:#121212;
-  --pris-mix:45%;
-  --fire:#f08a5d; --water:#4f9be0; --grass:#6dbb5c; --electric:#e6c229; --ice:#7fd1de;
-  --earth:#b88a52; --wind:#57c1a0; --light:#f2d77c; --dark:#9a7bd6; --none:#a7acb7; --unknown:#e1e3e8;
-  --hw:clamp(46px,calc((100vw - 48px)/6.4),108px);
-  color-scheme:light;
-}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#121212; --sheet:#1c1c1c; --tile:#262626;
-  --ink:#ececec; --muted:#a6a6a6; --rim:#8a8a8a; --rim-one:var(--lime);
-  --check:var(--lime); --focus:var(--lime);
-  --pris-mix:28%;
-  color-scheme:dark;
-}}
-:root[data-theme="dark"]{
-  --bg:#121212; --sheet:#1c1c1c; --tile:#262626;
-  --ink:#ececec; --muted:#a6a6a6; --rim:#8a8a8a; --rim-one:var(--lime);
-  --check:var(--lime); --focus:var(--lime);
-  --pris-mix:28%;
-  color-scheme:dark;
-}
-.intro{color:var(--muted);max-width:60ch}
+/* --rim-one outlines one-time event tiles; --pris-mix is how strong the Prismana stripes are; --hw is a tile's width */
+:root{--rim-one:#121212; --pris-mix:45%; --hw:clamp(46px,calc((100vw - 48px)/6.4),108px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--rim-one:var(--lime); --pris-mix:28%}}
+:root[data-theme="dark"]{--rim-one:var(--lime); --pris-mix:28%}
 
 /* Options */
-fieldset{position:relative;border:0;padding:4px 0 4px 18px;margin:0 0 18px}
-fieldset::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:linear-gradient(var(--lime),var(--mint))}
-legend{font-weight:700;padding:0;margin-bottom:4px}
-.opt{display:flex;align-items:flex-start;gap:10px;margin:8px 0}
-.opt input{width:19px;height:19px;margin:3px 0 0;accent-color:var(--check);flex:none}
+.opt{gap:10px}
 .opt.sub{margin-left:29px}
 .opt-rule{border:0;border-top:2px solid var(--rim);width:48px;margin:14px 0 14px 29px;opacity:.5}
-.opt label{cursor:pointer;font-weight:600}
-.opt small{display:block;color:var(--muted);font-weight:400;font-size:.88rem}
 .opt input:disabled+label{opacity:.5;cursor:default}
 
 /* categories.js mentions, with a hover/focus box listing what they refer to */
 .ref{position:relative;font-weight:600;color:var(--ink);border-bottom:1.5px dotted currentColor;cursor:help}
 .ref .tip{display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:5;width:max-content;max-width:min(300px,75vw);
-  background:var(--sheet);border:2px solid var(--rim);padding:8px 12px;color:var(--ink);font-size:.85rem;font-weight:400;line-height:1.4;cursor:auto}
+  background:var(--surface);border:2px solid var(--rim);padding:8px 12px;color:var(--ink);font-size:.85rem;font-weight:400;line-height:1.4;cursor:auto}
 .ref:hover .tip,.ref:focus .tip{display:block}
 /* On a toggle's main line the mention is the label itself: it still ticks the box, and the box also opens on keyboard focus */
 .opt .ref{cursor:pointer}
@@ -57,7 +25,6 @@ legend{font-weight:700;padding:0;margin-bottom:4px}
 .tip ul+b{margin-top:8px}
 .tip ul{margin:0;padding-left:1.1em}
 .tip em{color:var(--muted)}
-.warn{border:3px solid var(--rim);border-left-width:10px;border-left-color:var(--mint);padding:10px 14px;margin:0 0 14px;background:var(--sheet)}
 .count{color:var(--muted);margin:0 0 12px}
 
 /* Legend and page jump */
@@ -71,14 +38,10 @@ nav a{min-width:36px;text-align:center;color:var(--ink);text-decoration:none;fon
 nav a:hover{background:var(--brand) left bottom/100% 5px no-repeat}
 
 /* Sheets */
-.page{background:var(--sheet);border:3px solid var(--rim);padding:0 12px 28px;margin-bottom:22px}
-.page::before{content:"";display:block;height:6px;margin:0 -12px 14px;background:var(--brand)}
+.page{padding-bottom:28px}
 .page header{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 14px;padding:0 8px 16px}
-h2{margin:0;font-size:1.5rem;font-weight:700}
 .page header p{margin:0;color:var(--muted)}
-.copy{margin-left:auto;font:inherit;font-size:.9rem;font-weight:600;color:var(--ink);border:2px solid var(--rim);
-  background:var(--tile);padding:3px 12px;cursor:pointer}
-.copy:hover{background:var(--brand);color:#121212;border-color:#121212}
+.copy{margin-left:auto;padding:3px 12px}
 
 /* Hex grid */
 .comb{display:flex;flex-direction:column;align-items:center}
@@ -90,10 +53,6 @@ h2{margin:0;font-size:1.5rem;font-weight:700}
   /* The colored band: one element fills it; with two, the left half is the first and the right half the second */
   --band:linear-gradient(90deg,var(--el) 50%,var(--el2,var(--el)) 50%) 0 0/100% 33% no-repeat;
   background:var(--band),var(--tile)}
-.e-fire{--el:var(--fire)}.e-water{--el:var(--water)}.e-grass{--el:var(--grass)}.e-electric{--el:var(--electric)}.e-ice{--el:var(--ice)}
-.e-earth{--el:var(--earth)}.e-wind{--el:var(--wind)}.e-light{--el:var(--light)}.e-dark{--el:var(--dark)}.e-none{--el:var(--none)}.e-unknown{--el:var(--unknown)}
-.e2-fire{--el2:var(--fire)}.e2-water{--el2:var(--water)}.e2-grass{--el2:var(--grass)}.e2-electric{--el2:var(--electric)}.e2-ice{--el2:var(--ice)}
-.e2-earth{--el2:var(--earth)}.e2-wind{--el2:var(--wind)}.e2-light{--el2:var(--light)}.e2-dark{--el2:var(--dark)}.e2-none{--el2:var(--none)}.e2-unknown{--el2:var(--unknown)}
 .legend .sw-two{background:linear-gradient(90deg,var(--fire) 50%,var(--water) 50%)}
 .hex.one{background:var(--rim-one);padding:6px}
 /* Prismana: rainbow stripes, softened toward the tile color so text stays readable. --s is the stripe width. */
@@ -107,7 +66,7 @@ h2{margin:0;font-size:1.5rem;font-weight:700}
 .hex.pris>div{background:var(--band),var(--rainbow)}
 .hex.pris .f{color:var(--ink)}
 .empty{background:var(--rim);opacity:.25}
-.empty>div{background:var(--sheet)}
+.empty>div{background:var(--surface)}
 /* The number fills the colored band (top 33%) and sits at the band's visual center. The band narrows to the
    hexagon's point at the top, so that center is lower than halfway: the padding lifts it from the band's bottom edge. */
 .n{height:33%;flex:none;display:flex;align-items:flex-end;padding-bottom:calc(var(--hw)*0.05);font-size:calc(var(--hw)*0.11);font-weight:700;color:#121212;margin-bottom:calc(var(--hw)*0.03)}

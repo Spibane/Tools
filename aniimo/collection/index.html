@@ -1,11 +1,9 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Aniimo Collection Management</title>
-<link rel="icon" href="../../shared/logo.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../../shared/base.css">
 <script src="../../shared/site.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../aniimo.css">
 <link rel="stylesheet" href="style.css"></head><body><main>
 <a class="back" href="../">Back to Aniimo</a>
 <h1>Aniimo Collection Management</h1>
@@ -62,10 +60,8 @@ const OPTS=[...REGIONS,"pris","prisgroup","gender","keep","keep2","event","event
 // Forms that come as both ♂ and ♀, from categories.js
 const GENDERED=CATEGORIES.genders||[];
 GENDERED.forEach(k=>{if(!FORMS.some(f=>keyOf(f)===k)&&!missing.includes(k))missing.push(k);});
-const $=id=>document.getElementById(id);
 // Text under a tile's name: the form (none for Base), plus ♂/♀ for gender forms
 const formLabel=f=>[f.form==='Base'?'':f.form,f.gender||''].filter(Boolean).join(' ');
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function chunk(a){const o=[];for(let i=0;i<a.length;i+=24)o.push(a.slice(i,i+24));return o;}
 function render(){
   const o={};OPTS.forEach(k=>o[k]=$('opt-'+k).checked);
@@ -108,14 +104,18 @@ function render(){
       c+='<li class="'+cls+'" title="'+esc(lbl)+'"><div><span class="n">'+esc(f.n)+'</span><span class="nm'+(f.names?' multi':'')+'">'+(f.names?f.names.map(esc).join('<br>'):esc(f.name))+'</span>'+(formLabel(f)?'<span class="f">'+esc(formLabel(f))+'</span>':'')+'</div></li>';
     }return '<ul class="row">'+c+'</ul>';}).join('');
     const text=p.map((f,i)=>(i+first)+'. '+f.n+' '+f.name+(f.form==='Base'?'':' ('+f.form+' Form)')+(f.gender?' '+f.gender:'')+(f.oneTime?' [one-time]':'')).join('\n');
-    return '<section class="page" id="page-'+(pi+1)+'" aria-labelledby="h'+(pi+1)+'"><header><h2 id="h'+(pi+1)+'">Page '+(pi+1)+'</h2><p>'+esc(cats)+', slots '+first+'–'+last+' of '+list.length+'</p><button type="button" class="copy" data-text="'+esc(text)+'">Copy this page as text</button></header><div class="comb">'+rows+'</div></section>';
+    return '<section class="page panel" id="page-'+(pi+1)+'" aria-labelledby="h'+(pi+1)+'"><header><h2 id="h'+(pi+1)+'">Page '+(pi+1)+'</h2><p>'+esc(cats)+', slots '+first+'–'+last+' of '+list.length+'</p><button type="button" class="copy" data-text="'+esc(text)+'">Copy this page as text</button></header><div class="comb">'+rows+'</div></section>';
   }).join('');
 }
+// Options are saved under aniimo-collection.<option>. Older versions saved them as opt-<option>, which move over on load.
+const KEY=k=>'aniimo-collection.'+k;
+const RENAMED=Object.fromEntries(OPTS.map(k=>['opt-'+k,KEY(k)]));
+store.rename(RENAMED);
 OPTS.forEach(k=>{
   const el=$('opt-'+k);
   el.checked=REGIONS.includes(k);
-  try{const v=localStorage.getItem('opt-'+k);if(v!==null)el.checked=v==='1'}catch(_){}
-  el.addEventListener('change',()=>{try{localStorage.setItem('opt-'+k,el.checked?'1':'0')}catch(_){}render();});
+  const v=store.get(KEY(k));if(v!==null)el.checked=v==='1';
+  el.addEventListener('change',()=>{store.set(KEY(k),el.checked?'1':'0');render();});
 });
 $('pages').addEventListener('click',async e=>{
   const b=e.target.closest('.copy');if(!b)return;const t=b.dataset.text,old=b.textContent;
@@ -141,6 +141,7 @@ document.querySelectorAll('.ref').forEach(r=>{
 // The hover box sits inside a checkbox label, so stop clicks inside it from toggling the box
 document.addEventListener('click',e=>{if(e.target.closest('.tip'))e.preventDefault();});
 render();
+backups({what:'options',keys:OPTS.map(KEY),file:'aniimo-collection-options.json',renamed:RENAMED});
 // Size tile text to the widest name and form name in the data, so every tile matches and nothing wraps
 function measureText(){
   const ctx=document.createElement('canvas').getContext('2d');

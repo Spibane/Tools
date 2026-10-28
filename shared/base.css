@@ -2,16 +2,19 @@
    and the lime-to-mint gradient as an accent. The gradient is only used for
    decoration or behind black text, never as text on light backgrounds, so all
    text passes WCAG AA contrast (4.5:1+). Projects can link this and add their
-   own styles on top. Pages using it should also load the Chakra Petch font. */
+   own styles on top. site.js loads the Chakra Petch font and the favicon. */
 :root {
   --bg: #d8d8d8;
-  --surface: #efefef;
+  --surface: #efefef; /* panels and cards */
+  --tile: #ffffff;    /* rows, buttons and inputs that sit on a panel */
   --ink: #121212;
   --muted: #4d4d4d;
   --rim: #121212;
+  --check: #121212;   /* checkbox and radio accent */
   --lime: #b9fc58;
   --mint: #48f7a3;
   --brand: linear-gradient(90deg, var(--lime), var(--mint));
+  --brand-v: linear-gradient(var(--lime), var(--mint)); /* the same, top to bottom, for side bars */
   --focus: #121212;
   --hex: var(--hex-light); /* background texture tiles, built by site.js */
   color-scheme: light;
@@ -21,9 +24,11 @@
   :root:not([data-theme="light"]) {
     --bg: #121212;
     --surface: #1c1c1c;
+    --tile: #262626;
     --ink: #ececec;
     --muted: #a6a6a6;
     --rim: #8a8a8a;
+    --check: var(--lime);
     --focus: var(--lime);
     --hex: var(--hex-dark);
     color-scheme: dark;
@@ -32,9 +37,11 @@
 :root[data-theme="dark"] {
   --bg: #121212;
   --surface: #1c1c1c;
+  --tile: #262626;
   --ink: #ececec;
   --muted: #a6a6a6;
   --rim: #8a8a8a;
+  --check: var(--lime);
   --focus: var(--lime);
   --hex: var(--hex-dark);
   color-scheme: dark;
@@ -83,15 +90,81 @@ a { color: var(--ink); text-decoration-thickness: 2px; text-underline-offset: 3p
 .back:hover { background: var(--brand); color: #121212; }
 code { font-size: 0.92em; background: var(--surface); border: 1.5px solid var(--rim); padding: 0 4px; }
 
+/* Buttons. .button styles a label the same way, like the one for a hidden file picker. */
+button, .button {
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--tile);
+  border: 2px solid var(--rim);
+  padding: 4px 12px;
+  cursor: pointer;
+}
+button:hover, .button:hover { background: var(--brand); color: #121212; border-color: #121212; }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+button:disabled:hover { background: var(--tile); color: var(--ink); border-color: var(--rim); }
+/* A visually hidden input that still takes keyboard focus, which shows on the label after it */
+.vh { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+.vh:focus-visible + .button { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* Tool pages: the intro under the title, and option groups with a gradient bar down the side */
+.intro { color: var(--muted); max-width: 60ch; }
+fieldset { position: relative; border: 0; padding: 4px 0 4px 18px; margin: 0 0 18px; }
+fieldset::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--brand-v); }
+legend { font-weight: 700; padding: 0; margin-bottom: 4px; }
+.hint { color: var(--muted); font-size: 0.9rem; margin: 0 0 8px; }
+.warn { border: 3px solid var(--rim); border-left-width: 10px; border-left-color: var(--mint); padding: 10px 14px; margin: 0 0 14px; background: var(--surface); }
+
+/* A panel: an outlined sheet with a gradient strip along the top. Pages set its bottom padding and margin. */
+.panel { background: var(--surface); border: 3px solid var(--rim); padding: 0 12px 12px; margin-bottom: 22px; }
+.panel::before { content: ""; display: block; height: 6px; margin: 0 -12px 14px; background: var(--brand); }
+.panel h2 { font-size: 1.5rem; }
+
+/* Dropdowns (<details>) open and close with an arrow before the summary */
+summary { cursor: pointer; list-style: none; }
+summary::-webkit-details-marker { display: none; }
+summary::before { content: "▸" / ""; font-size: 0.9em; width: 1em; flex: none; }
+details[open] > summary::before { content: "▾" / ""; }
+
+/* A progress bar: set the inner span's width */
+.meter { display: inline-block; width: 80px; height: 10px; border: 2px solid var(--rim); background: var(--tile); }
+.meter span { display: block; height: 100%; background: var(--brand); }
+
+/* Tickbox pills, like the job and hero pickers, in groups under a small heading. Unticked pills fade. */
+.pill-group { margin-bottom: 8px; }
+.pill-group h3 { font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 0 0 4px; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; background: var(--tile); border: 2px solid var(--rim); padding: 3px 9px 3px 6px; font-weight: 600; font-size: 0.9rem; cursor: pointer; }
+.pill input { width: 17px; height: 17px; margin: 0; accent-color: var(--check); }
+.pill:not(:has(input:checked)) { opacity: 0.55; }
+.button-row { margin-top: 10px; }
+
+/* Randomizers: a panel with the roll button in its header, one result row per pick, and a toggle line */
+.roll-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-bottom: 8px; }
+button.roll { font-size: 1.1rem; font-weight: 700; padding: 8px 22px; border: 3px solid #121212; background: var(--brand); color: #121212; }
+button.roll:hover { background: var(--tile); color: var(--ink); border-color: var(--rim); }
+.toggle { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+.toggle input { width: 18px; height: 18px; margin: 0; flex: none; accent-color: var(--check); }
+.results { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.result { display: grid; align-items: center; gap: 4px 12px; background: var(--tile); border: 2px solid var(--rim); padding: 8px 10px; }
+.r-name { font-weight: 700; }
+.r-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 1.05rem; }
+.result.empty .r-pick { font-size: 0.9rem; }
+.r-buttons { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.stale { font-size: 0.85rem; color: var(--muted); }
+/* Role tags: pages give each role a background colour. The black outline keeps the text readable. */
+.role { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 0 6px; border: 2px solid #121212; color: #121212; }
+
 /* Hub page categories: a heading over each group of project tiles */
 .category { margin-top: 28px; }
 .category h2 { margin-bottom: 10px; }
 
-/* Save/load-everything backup on the hub page */
-.backup { margin-top: 28px; }
-.backup h2 { margin-bottom: 6px; }
-.backup-row { display: flex; flex-wrap: wrap; gap: 8px; }
-.backup #backup-msg { margin: 8px 0 0; }
+/* Save, load and clear buttons for backups, on the hub page and on tools with their own backup */
+.saves { margin-top: 28px; }
+.saves h2 { margin-bottom: 6px; }
+.save-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.saves [aria-live] { margin: 8px 0 0; }
 
 /* Privacy note at the bottom of the hub page */
 .privacy { margin: 40px 0 0; font-size: 0.9rem; max-width: 65ch; }
@@ -112,7 +185,7 @@ code { font-size: 0.92em; background: var(--surface); border: 1.5px solid var(--
   position: absolute;
   left: 0; top: 0; bottom: 0;
   width: 8px;
-  background: linear-gradient(var(--lime), var(--mint));
+  background: var(--brand-v);
 }
 .link-list a:hover { border-color: var(--ink); }
 .link-list a:hover::before { width: 12px; }
@@ -139,15 +212,5 @@ code { font-size: 0.92em; background: var(--surface); border: 1.5px solid var(--
 .site-footer a { display: inline-flex; align-items: center; gap: 10px; font-weight: 600; }
 .site-footer img { width: 32px; height: 32px; }
 .site-footer .muted { margin: 0 0 0 auto; }
-.theme-toggle, .backup button {
-  font: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--ink);
-  background: var(--surface);
-  border: 2px solid var(--rim);
-  padding: 3px 12px;
-  cursor: pointer;
-}
-.theme-toggle:hover, .backup button:hover { background: var(--brand); color: #121212; }
-@media print { .site-footer { display: none; } }
+.theme-toggle { padding: 3px 12px; }
+@media print { .site-footer, .back, .saves { display: none; } }

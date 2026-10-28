@@ -1,0 +1,18 @@
+/* Shared by the Aniimo pages: element colors and the option toggles.
+   Loaded after shared/base.css and before each page's own style.css. */
+
+:root{
+  --fire:#f08a5d; --water:#4f9be0; --grass:#6dbb5c; --electric:#e6c229; --ice:#7fd1de;
+  --earth:#b88a52; --wind:#57c1a0; --light:#f2d77c; --dark:#9a7bd6; --none:#a7acb7; --unknown:#e1e3e8;
+}
+/* A form's element sets --el, and a second element sets --el2 */
+.e-fire{--el:var(--fire)}.e-water{--el:var(--water)}.e-grass{--el:var(--grass)}.e-electric{--el:var(--electric)}.e-ice{--el:var(--ice)}
+.e-earth{--el:var(--earth)}.e-wind{--el:var(--wind)}.e-light{--el:var(--light)}.e-dark{--el:var(--dark)}.e-none{--el:var(--none)}.e-unknown{--el:var(--unknown)}
+.e2-fire{--el2:var(--fire)}.e2-water{--el2:var(--water)}.e2-grass{--el2:var(--grass)}.e2-electric{--el2:var(--electric)}.e2-ice{--el2:var(--ice)}
+.e2-earth{--el2:var(--earth)}.e2-wind{--el2:var(--wind)}.e2-light{--el2:var(--light)}.e2-dark{--el2:var(--dark)}.e2-none{--el2:var(--none)}.e2-unknown{--el2:var(--unknown)}
+
+/* Option toggles: a tickbox or radio, then its label with an optional note underneath */
+.opt{display:flex;align-items:flex-start;margin:8px 0}
+.opt input{width:19px;height:19px;margin:3px 0 0;accent-color:var(--check);flex:none}
+.opt label{cursor:pointer;font-weight:600}
+.opt small{display:block;color:var(--muted);font-weight:400;font-size:.88rem}

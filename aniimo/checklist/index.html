@@ -1,11 +1,9 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Aniimo Collection Checklists</title>
-<link rel="icon" href="../../shared/logo.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../../shared/base.css">
 <script src="../../shared/site.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../aniimo.css">
 <link rel="stylesheet" href="style.css"></head><body><main>
 <a class="back" href="../">Back to Aniimo</a>
 <h1>Aniimo Collection Checklists</h1>
@@ -23,12 +21,6 @@
 </fieldset>
 <p class="warn" id="warn" hidden></p>
 <div id="regions"></div>
-<section class="saves" aria-labelledby="saves-h"><h2 id="saves-h">Back up your collection</h2>
-<p class="muted">Your collection lives in this browser only. Save it to a file to move it to another device or keep it safe.</p>
-<div class="save-row"><button type="button" id="export">Save collection to a file</button>
-<input type="file" id="import" class="vh" accept=".json,application/json"><label class="button" for="import">Load collection from a file</label>
-<button type="button" id="reset">Clear collection</button></div>
-<p class="muted" id="save-msg" aria-live="polite"></p></section>
 </main>
 <script src="../data/forms.js"></script>
 <script src="../data/categories.js"></script>
@@ -38,8 +30,6 @@ const REGION_NAMES={breezy:"Breezy Plains",whisperwake:"Whisperwake Isles"};
 const BOXES=[["own","Own"],["perfect","Perfect"],["alpha","Alpha"],["umbra","Umbral"]];
 const SYMBOL={"Rain":"☂","Thunderstorm":"⚡","Rain or thunderstorm":"☂","Snow":"❄","Night":"☾","Prismana Flow":"✦"};
 const keyOf=f=>f.form==="Base"?f.name:f.form+" "+f.name;
-const $=id=>document.getElementById(id);
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,'-');
 const BY_KEY=new Map(FORMS.map(f=>[keyOf(f),f]));
 const ORDER=new Map(FORMS.map((f,i)=>[keyOf(f),i]));
@@ -93,10 +83,18 @@ REGIONS.forEach(r=>r.subs.forEach(s=>s.rows.forEach(row=>{
 })));
 const ALL=[...PLACES.keys()].sort((a,b)=>ORDER.get(a)-ORDER.get(b));
 
+// Everything is saved under aniimo-checklist.<name>. Older versions used the names in RENAMED, which move over on load,
+// and before that the "Hide forms I own" checkbox (opt-hide), which becomes Own: No.
+const KEY=n=>'aniimo-checklist.'+n;
+const FILTERS=['need',...BOXES.map(([b])=>b)];
+const RENAMED={checklist:KEY('collection'),'checklist-open':KEY('open'),'opt-mode':KEY('mode'),...Object.fromEntries(FILTERS.map(n=>['opt-'+n,KEY(n)]))};
+if(store.get('opt-hide')==='1'&&store.get('opt-own')===null)store.set('opt-own','no');
+store.remove('opt-hide');
+store.rename(RENAMED);
+
 // Collection: one entry per form, so a form is marked in every sub-region it spawns in
-let collection={};
-try{collection=JSON.parse(localStorage.getItem('checklist'))||{};}catch(_){}
-const save=()=>{try{localStorage.setItem('checklist',JSON.stringify(collection));}catch(_){}};
+const collection=store.load(KEY('collection'),{});
+const save=()=>store.save(KEY('collection'),collection);
 const has=(k,b)=>!!(collection[k]&&collection[k][b]);
 function setBox(k,b,on){
   const t=collection[k]||(collection[k]={});
@@ -107,8 +105,7 @@ function setBox(k,b,on){
   save();
 }
 
-let open={};
-try{open=JSON.parse(localStorage.getItem('checklist-open'))||{};}catch(_){}
+const open=store.load(KEY('open'),{});
 const pct=(n,d)=>d?Math.floor(n/d*100):0;
 // Each box counts out of the forms that can have it, so Umbral leaves out Prismana forms
 function stats(keys){
@@ -159,7 +156,7 @@ function render(){
   const show=row=>fits(row.form)&&(row.places?row.places.some(p=>needs(p.need)):needs(row.need));
   if($('mode-all').checked){
     const rows=ALL.map(k=>({form:k,places:PLACES.get(k)})),s=stats(ALL),vis=rows.filter(show);
-    $('regions').innerHTML='<section class="region all" id="all-forms" aria-labelledby="all-h"><header><h2 id="all-h">All forms</h2>'+bar(s,'All forms')+
+    $('regions').innerHTML='<section class="region panel all" id="all-forms" aria-labelledby="all-h"><header><h2 id="all-h">All forms</h2>'+bar(s,'All forms')+
       '<p class="counts">'+ALL.length+' forms · '+counts(s)+'</p></header>'+
       (vis.length?'<ul class="rows">'+vis.map(rowHTML).join('')+'</ul>':'<p class="sub-note">No forms match these options.</p>')+'</section>';
     return;
@@ -176,7 +173,7 @@ function render(){
         (vis.length?'<ul class="rows">'+vis.map(rowHTML).join('')+'</ul>':'<p class="sub-note">Nothing to show with these options.</p>')+'</details>';
     }).join('');
     if(!subs)return '';
-    return '<section class="region" aria-labelledby="'+r.id+'-h"><header><h2 id="'+r.id+'-h">'+esc(r.name)+'</h2>'+bar(rs,r.name)+
+    return '<section class="region panel" aria-labelledby="'+r.id+'-h"><header><h2 id="'+r.id+'-h">'+esc(r.name)+'</h2>'+bar(rs,r.name)+
       '<p class="counts">'+all.length+' forms · '+counts(rs)+'</p></header>'+subs+'</section>';
   }).join('');
   $('regions').innerHTML=html||'<p class="warn">No forms match these options.</p>';
@@ -194,44 +191,22 @@ $('regions').addEventListener('change',e=>{
 $('regions').addEventListener('toggle',e=>{
   if(!e.target.matches('.sub'))return;
   if(e.target.open)open[e.target.id]=1;else delete open[e.target.id];
-  try{localStorage.setItem('checklist-open',JSON.stringify(open));}catch(_){}
+  store.save(KEY('open'),open);
 },true);
-// The old "Hide forms I own" checkbox becomes Own: No
-try{if(localStorage.getItem('opt-hide')==='1'&&localStorage.getItem('opt-own')===null)localStorage.setItem('opt-own','no');localStorage.removeItem('opt-hide');}catch(_){}
-['opt-need',...BOXES.map(([b])=>'opt-'+b)].forEach(id=>{
-  const el=$(id);
-  try{const v=localStorage.getItem(id);if(v!==null)el.value=v;}catch(_){}
-  el.addEventListener('change',()=>{try{localStorage.setItem(id,el.value);}catch(_){}render();});
+FILTERS.forEach(n=>{
+  const el=$('opt-'+n);
+  const v=store.get(KEY(n));if(v!==null)el.value=v;
+  el.addEventListener('change',()=>{store.set(KEY(n),el.value);render();});
 });
 // List mode: by region, or every form in one list
-try{if(localStorage.getItem('opt-mode')==='all')$('mode-all').checked=true;}catch(_){}
+if(store.get(KEY('mode'))==='all')$('mode-all').checked=true;
 document.querySelectorAll('input[name="mode"]').forEach(el=>el.addEventListener('change',()=>{
-  try{localStorage.setItem('opt-mode',el.value);}catch(_){}render();
+  store.set(KEY('mode'),el.value);render();
 }));
-
-// Back up and restore the collection as a file
-const msg=t=>{$('save-msg').textContent=t;};
-$('export').addEventListener('click',()=>{
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([JSON.stringify({checklist:collection},null,1)],{type:'application/json'}));
-  a.download='aniimo-region-collection.json';a.click();URL.revokeObjectURL(a.href);
-  msg('Saved '+Object.keys(collection).length+' forms from your collection.');
-});
-$('import').addEventListener('change',async e=>{
-  const file=e.target.files[0];if(!file)return;e.target.value='';
-  try{
-    const data=JSON.parse(await file.text()).checklist;
-    if(!data||typeof data!=='object')throw 0;
-    collection={};
-    for(const [k,t] of Object.entries(data))BOXES.forEach(([b])=>{if(t&&t[b]===true)(collection[k]||(collection[k]={}))[b]=true;});
-    save();render();msg('Loaded '+Object.keys(collection).length+' forms into your collection.');
-  }catch(_){msg('That file isn’t a collection backup.');}
-});
-$('reset').addEventListener('click',()=>{
-  if(!confirm('Clear your whole collection on this page? Save it to a file first if you might want it back.'))return;
-  collection={};save();render();msg('Collection cleared.');
-});
 
 if(missing.length){$('warn').hidden=false;$('warn').textContent='These spawns.js or categories.js entries don’t match any form, so they aren’t shown: '+missing.join(', ')+'. Check the spelling against forms.js.';}
 render();
+backups({what:'collection',keys:[KEY('collection'),KEY('open'),KEY('mode'),...FILTERS.map(KEY)],file:'aniimo-region-collection.json',renamed:RENAMED,
+  // Older backups from this page were {checklist: collection}
+  legacy:f=>f&&f.checklist&&typeof f.checklist==='object'&&{[KEY('collection')]:JSON.stringify(f.checklist)}});
 </script></body></html>

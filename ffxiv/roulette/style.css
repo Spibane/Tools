@@ -1,40 +1,17 @@
-/* FFXIV roulette job picker, styled like the relic checklists: logo grey, heavy outlines,
-   and the lime-to-mint gradient only as decoration or behind black text.
+/* FFXIV roulette job picker. Buttons, pills, the roll panel and result rows come from shared/base.css.
    Loaded after shared/base.css. */
 
-:root{--sheet:#efefef; --tile:#ffffff; --check:#121212}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--sheet:#1c1c1c; --tile:#262626; --check:var(--lime)}}
-:root[data-theme="dark"]{--sheet:#1c1c1c; --tile:#262626; --check:var(--lime)}
-.intro{color:var(--muted);max-width:60ch}
-button{font:inherit;font-size:.9rem;font-weight:600;color:var(--ink);border:2px solid var(--rim);background:var(--tile);padding:4px 12px;cursor:pointer}
-button:hover{background:var(--brand);color:#121212;border-color:#121212}
-
-/* Options */
-fieldset{position:relative;border:0;padding:4px 0 4px 18px;margin:0 0 18px}
-fieldset::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:linear-gradient(var(--lime),var(--mint))}
-legend{font-weight:700;padding:0;margin-bottom:4px}
-.hint{color:var(--muted);font-size:.9rem;margin:0 0 8px}
-
-/* Job and role toggles */
-.job-role{margin-bottom:8px}
-.job-role h3{font-size:.85rem;font-weight:600;color:var(--muted);margin:0 0 4px}
-.jobs{display:flex;flex-wrap:wrap;gap:6px}
-.job{display:inline-flex;align-items:center;gap:6px;background:var(--tile);border:2px solid var(--rim);padding:3px 9px 3px 6px;font-weight:600;font-size:.9rem;cursor:pointer}
-.job input{width:17px;height:17px;margin:0;accent-color:var(--check)}
-.job:not(:has(input:checked)){opacity:.55;text-decoration:line-through}
+/* Job and role toggles: unticked jobs are struck through, except under a role that's turned off */
+.job:not(:has(input:checked)){text-decoration:line-through}
 .role-off .job:not(:has(input:checked)){opacity:1}
 .job.upcoming{border-style:dashed}
-.job-buttons{margin-top:10px}
 
 /* One row per roulette: a tickbox to use it, and a dropdown for its custom roles and jobs */
 .roulettes{display:grid;gap:6px}
-.roulette{display:grid;grid-template-columns:auto 1fr;gap:0 10px;align-items:start;background:var(--sheet);border:2px solid var(--rim);padding:4px 10px}
+.roulette{display:grid;grid-template-columns:auto 1fr;gap:0 10px;align-items:start;background:var(--surface);border:2px solid var(--rim);padding:4px 10px}
 .roulette>.use{width:18px;height:18px;margin:9px 0 0;accent-color:var(--check);cursor:pointer}
-.roulette summary{display:flex;flex-wrap:wrap;align-items:center;gap:2px 12px;padding:6px 0;cursor:pointer;list-style:none}
-.roulette summary::-webkit-details-marker{display:none}
-.roulette summary::before{content:"▸" / "";font-size:.9em;width:1em;flex:none}
-.roulette details[open] summary::before{content:"▾" / ""}
-.r-name{font-weight:700;flex:1 1 10em}
+.roulette summary{display:flex;flex-wrap:wrap;align-items:center;gap:2px 12px;padding:6px 0}
+.roulette summary .r-name{flex:1 1 10em}
 .roulette summary:hover .r-name{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
 .r-status{font-size:.85rem;color:var(--muted)}
 .r-status .narrow{display:none}
@@ -46,26 +23,17 @@ legend{font-weight:700;padding:0;margin-bottom:4px}
 .r-role{font-size:.9rem;margin-bottom:4px}
 .r-custom input,.r-role input{width:18px;height:18px;margin:0;accent-color:var(--check)}
 .r-body .hint{margin:0}
-.job-role.role-off .jobs{opacity:.45}
+.job-role.role-off .pills{opacity:.45}
 .job:has(input:disabled){cursor:default}
 
 /* The roll */
-.rolls{background:var(--sheet);border:3px solid var(--rim);padding:0 12px 12px;margin-bottom:26px}
-.rolls::before{content:"";display:block;height:6px;margin:0 -12px 14px;background:var(--brand)}
-.roll-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-bottom:8px}
-.rolls h2{font-size:1.5rem}
-button.roll{font-size:1.1rem;font-weight:700;padding:8px 22px;border:3px solid #121212;background:var(--brand);color:#121212}
-button.roll:hover{background:var(--tile);color:var(--ink);border-color:var(--rim)}
-.unique{display:flex;align-items:center;gap:10px;margin:0 0 12px;font-size:.9rem;font-weight:600;cursor:pointer}
-.unique input{width:18px;height:18px;margin:0;flex:none;accent-color:var(--check)}
-.results{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.rolls{margin-bottom:26px}
 .progress{margin:-4px 0 10px;font-weight:600;font-size:.9rem;color:var(--muted)}
-.result{position:relative;display:grid;grid-template-columns:12em 1fr auto;align-items:center;gap:4px 12px;background:var(--tile);border:2px solid var(--rim);padding:8px 10px}
-.r-buttons{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}
+.result{position:relative;grid-template-columns:12em 1fr auto}
 /* Done today: a gradient bar down the side, the job faded, and a filled Done button */
-.result.done{background:var(--sheet);padding-left:18px}
-.result.done::before{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;background:linear-gradient(var(--lime),var(--mint))}
-.result.done .r-name,.result.done .r-job{opacity:.6}
+.result.done{background:var(--surface);padding-left:18px}
+.result.done::before{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;background:var(--brand-v)}
+.result.done .r-name,.result.done .r-pick{opacity:.6}
 .result.done .r-name{text-decoration:line-through;text-decoration-thickness:2px}
 .mark[aria-pressed="true"]{background:var(--brand);color:#121212;border-color:#121212}
 .mark[aria-pressed="true"]:hover{background:var(--tile);color:var(--ink);border-color:var(--rim)}
@@ -73,14 +41,7 @@ button.roll:hover{background:var(--tile);color:var(--ink);border-color:var(--rim
 .lock{display:inline-flex;align-items:center;justify-content:center;padding:4px 8px}
 .lock svg{display:block}
 .lock[aria-pressed="true"]{background:var(--ink);color:var(--tile);border-color:var(--ink)}
-button:disabled{opacity:.4;cursor:not-allowed}
-button:disabled:hover{background:var(--tile);color:var(--ink);border-color:var(--rim)}
-.r-name{font-weight:700}
-.r-job{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font-size:1.05rem}
-.result.empty .r-job{font-size:.9rem}
-.stale{font-size:.85rem;color:var(--muted)}
-/* Role tags in the game's colours, with a black outline so the text always reads */
-.role{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:0 6px;border:2px solid #121212;color:#121212}
+/* Role tags in the game's colours */
 .role-tank{background:#8ab4ff}
 .role-healer{background:#8fe08a}
 .role-melee{background:#ff9a9a}
@@ -92,4 +53,4 @@ button:disabled:hover{background:var(--tile);color:var(--ink);border-color:var(-
   .r-buttons button{flex:1 1 auto}
   .r-buttons .lock{flex:0 0 auto}
 }
-@media print{fieldset,.back,.r-buttons,button.roll,.unique{display:none}}
+@media print{fieldset,.r-buttons,button.roll,.toggle{display:none}}

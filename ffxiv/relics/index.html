@@ -1,11 +1,8 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>FFXIV Relic Step Checklists</title>
-<link rel="icon" href="../../shared/logo.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../../shared/base.css">
 <script src="../../shared/site.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css"></head><body><main>
 <a class="back" href="../">Back to Final Fantasy XIV</a>
 <h1>Relic Step Checklists</h1>
@@ -15,16 +12,10 @@
 </fieldset>
 <fieldset><legend>Weapons to count</legend>
 <p class="hint">Untick a job you don't play or have already finished, and every total below changes to match.</p>
-<div class="jobs" id="jobs"></div>
-<div class="job-buttons"><button type="button" id="jobs-all">Count every weapon</button></div>
+<div class="pills" id="jobs"></div>
+<div class="button-row"><button type="button" id="jobs-all">Count every weapon</button></div>
 </fieldset>
 <div id="steps"></div>
-<section class="saves" aria-labelledby="saves-h"><h2 id="saves-h">Back up your progress</h2>
-<p class="muted">Your progress lives in this browser only. Save it to a file to move it to another device or keep it safe.</p>
-<div class="save-row"><button type="button" id="export">Save progress to a file</button>
-<input type="file" id="import" class="vh" accept=".json,application/json"><label class="button" for="import">Load progress from a file</label>
-<button type="button" id="reset">Clear progress</button></div>
-<p class="muted" id="save-msg" aria-live="polite"></p></section>
 </main>
 <script>
 // Each data file adds one relic line: RELIC_DATA.push({id, expansion, name, weapons, steps}).
@@ -48,20 +39,15 @@ const RELIC_DATA=[];
 // How much of a currency you can hold at once, shown so you know to buy as you go
 const CAPS={"Allagan Tomestone of Poetics":2000,"Allagan Tomestone of Mathematics":2000,"Grand Company Seal":90000};
 const CAP_NOTE={"Grand Company Seal":" once you reach the top Grand Company rank"};
-const $=id=>document.getElementById(id);
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const num=n=>n.toLocaleString('en-US');
 const chip=id=>id.replace(/-/g,' ');
 
 // Progress: have = how many of each item you hold, per step; done = steps finished;
 // skip = weapons left out of the totals, per relic
-let state={have:{},done:{},skip:{}};
-try{state=Object.assign(state,JSON.parse(localStorage.getItem('relics')));}catch(_){}
-const save=()=>{try{localStorage.setItem('relics',JSON.stringify(state));}catch(_){}};
-let open={};
-try{open=JSON.parse(localStorage.getItem('relics-open'))||{};}catch(_){}
-let relic=RELIC_DATA[0];
-try{relic=RELIC_DATA.find(r=>r.id===localStorage.getItem('relics-pick'))||relic;}catch(_){}
+const state=Object.assign({have:{},done:{},skip:{}},store.load('relics'));
+const save=()=>store.save('relics',state);
+const open=store.load('relics-open',{});
+let relic=RELIC_DATA.find(r=>r.id===store.get('relics-pick'))||RELIC_DATA[0];
 
 const counted=r=>r.weapons.filter(w=>!(state.skip[r.id]||[]).includes(w.id));
 const stepKey=(r,s)=>r.id+'/'+s.name;
@@ -154,16 +140,16 @@ function render(){
   $('relic-pick').innerHTML=RELIC_DATA.map(r=>'<span><input type="radio" name="relic" id="relic-'+r.id+'" value="'+r.id+'"'+(r===relic?' checked':'')+'>'+
     '<label for="relic-'+r.id+'">'+esc(r.expansion)+'<small>'+esc(r.name)+'</small></label></span>').join('');
   const skip=state.skip[relic.id]||[];
-  $('jobs').innerHTML=relic.weapons.map(w=>'<label class="job" title="'+esc(w.job+(w.label?', '+w.label:''))+'"><input type="checkbox" value="'+esc(w.id)+'"'+(skip.includes(w.id)?'':' checked')+'>'+esc(chip(w.id))+'</label>').join('');
+  $('jobs').innerHTML=relic.weapons.map(w=>'<label class="job pill" title="'+esc(w.job+(w.label?', '+w.label:''))+'"><input type="checkbox" value="'+esc(w.id)+'"'+(skip.includes(w.id)?'':' checked')+'>'+esc(chip(w.id))+'</label>').join('');
   const n=counted(relic).length;
-  $('steps').innerHTML='<section class="relic"><header><h2>'+esc(relic.name)+'</h2><p class="counts">'+esc(relic.expansion)+' · '+relic.steps.length+' steps · counting '+n+' of '+relic.weapons.length+' weapons</p></header>'+
+  $('steps').innerHTML='<section class="relic panel"><header><h2>'+esc(relic.name)+'</h2><p class="counts">'+esc(relic.expansion)+' · '+relic.steps.length+' steps · counting '+n+' of '+relic.weapons.length+' weapons</p></header>'+
     relic.steps.map((s,i)=>stepHTML(relic,s,i)).join('')+'</section>';
   document.querySelectorAll('.step').forEach(refresh);
 }
 
 $('relic-pick').addEventListener('change',e=>{
   relic=RELIC_DATA.find(r=>r.id===e.target.value);
-  try{localStorage.setItem('relics-pick',relic.id);}catch(_){}
+  store.set('relics-pick',relic.id);
   render();
 });
 $('jobs').addEventListener('change',()=>{
@@ -198,34 +184,11 @@ $('steps').addEventListener('change',e=>{
 $('steps').addEventListener('toggle',e=>{
   if(!e.target.matches('.step'))return;
   open[e.target.dataset.k]=e.target.open;
-  try{localStorage.setItem('relics-open',JSON.stringify(open));}catch(_){}
+  store.save('relics-open',open);
 },true);
 
-// Back up and restore progress as a file
-const msg=t=>{$('save-msg').textContent=t;};
-$('export').addEventListener('click',()=>{
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([JSON.stringify({relics:state},null,1)],{type:'application/json'}));
-  a.download='ffxiv-relic-progress.json';a.click();URL.revokeObjectURL(a.href);
-  msg('Saved your relic progress.');
-});
-$('import').addEventListener('change',async e=>{
-  const file=e.target.files[0];if(!file)return;e.target.value='';
-  try{
-    const data=JSON.parse(await file.text()).relics;
-    if(!data||typeof data!=='object')throw 0;
-    state={have:{},done:{},skip:{}};
-    for(const [k,h] of Object.entries(data.have||{}))for(const [name,v] of Object.entries(h||{}))
-      if(Number.isInteger(v)&&v>0)(state.have[k]||(state.have[k]={}))[name]=v;
-    for(const k of Object.keys(data.done||{}))if(data.done[k]===true)state.done[k]=true;
-    for(const [r,ids] of Object.entries(data.skip||{}))if(Array.isArray(ids))state.skip[r]=ids.filter(x=>typeof x==='string');
-    save();render();msg('Loaded your relic progress.');
-  }catch(_){msg('That file isn’t a relic progress backup.');}
-});
-$('reset').addEventListener('click',()=>{
-  if(!confirm('Clear all your relic progress on this page? Save it to a file first if you might want it back.'))return;
-  state={have:{},done:{},skip:{}};save();render();msg('Progress cleared.');
-});
-
 render();
+backups({what:'relic progress',keys:['relics','relics-open','relics-pick'],file:'ffxiv-relic-progress.json',
+  // Older backups from this page were {relics: progress}
+  legacy:f=>f&&f.relics&&typeof f.relics==='object'&&{relics:JSON.stringify(f.relics)}});
 </script></body></html>
