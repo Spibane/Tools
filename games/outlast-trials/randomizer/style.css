@@ -1,0 +1,16 @@
+/* Outlast Trials trial randomizer. Buttons, pills, the roll panel and result rows come from shared/base.css.
+   Loaded after shared/base.css. */
+
+/* The roll */
+.rolls{margin-bottom:26px}
+.result{grid-template-columns:1fr auto}
+
+/* Trials marked as played */
+.played{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-top:12px}
+.played-list{margin:0;font-size:.9rem;flex:1 1 20em}
+.trial.is-played{text-decoration:line-through}
+#kinds .button-row{margin-top:16px}
+/* Kind tags */
+.kind-trial{background:#ff9a9a}
+.kind-mk{background:#8ab4ff}
+@media print{fieldset,.r-buttons,button.roll,.toggle,.played button{display:none}}
