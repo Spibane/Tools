@@ -9,13 +9,18 @@
 const old = location.pathname.match(/^\/(aniimo|dbd|ffxiv|marvel-rivals)(\/.*)?$/);
 if (old) location.replace("/games/" + old[1] + (old[2] || "/") + location.search + location.hash);
 </script>
+<!-- Paths start at / because this page is served at whatever address was missing -->
 <link rel="stylesheet" href="/shared/base.css">
 <script src="/shared/site.js"></script>
 </head>
 <body>
 <main>
   <a class="back" href="/">Back to All Tools</a>
-  <h1>Page not found</h1>
+  <header class="site-head">
+    <img class="logo" src="/shared/logo.svg" alt="" width="80" height="80">
+    <h1>Page not found</h1>
+  </header>
+  <p class="muted">This page doesn't exist or has moved.</p>
 </main>
 </body>
 </html>
