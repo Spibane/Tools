@@ -98,7 +98,7 @@ function backups({ what, keys, file, renamed = {}, legacy, title, intro, save, l
 
 (() => {
   const SITE_NAME = "Spibane's Tools for Everything";
-  const CREDIT = 'Made by <a href="https://github.com/Spibane">Spibane</a>';
+  const CREDIT = 'Made by <a href="https://github.com/Spibane">Spibane</a> · <a href="https://ko-fi.com/spibane">Ko-fi</a>';
   const FONT = "https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap";
 
   const script = document.currentScript;
