@@ -1,27 +1,27 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Marvel Rivals Hero Randomizer</title>
-<link rel="stylesheet" href="../../shared/base.css">
-<script src="../../shared/site.js"></script>
+<link rel="stylesheet" href="../../../shared/base.css">
+<script src="../../../shared/site.js"></script>
 <link rel="stylesheet" href="style.css"></head><body><main>
 <a class="back" href="../">Back to Marvel Rivals</a>
 <h1>Hero Randomizer</h1>
-<p class="intro">Rolls a random Vanguard, Duelist and Strategist, plus one more hero of any role, all at once. Pick your strike team below to roll only from heroes you want to play, mark heroes as played to leave them out until you reset, and roll a team-up for each hero if you like. Your choices and last roll are saved in this browser.</p>
+<p class="intro">Rolls a random Vanguard, Duelist and Strategist, plus one hero of any role.</p>
 <section class="rolls panel" aria-labelledby="rolls-h">
 <div class="roll-head"><h2 id="rolls-h">Your heroes</h2><button type="button" class="roll" id="roll">Roll heroes</button></div>
 <label class="toggle"><input type="checkbox" id="use-team"> Roll only from my strike team</label>
-<label class="toggle"><input type="checkbox" id="use-played"> Leave out heroes I've played until I reset</label>
-<label class="toggle"><input type="checkbox" id="use-teamups"> Roll a team-up for each hero</label>
+<label class="toggle"><input type="checkbox" id="use-played"> Leave out played heroes</label>
+<label class="toggle"><input type="checkbox" id="use-teamups"> Roll team-ups</label>
 <ol class="results" id="results" aria-live="polite"></ol>
 <div class="played" id="played" hidden>
 <p class="played-list" id="played-list"></p>
-<button type="button" id="played-reset">Reset played heroes</button>
+<button type="button" id="played-reset">Reset played</button>
 </div>
 </section>
 <fieldset><legend>Strike team</legend>
-<p class="hint">Tick the heroes you want on your strike team. Deadpool is listed under each role, so tick only the roles you like him in. Your team is only used for rolls while "Roll only from my strike team" is ticked. <span id="team-count"></span></p>
+<p class="hint"><span id="team-count"></span> Deadpool is listed under each role.</p>
 <div id="heroes"></div>
-<div class="button-row"><button type="button" id="team-all">Add every hero</button> <button type="button" id="team-none">Clear strike team</button></div>
+<div class="button-row"><button type="button" id="team-all">All</button> <button type="button" id="team-none">None</button></div>
 </fieldset>
 </main>
 <script>
@@ -138,24 +138,22 @@ function renderResults(){
   $('results').innerHTML=SLOTS.map(s=>{
     const h=hero(state.result[s.id]),fits=h&&candidates(s).includes(h),none=!candidates(s).length,t=state.useTeamUps&&teamUp(s);
     return '<li class="result'+(h?'':' empty')+'"><span class="r-name">'+esc(s.name)+'</span>'+
-      '<span class="r-pick">'+(none?'<span class="muted">No hero left for this pick. '+(state.usePlayed&&state.played.length?'Reset your played heroes':'Add some heroes to your strike team')+'.</span>':
-        h?roleTag(h)+'<b>'+esc(h.name)+'</b>'+(fits?'':' <span class="stale">'+(played(h)?'played':'not on your strike team')+', roll again</span>')+
+      '<span class="r-pick">'+(none?'<span class="muted">No hero left</span>':
+        h?roleTag(h)+'<b>'+esc(h.name)+'</b>'+(fits?'':' <span class="stale">'+(played(h)?'played':'not on your team')+', reroll</span>')+
           (t?'<span class="teamup">Team-up: '+esc(t)+'</span>':''):
         '<span class="muted">'+(Object.keys(state.result).length?'Not enough heroes to go around':'Not rolled yet')+'</span>')+'</span>'+
       '<span class="r-buttons">'+(state.usePlayed&&fits?'<button type="button" class="mark" data-h="'+h.hero+'" aria-label="'+esc('Mark '+h.name+' as played')+'">Played</button>':'')+
-      (none?'':'<button type="button" class="reroll" data-s="'+s.id+'" aria-label="'+esc('Roll again for '+s.name)+'">Roll again</button>')+'</span></li>';
+      (none?'':'<button type="button" class="reroll" data-s="'+s.id+'" aria-label="'+esc('Reroll '+s.name)+'">Reroll</button>')+'</span></li>';
   }).join('');
   const list=state.played.map(id=>HEROES.find(h=>h.hero===id)).filter(Boolean);
-  $('played').hidden=!state.usePlayed;
-  $('played-list').innerHTML=list.length?'<b>Played ('+list.length+'):</b> '+list.map(h=>esc(h.name)).join(', '):
-    '<span class="muted">Press Played on a hero above to leave them out of rolls until you reset.</span>';
-  $('played-reset').disabled=!list.length;
+  $('played').hidden=!state.usePlayed||!list.length;
+  $('played-list').innerHTML='<b>Played ('+list.length+'):</b> '+list.map(h=>esc(h.name)).join(', ');
   $('heroes').querySelectorAll('.hero').forEach(el=>el.classList.toggle('is-played',played(hero(el.querySelector('input').value))));
 }
 
 function renderCount(){
   const n=new Set(state.team.map(id=>hero(id)?.hero).filter(Boolean)).size;
-  $('team-count').textContent=n?n+' of '+HERO_COUNT+' heroes on your team.':'Your strike team is empty.';
+  $('team-count').textContent=n+' of '+HERO_COUNT+' heroes.';
 }
 
 function render(){

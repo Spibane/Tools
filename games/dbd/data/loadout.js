@@ -1,5 +1,5 @@
 // Dead by Daylight characters, perks, items, add-ons and offerings, built by update.py from dbd.tricky.lol.
-// Don't edit by hand: run python3 dbd/data/update.py to bring it up to date.
+// Don't edit by hand: run python3 games/dbd/data/update.py to bring it up to date.
 // The ids are used to save your settings, so they come straight from the game's files.
 const DBD={
   survivors:[

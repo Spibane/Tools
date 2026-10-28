@@ -29,7 +29,6 @@
 .p-count{font-size:.85rem;font-weight:600;color:var(--muted)}
 .p-tools{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 10px}
 .p-tools input{flex:1 1 12em;font:inherit;font-size:.9rem;color:var(--ink);background:var(--tile);border:2px solid var(--rim);padding:3px 8px}
-.pool .pill-group[hidden],.pool .pill[hidden]{display:none}
 .pool .pill-group:last-child{margin-bottom:12px}
 
 /* Rarity in the game's colours: a tag on rolled things, and a thick left edge on pills */

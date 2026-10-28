@@ -13,33 +13,31 @@
     <img class="logo" src="shared/logo.svg" alt="" width="80" height="80">
     <h1>Spibane's Tools for Everything</h1>
   </header>
-  <p class="muted">Small, simple tools and projects, one folder each.</p>
-  <!-- One <section> per category. Add one <li> per project; the href is the project's folder name. -->
+  <p class="muted">Small, simple tools and projects.</p>
+  <!-- One <section> per category. Add one <li> per project; the href is its folder (games go in games/). -->
   <section class="category">
     <h2>Everyday</h2>
     <ul class="link-list">
-      <li><a href="tasks/"><strong>Tasks and Events</strong><span>Repeating checklists and events</span></a></li>
+      <li><a href="tasks/"><strong>Tasks and Events</strong><span>Checklists that reset, and events that end</span></a></li>
     </ul>
   </section>
   <section class="category">
     <h2>Games</h2>
     <ul class="link-list">
-      <li><a href="aniimo/"><strong>Aniimo</strong><span>Layouts and lists for the game Aniimo</span></a></li>
-      <li><a href="dbd/"><strong>Dead by Daylight</strong><span>Tools for Dead by Daylight</span></a></li>
-      <li><a href="ffxiv/"><strong>Final Fantasy XIV</strong><span>Checklists and tools for Final Fantasy XIV</span></a></li>
-      <li><a href="marvel-rivals/"><strong>Marvel Rivals</strong><span>Tools for Marvel Rivals</span></a></li>
+      <li><a href="games/aniimo/"><strong>Aniimo</strong><span>Collection boxes and checklists</span></a></li>
+      <li><a href="games/dbd/"><strong>Dead by Daylight</strong><span>Loadout randomizer</span></a></li>
+      <li><a href="games/ffxiv/"><strong>Final Fantasy XIV</strong><span>Relic checklists and roulette job picker</span></a></li>
+      <li><a href="games/marvel-rivals/"><strong>Marvel Rivals</strong><span>Hero randomizer</span></a></li>
     </ul>
   </section>
   <section class="saves"></section>
-  <p class="privacy muted"><strong>Privacy:</strong> No accounts, ads, analytics or tracking, and no data is collected. Your settings, like light or dark mode and page options, are saved only in your own browser and never leave your device. Use “Save all progress” above to back them up to a file, and “Load all progress” to restore them on another device. The site is hosted on GitHub Pages and loads its font from Google Fonts, so those services see standard request details such as your IP address.</p>
+  <p class="privacy muted"><strong>Privacy:</strong> No accounts, ads or tracking, and no data is collected. Everything you save stays in your browser. The site is hosted on GitHub Pages and loads its font from Google Fonts, which see standard request details such as your IP address.</p>
 </main>
 <script>
 // The site-wide backup: every tool saves to this site's localStorage, so one file holds everything
 backups({
   title: "Back up everything",
-  intro: "Every tool saves your progress and settings in this browser only. Save them all to one file to move them to another device or keep them safe. Each tool also has its own Save and Load buttons.",
-  save: "Save all progress",
-  load: "Load all progress",
+  intro: "Every tool's progress and settings, in one file.",
   file: "spibane-tools-backup.json",
 });
 </script>

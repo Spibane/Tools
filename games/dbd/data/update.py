@@ -1,5 +1,5 @@
 # Rebuilds loadout.js from the dbd.tricky.lol API, which tracks the game's files.
-# Run it after a new chapter or event comes out: python3 dbd/data/update.py
+# Run it after a new chapter or event comes out: python3 games/dbd/data/update.py
 # Then check the diff before committing, since the API can list things from test builds early.
 import json, pathlib, re, urllib.request
 
@@ -58,7 +58,7 @@ def block(name, rows):
 
 OUT.write_text(
     "// Dead by Daylight characters, perks, items, add-ons and offerings, built by update.py from dbd.tricky.lol.\n"
-    "// Don't edit by hand: run python3 dbd/data/update.py to bring it up to date.\n"
+    "// Don't edit by hand: run python3 games/dbd/data/update.py to bring it up to date.\n"
     "// The ids are used to save your settings, so they come straight from the game's files.\n"
     "const DBD={\n" + ",\n".join([
         block("survivors", survivors), block("killers", killers), block("perks", perk_list), block("items", item_list),

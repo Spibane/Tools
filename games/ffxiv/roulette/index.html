@@ -1,27 +1,26 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>FFXIV Roulette Job Picker</title>
-<link rel="stylesheet" href="../../shared/base.css">
-<script src="../../shared/site.js"></script>
+<link rel="stylesheet" href="../../../shared/base.css">
+<script src="../../../shared/site.js"></script>
 <link rel="stylesheet" href="style.css"></head><body><main>
 <a class="back" href="../">Back to Final Fantasy XIV</a>
 <h1>Roulette Job Picker</h1>
-<p class="intro">Picks a random job for each of your daily duty roulettes. Choose which jobs you're happy to play and which roles each roulette can go to, then roll. Your choices and last roll are saved in this browser.</p>
+<p class="intro">Rolls a random job for each daily duty roulette.</p>
 <section class="rolls panel" aria-labelledby="rolls-h">
 <div class="roll-head"><h2 id="rolls-h">Your roulettes</h2><button type="button" class="roll" id="roll">Roll jobs</button></div>
 <p class="progress" id="progress"></p>
-<label class="toggle"><input type="checkbox" id="unique"> Use a different job for each roulette when there are enough to go around</label>
+<label class="toggle"><input type="checkbox" id="unique"> Different job for each roulette</label>
 <ol class="results" id="results" aria-live="polite"></ol>
 </section>
 <fieldset><legend>Default jobs</legend>
-<p class="hint">The jobs every roulette can give you unless you set it to custom below. Untick a job you don't want to play, haven't unlocked or haven't levelled far enough. Jobs with dashed outlines (Bastion and Zephyr) aren't out yet, so they start unticked and their abbreviations are best guesses.</p>
+<p class="hint">Dashed jobs aren't out yet.</p>
 <div id="jobs"></div>
-<div class="button-row"><button type="button" id="jobs-all">Allow every released job</button></div>
+<div class="button-row"><button type="button" id="jobs-all">All</button></div>
 </fieldset>
 <fieldset><legend>Roulettes</legend>
-<p class="hint">Untick a roulette to leave it out of the roll. Open one and tick Custom to choose its own roles and jobs instead of the defaults.</p>
 <div class="roulettes" id="roulettes"></div>
-<div class="button-row"><button type="button" id="roulettes-all">Use every roulette with the default jobs</button></div>
+<div class="button-row"><button type="button" id="roulettes-all">Reset all</button></div>
 </fieldset>
 </main>
 <script>
@@ -68,7 +67,7 @@ const isDone=id=>(state.done[id]||0)>=lastReset();
 function progressText(){
   const rs=active(),done=rs.filter(r=>isDone(r.id)).length,left=lastReset()+864e5-Date.now();
   const h=Math.floor(left/36e5),m=Math.floor(left%36e5/6e4);
-  return (rs.length?(done===rs.length?'All '+rs.length+' completed today':done+' of '+rs.length+' completed today')+' · ':'')+'Resets in '+(h?h+'h ':'')+m+'m';
+  return (rs.length?(done===rs.length?'All '+rs.length+' done today':done+' of '+rs.length+' done today')+' · ':'')+'Resets in '+(h?h+'h ':'')+m+'m';
 }
 const customOf=r=>state.custom[r.id]&&state.custom[r.id].on?state.custom[r.id]:null;
 const candidates=r=>{const c=customOf(r);return JOBS.filter(j=>c?!c.offJobs.includes(j.id)&&!c.offRoles.includes(j.role):!state.offJobs.includes(j.id));};
@@ -100,14 +99,14 @@ function renderResults(){
     const j=job(state.result[r.id]),fits=j&&candidates(r).includes(j),none=!candidates(r).length,done=isDone(r.id);
     const locked=state.locked.includes(r.id);
     return '<li class="result'+(j?'':' empty')+(done?' done':'')+(locked?' locked':'')+'"><span class="r-name">'+esc(r.name)+'</span>'+
-      '<span class="r-pick">'+(none?'<span class="muted">No job fits. Allow another role or job below.</span>':
-        j?'<span class="role role-'+j.role+'">'+esc(ROLES.find(x=>x.id===j.role).name)+'</span><b>'+esc(j.name)+'</b>'+(fits?'':' <span class="stale">no longer allowed, reroll it</span>'):
+      '<span class="r-pick">'+(none?'<span class="muted">No job fits</span>':
+        j?'<span class="role role-'+j.role+'">'+esc(ROLES.find(x=>x.id===j.role).name)+'</span><b>'+esc(j.name)+'</b>'+(fits?'':' <span class="stale">not allowed, reroll</span>'):
         '<span class="muted">Not rolled yet</span>')+'</span>'+
       '<span class="r-buttons">'+(none||done?'':'<button type="button" class="reroll" data-r="'+r.id+'"'+(locked?' disabled':'')+' aria-label="'+esc('Reroll '+r.name)+'">Reroll</button>')+
-      '<button type="button" class="mark" data-r="'+r.id+'" aria-pressed="'+done+'" aria-label="'+esc(r.name+' completed today')+'">'+(done?'✓ Completed':'Done')+'</button>'+
-      // Completed roulettes only keep their Completed button; Roll jobs already skips them
+      '<button type="button" class="mark" data-r="'+r.id+'" aria-pressed="'+done+'" aria-label="'+esc(r.name+' done')+'">'+(done?'✓ Done':'Done')+'</button>'+
+      // Done roulettes only keep their Done button; Roll jobs already skips them
       (done?'':'<button type="button" class="lock" data-r="'+r.id+'" aria-pressed="'+locked+'" aria-label="'+esc('Lock '+r.name)+'" title="'+(locked?'Unlock':'Lock')+'">'+(locked?LOCKED:UNLOCKED)+'</button>')+'</span></li>';
-  }).join(''):'<li class="result empty"><span class="muted">Every roulette is turned off. Pick some below.</span></li>';
+  }).join(''):'<li class="result empty"><span class="muted">No roulettes on</span></li>';
 }
 
 // A job tickbox; id prefixes keep the default list and each roulette's list apart
@@ -147,12 +146,12 @@ function renderRoulettes(){
     return '<div class="roulette'+(off?' off':'')+'" data-r="'+r.id+'">'+
       '<input type="checkbox" class="use" id="use-'+r.id+'"'+(off?'':' checked')+' aria-label="'+esc('Include '+r.name+' in the roll')+'">'+
       '<details id="r-'+r.id+'"'+(openR.has(r.id)?' open':'')+'><summary><span class="r-name">'+esc(r.name)+'</span><span class="r-status">'+status+'</span></summary><div class="r-body">'+
-      '<label class="r-custom"><input type="checkbox" class="custom" id="custom-'+r.id+'"'+(c?' checked':'')+'> Custom roles and jobs for this roulette</label>'+
+      '<label class="r-custom"><input type="checkbox" class="custom" id="custom-'+r.id+'"'+(c?' checked':'')+'> Custom roles and jobs</label>'+
       (c?ROLES.map(role=>{
         const roleOn=!c.offRoles.includes(role.id);
         return '<div class="job-role pill-group'+(roleOn?'':' role-off')+'"><label class="r-role"><input type="checkbox" class="role-pick" id="role-'+r.id+'-'+role.id+'" value="'+role.id+'"'+(roleOn?' checked':'')+'>'+role.name+'</label>'+
           '<div class="pills">'+JOBS.filter(j=>j.role===role.id).map(j=>jobChip(j,!c.offJobs.includes(j.id),'job-'+r.id+'-'+j.id,!roleOn)).join('')+'</div></div>';
-      }).join(''):'<p class="hint">Using the default jobs above.</p>')+
+      }).join(''):'')+
       '</div></details></div>';
   }).join('');
 }

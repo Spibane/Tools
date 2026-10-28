@@ -47,6 +47,8 @@
   color-scheme: dark;
 }
 *, *::before, *::after { box-sizing: border-box; }
+/* hidden wins over any display a page sets */
+[hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;

@@ -1,19 +1,18 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>FFXIV Relic Step Checklists</title>
-<link rel="stylesheet" href="../../shared/base.css">
-<script src="../../shared/site.js"></script>
+<link rel="stylesheet" href="../../../shared/base.css">
+<script src="../../../shared/site.js"></script>
 <link rel="stylesheet" href="style.css"></head><body><main>
 <a class="back" href="../">Back to Final Fantasy XIV</a>
 <h1>Relic Step Checklists</h1>
-<p class="intro">Everything you need to finish each relic step on every weapon at once. Items bought with currency are grouped under it, with how much you still have to spend. Enter how many of an item you have, or tick it once you have them all. Your progress is saved in this browser.</p>
+<p class="intro">Every item each relic step needs, for all your weapons at once.</p>
 <fieldset><legend>Relic</legend>
 <div class="opt relic-pick" id="relic-pick" role="radiogroup" aria-label="Relic"></div>
 </fieldset>
 <fieldset><legend>Weapons to count</legend>
-<p class="hint">Untick a job you don't play or have already finished, and every total below changes to match.</p>
 <div class="pills" id="jobs"></div>
-<div class="button-row"><button type="button" id="jobs-all">Count every weapon</button></div>
+<div class="button-row"><button type="button" id="jobs-all">All</button></div>
 </fieldset>
 <div id="steps"></div>
 </main>
@@ -38,7 +37,7 @@ const RELIC_DATA=[];
 <script>
 // How much of a currency you can hold at once, shown so you know to buy as you go
 const CAPS={"Allagan Tomestone of Poetics":2000,"Allagan Tomestone of Mathematics":2000,"Grand Company Seal":90000};
-const CAP_NOTE={"Grand Company Seal":" once you reach the top Grand Company rank"};
+const CAP_NOTE={"Grand Company Seal":" at the top Grand Company rank"};
 const num=n=>n.toLocaleString('en-US');
 const chip=id=>id.replace(/-/g,' ');
 
@@ -82,7 +81,7 @@ let uid=0;
 function lineHTML(k,l){
   const have=haveOf(k,l.name),plain=num(l.need)+' '+l.name,id='got-'+(++uid);
   const meta=[];
-  if(l.perRelic)meta.push('Once for the whole line, not per weapon');
+  if(l.perRelic)meta.push('Once for the whole line');
   if(l.for.length)meta.push('For '+l.for.join(', '));
   if(l.buy)meta.push(num(l.buy.price)+' each'+(l.buy.vendor?' from '+l.buy.vendor:''));
   if(l.source)meta.push(l.source);
@@ -101,15 +100,15 @@ function stepHTML(r,s,i){
   const isOpen=k in open?open[k]:first;
   const body=lines.length?groupsFor(lines).map(([cur,ls])=>'<div class="group" data-cur="'+esc(cur)+'">'+
       '<h4>'+(cur?esc(cur)+'<span class="spend"></span>':lines.some(l=>l.buy)?'Other items':'Items')+'</h4>'+
-      (cur&&CAPS[cur]?'<p class="cap">You can hold up to '+num(CAPS[cur])+' at a time'+(CAP_NOTE[cur]||'')+', so buy as you go.</p>':'')+
+      (cur&&CAPS[cur]?'<p class="cap">Holds up to '+num(CAPS[cur])+(CAP_NOTE[cur]||'')+', so buy as you go.</p>':'')+
       '<ul class="lines">'+ls.map(l=>lineHTML(k,l)).join('')+'</ul></div>').join('')
-    :'<p class="none">No items needed for this step.</p>';
+    :'<p class="none">No items needed</p>';
   return '<details class="step'+(done?' finished':'')+'" data-k="'+esc(k)+'"'+(isOpen?' open':'')+'><summary>'+
     '<span class="step-name"><small>Step '+(i+1)+'</small>'+esc(s.name)+'</span><span class="status"></span></summary>'+
     '<div class="step-body">'+
     (s.quest||s.start?'<p class="quest">'+(s.quest?'<b>'+esc(s.quest)+'</b>':'')+(s.start?' · starts with '+esc(s.start):'')+'</p>':'')+
     (s.note?'<p class="note">'+esc(s.note)+'</p>':'')+body+
-    '<label class="finish"><input type="checkbox" class="done"'+(done?' checked':'')+'> I’ve finished this step on every weapon</label>'+
+    '<label class="finish"><input type="checkbox" class="done"'+(done?' checked':'')+'> Done on every weapon</label>'+
     (s.sources&&s.sources.length?'<p class="sources">Sources: '+s.sources.map((u,j)=>'<a href="'+esc(u)+'" rel="noopener">'+(j+1)+'</a>').join(' ')+'</p>':'')+
     '</div></details>';
 }

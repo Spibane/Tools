@@ -1,13 +1,13 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Dead by Daylight Loadout Randomizer</title>
-<link rel="stylesheet" href="../../shared/base.css">
-<script src="../../shared/site.js"></script>
+<link rel="stylesheet" href="../../../shared/base.css">
+<script src="../../../shared/site.js"></script>
 <script src="../data/loadout.js"></script>
 <link rel="stylesheet" href="style.css"></head><body><main>
 <a class="back" href="../">Back to Dead by Daylight</a>
 <h1>Loadout Randomizer</h1>
-<p class="intro">Rolls a character, four perks, add-ons and an offering, plus an item for survivors. Turn off anything you don't want rolled, and mark what you've played to leave it out until you reset. Survivor and killer settings are kept apart and saved in this browser.</p>
+<p class="intro">Rolls a character, four perks, add-ons and an offering, plus an item for survivors.</p>
 <div class="side-pick" role="radiogroup" aria-label="Play as">
 <label class="pill"><input type="radio" name="side" value="survivor"> Survivor</label>
 <label class="pill"><input type="radio" name="side" value="killer"> Killer</label>
@@ -16,13 +16,13 @@
 <div class="roll-head"><h2 id="rolls-h">Your loadout</h2><button type="button" class="roll" id="roll">Roll loadout</button></div>
 <div class="parts" id="parts"></div>
 <ol class="results" id="results" aria-live="polite"></ol>
-<div class="played" id="played">
+<div class="played" id="played" hidden>
 <p class="played-list" id="played-list"></p>
 <button type="button" id="played-reset">Reset played</button>
 </div>
 </section>
 <fieldset><legend>What can be rolled</legend>
-<p class="hint">Untick anything you don't want rolled. Event items and offerings start off.</p>
+<p class="hint">Event items and offerings start off.</p>
 <div id="pools"></div>
 </fieldset>
 </main>
@@ -114,10 +114,10 @@ function why(s,e){
 }
 function emptyText(s){
   const parent=s.needs&&entry(state.side,S().result[s.needs]);
-  if(s.needs==='item'&&!parent)return 'No item to fit.';
-  if(s.needs==='item'&&!DBD.itemAddons.some(a=>a.type===parent.type))return 'This item takes no add-ons.';
-  if(s.needs==='char'&&s.cat==='addon'&&!parent)return 'No killer rolled.';
-  return candidates(s).length?'Not enough to go around.':'Nothing left. Turn more on below or reset played.';
+  if(s.needs==='item'&&!parent)return 'No item';
+  if(s.needs==='item'&&!DBD.itemAddons.some(a=>a.type===parent.type))return 'No add-ons for this item';
+  if(s.needs==='char'&&s.cat==='addon'&&!parent)return 'No killer';
+  return candidates(s).length?'Not enough to go around':'Nothing left';
 }
 
 function renderResults(){
@@ -128,18 +128,18 @@ function renderResults(){
     const e=entry(state.side,r[s.id]),fits=e&&candidates(s).includes(e),locked=S().locked.includes(s.id);
     return '<li class="result'+(e?'':' empty')+(locked?' locked':'')+'"><span class="r-name">'+esc(s.name)+'</span>'+
       '<span class="r-pick">'+(e?tag(e)+'<b>'+esc(e.name)+'</b>'+(e.owner?'<span class="owner">'+esc(charName(e.owner))+'</span>':'')+
-        (fits?'':' <span class="stale">'+why(s,e)+', roll again</span>'):
+        (fits?'':' <span class="stale">'+why(s,e)+', reroll</span>'):
         '<span class="muted">'+(rolled?emptyText(s):'Not rolled yet')+'</span>')+'</span>'+
       '<span class="r-buttons">'+(fits?'<button type="button" class="mark" data-s="'+s.id+'" aria-label="'+esc('Mark '+e.name+' as played')+'">Played</button>':'')+
-      '<button type="button" class="reroll" data-s="'+s.id+'"'+(locked?' disabled':'')+' aria-label="'+esc('Roll again for '+s.name)+'">Roll again</button>'+
+      '<button type="button" class="reroll" data-s="'+s.id+'"'+(locked?' disabled':'')+' aria-label="'+esc('Reroll '+s.name)+'">Reroll</button>'+
       '<button type="button" class="lock" data-s="'+s.id+'" aria-pressed="'+locked+'" aria-label="'+esc('Lock '+s.name)+'" title="'+(locked?'Unlock':'Lock')+'">'+(locked?LOCKED:UNLOCKED)+'</button></span></li>';
   }).join('');
   const list=S().played.map(k=>entry(state.side,k)).filter(Boolean);
-  $('played-list').innerHTML=list.length?'<b>Played ('+list.length+'):</b> '+Object.keys(CATS).map(c=>{
+  $('played').hidden=!list.length;
+  $('played-list').innerHTML='<b>Played ('+list.length+'):</b> '+Object.keys(CATS).map(c=>{
     const names=list.filter(e=>e.cat===c).map(e=>esc(e.name));
     return names.length?'<span class="played-cat">'+CATS[c]+': '+names.join(', ')+'</span>':'';
-  }).join(''):'<span class="muted">Nothing marked played.</span>';
-  $('played-reset').disabled=!list.length;
+  }).join('');
   $('pools').querySelectorAll('.pill input').forEach(el=>el.parentNode.classList.toggle('is-played',S().played.includes(el.value)));
 }
 
@@ -149,7 +149,7 @@ function renderPools(){
     const groups=[...new Set(list.map(e=>e.group))];
     return '<details class="pool" data-cat="'+cat+'"><summary><span class="p-name">'+(cat==='char'?(state.side==='survivor'?'Survivors':'Killers'):CATS[cat])+'</span><span class="p-count"></span></summary>'+
       '<div class="p-tools"><input type="search" placeholder="Filter" aria-label="'+esc('Filter '+CATS[cat].toLowerCase())+'">'+
-      '<button type="button" data-on="1">Turn on</button><button type="button" data-on="">Turn off</button></div>'+
+      '<button type="button" data-on="1">All</button><button type="button" data-on="">None</button></div>'+
       groups.map(g=>'<div class="pill-group">'+(g?'<h3>'+esc(g)+'</h3>':'')+'<div class="pills">'+list.filter(e=>e.group===g).map(e=>
         '<label class="pill"'+(e.rarity?' data-r="'+e.rarity+'"':'')+' data-f="'+esc((e.name+' '+g).toLowerCase())+'"><input type="checkbox" value="'+e.key+'"'+(enabled(e)?' checked':'')+'>'+esc(e.name)+'</label>').join('')+
         '</div></div>').join('')+'</details>';

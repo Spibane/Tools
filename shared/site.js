@@ -51,10 +51,10 @@ function backups({ what, keys, file, renamed = {}, legacy, title, intro, save, l
   section.className = "saves";
   section.setAttribute("aria-labelledby", "saves-h");
   section.innerHTML = `<h2 id="saves-h">${esc(title || "Back up your " + what)}</h2>` +
-    `<p class="muted">${intro || `This page saves to this browser only. Save it to a file to move it to another device or keep it safe, or back up every tool at once from the <a href="${SITE_ROOT}">main page</a>.`}</p>` +
-    `<div class="save-row"><button type="button" class="b-save">${esc(save || "Save " + what + " to a file")}</button>` +
-    `<input type="file" id="saves-file" class="vh" accept=".json,application/json"><label class="button" for="saves-file">${esc(load || "Load " + what + " from a file")}</label>` +
-    (keys ? `<button type="button" class="b-clear">${esc("Clear " + what)}</button>` : "") + `</div>` +
+    `<p class="muted">${intro || `Saved in this browser only. Back up every tool at once from the <a href="${SITE_ROOT}">main page</a>.`}</p>` +
+    `<div class="save-row"><button type="button" class="b-save">${esc(save || "Save")}</button>` +
+    `<input type="file" id="saves-file" class="vh" accept=".json,application/json"><label class="button" for="saves-file">${esc(load || "Load")}</label>` +
+    (keys ? `<button type="button" class="b-clear">Clear</button>` : "") + `</div>` +
     `<p class="muted" aria-live="polite"></p>`;
   const msg = t => { section.querySelector("[aria-live]").textContent = t; };
   const mine = k => !keys || keys.includes(k);
