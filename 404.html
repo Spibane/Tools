@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Page Not Found</title>
+<script>
+// Game tools moved into games/ (October 2026); old links go to their new place
+const old = location.pathname.match(/^\/(aniimo|dbd|ffxiv|marvel-rivals)(\/.*)?$/);
+if (old) location.replace("/games/" + old[1] + (old[2] || "/") + location.search + location.hash);
+</script>
+<!-- Paths start at / because this page is served at whatever address was missing -->
+<link rel="stylesheet" href="/shared/base.css">
+<script src="/shared/site.js"></script>
+</head>
+<body>
+<main>
+  <a class="back" href="/">Back to All Tools</a>
+  <header class="site-head">
+    <img class="logo" src="/shared/logo.svg" alt="" width="80" height="80">
+    <h1>Page not found</h1>
+  </header>
+  <p class="muted">This page doesn't exist or has moved.</p>
+</main>
+</body>
+</html>

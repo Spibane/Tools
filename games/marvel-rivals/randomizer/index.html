@@ -1,26 +1,27 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Marvel Rivals Hero Randomizer</title>
-<link rel="stylesheet" href="../../shared/base.css">
-<script src="../../shared/site.js"></script>
+<link rel="stylesheet" href="../../../shared/base.css">
+<script src="../../../shared/site.js"></script>
 <link rel="stylesheet" href="style.css"></head><body><main>
 <a class="back" href="../">Back to Marvel Rivals</a>
 <h1>Hero Randomizer</h1>
-<p class="intro">Rolls a random Vanguard, Duelist and Strategist, plus one more hero of any role, all at once. Pick your strike team below to roll only from heroes you want to play, and mark heroes as played to leave them out until you reset. Your choices and last roll are saved in this browser.</p>
+<p class="intro">Rolls a random Vanguard, Duelist and Strategist, plus one hero of any role.</p>
 <section class="rolls panel" aria-labelledby="rolls-h">
 <div class="roll-head"><h2 id="rolls-h">Your heroes</h2><button type="button" class="roll" id="roll">Roll heroes</button></div>
 <label class="toggle"><input type="checkbox" id="use-team"> Roll only from my strike team</label>
-<label class="toggle"><input type="checkbox" id="use-played"> Leave out heroes I've played until I reset</label>
+<label class="toggle"><input type="checkbox" id="use-played"> Leave out played heroes</label>
+<label class="toggle"><input type="checkbox" id="use-teamups"> Roll team-ups</label>
 <ol class="results" id="results" aria-live="polite"></ol>
 <div class="played" id="played" hidden>
 <p class="played-list" id="played-list"></p>
-<button type="button" id="played-reset">Reset played heroes</button>
+<button type="button" id="played-reset">Reset played</button>
 </div>
 </section>
 <fieldset><legend>Strike team</legend>
-<p class="hint">Tick the heroes you want on your strike team. Deadpool is listed under each role, so tick only the roles you like him in. Your team is only used for rolls while "Roll only from my strike team" is ticked. <span id="team-count"></span></p>
+<p class="hint"><span id="team-count"></span> Deadpool is listed under each role.</p>
 <div id="heroes"></div>
-<div class="button-row"><button type="button" id="team-all">Add every hero</button> <button type="button" id="team-none">Clear strike team</button></div>
+<div class="button-row"><button type="button" id="team-all">All</button> <button type="button" id="team-none">None</button></div>
 </fieldset>
 </main>
 <script>
@@ -38,13 +39,71 @@ const HEROES=[
   ...['Adam Warlock','Cloak & Dagger','Gambit','Invisible Woman','Jeff the Land Shark','Jubilee','Loki','Luna Snow','Mantis','Rocket Raccoon','Ultron','White Fox'].map(n=>({name:n,role:'strategist'})),
   ...['vanguard','duelist','strategist'].map(r=>({name:'Deadpool',role:r,id:'deadpool-'+r}))
 ].map(h=>({...h,hero:slug(h.name),id:h.id||slug(h.name)})).sort((a,b)=>a.name.localeCompare(b.name));
+// The anchor hero of each hero's two team-ups as of Season 10.5. Rolled team-ups are saved by anchor name.
+const TEAMUPS={
+  'Adam Warlock':['Storm','Ultron'],
+  'Angela':['Loki','Star-Lord'],
+  'Black Cat':['Black Panther','Spider-Man'],
+  'Black Panther':['Storm','Magik'],
+  'Black Widow':['Hawkeye','Phoenix'],
+  'Blade':['Moon Knight','Captain America'],
+  'Captain America':['Thor','Winter Soldier'],
+  'Cloak & Dagger':['The Hood','Luna Snow'],
+  'Cyclops':['Phoenix','Gambit'],
+  'Daredevil':['Iron Fist','Black Widow'],
+  'Deadpool':['Gambit','Hela'],
+  'Devil Dinosaur':['The Punisher','Jeff the Land Shark'],
+  'Doctor Strange':['Hulk','Invisible Woman'],
+  'Elsa Bloodstone':['Devil Dinosaur','Deadpool'],
+  'Emma Frost':['Luna Snow','Mantis'],
+  'Gambit':['Magneto','Jubilee'],
+  'Gorr':['Hela','Venom'],
+  'Groot':['Mantis','Jeff the Land Shark'],
+  'Hawkeye':['Cloak & Dagger','Psylocke'],
+  'Hela':['Venom','Namor'],
+  'Hulk':['Captain America','Wolverine'],
+  'Human Torch':['Jubilee','Storm'],
+  'Invisible Woman':['Human Torch','Mister Fantastic'],
+  'Iron Fist':['White Fox','The Thing'],
+  'Iron Man':['Hulk','Thor'],
+  'Jeff the Land Shark':['Venom','Deadpool'],
+  'Jubilee':['The Hood','Blade'],
+  'Loki':['Mantis','Hela'],
+  'Luna Snow':['White Fox','Adam Warlock'],
+  'Magik':['Doctor Strange','The Hood'],
+  'Magneto':['Scarlet Witch','Emma Frost'],
+  'Mantis':['Star-Lord','Adam Warlock'],
+  'Mister Fantastic':['Rocket Raccoon','The Thing'],
+  'Moon Knight':['Cloak & Dagger','Elsa Bloodstone'],
+  'Namor':['Luna Snow','Hulk'],
+  'Peni Parker':['Black Panther','Rocket Raccoon'],
+  'Phoenix':['Hela','Rogue'],
+  'Psylocke':['Cloak & Dagger','Emma Frost'],
+  'Rocket Raccoon':['Groot','Squirrel Girl'],
+  'Rogue':['Gambit','Magneto'],
+  'Scarlet Witch':['Doctor Strange','Jubilee'],
+  'Spider-Man':['Venom','Peni Parker'],
+  'Squirrel Girl':['Iron Man','Spider-Man'],
+  'Star-Lord':['Groot','Adam Warlock'],
+  'Storm':['Thor','Jeff the Land Shark'],
+  'The Hood':['Scarlet Witch','Moon Knight'],
+  'The Punisher':['Rocket Raccoon','Daredevil'],
+  'The Thing':['Human Torch','Invisible Woman'],
+  'Thor':['Hela','Angela'],
+  'Ultron':['Iron Man','Peni Parker'],
+  'Venom':['Blade','Phoenix'],
+  'White Fox':['Black Cat','Psylocke'],
+  'Winter Soldier':['The Punisher','Elsa Bloodstone'],
+  'Wolverine':['Cyclops','Gambit']
+};
 const HERO_COUNT=new Set(HEROES.map(h=>h.hero)).size;
 const hero=id=>HEROES.find(h=>h.id===id);
 const roleTag=h=>'<span class="role role-'+h.role+'">'+ROLES.find(r=>r.id===h.role).name+'</span>';
 
 // Settings: team = hero entry ids on your strike team; useTeam = roll only from them;
-// played = heroes marked as played (by hero, so all of Deadpool's roles at once); usePlayed = leave them out of rolls; result = the last roll
-let state={team:[],useTeam:false,played:[],usePlayed:false,result:{}};
+// played = heroes marked as played (by hero, so all of Deadpool's roles at once); usePlayed = leave them out of rolls; result = the last roll;
+// useTeamUps = roll a team-up with each hero; teamUps = the rolled team-up's anchor hero for each pick
+let state={team:[],useTeam:false,played:[],usePlayed:false,result:{},useTeamUps:false,teamUps:{}};
 state=Object.assign(state,store.load('rivals'));
 const save=()=>store.save('rivals',state);
 // Deadpool used to be one entry for every role: give a saved team all three, and a saved roll his role for that pick
@@ -54,6 +113,11 @@ SLOTS.forEach(s=>{if(state.result[s.id]==='deadpool'){if(s.role)state.result[s.i
 const offTeam=h=>state.useTeam&&!state.team.includes(h.id);
 const played=h=>state.usePlayed&&state.played.includes(h.hero);
 const candidates=s=>HEROES.filter(h=>!offTeam(h)&&!played(h)&&(!s.role||h.role===s.role));
+const teamUp=s=>(TEAMUPS[hero(state.result[s.id])?.name]||[]).find(a=>a===state.teamUps[s.id]);
+// Gives each rolled pick without a team-up a random one of its hero's team-ups
+function rollTeamUps(){
+  SLOTS.forEach(s=>{const h=hero(state.result[s.id]);if(h&&!teamUp(s)&&TEAMUPS[h.name])state.teamUps[s.id]=pick(TEAMUPS[h.name]);});
+}
 
 // Rolls the given picks, keeping the others as they are. A hero is never picked twice,
 // so picks with the fewest options go first and don't lose their only hero to one with plenty.
@@ -61,39 +125,41 @@ function roll(ids){
   const taken=new Set(Object.entries(state.result).filter(([id])=>!ids.includes(id)).map(([,id])=>hero(id)?.hero));
   ids.map(id=>SLOTS.find(s=>s.id===id)).sort((a,b)=>candidates(a).length-candidates(b).length).forEach(s=>{
     const free=candidates(s).filter(h=>!taken.has(h.hero));
+    delete state.teamUps[s.id];
     if(!free.length){delete state.result[s.id];return;}
     const h=pick(free);
     state.result[s.id]=h.id;taken.add(h.hero);
   });
+  if(state.useTeamUps)rollTeamUps();
   save();renderResults();
 }
 
 function renderResults(){
   $('results').innerHTML=SLOTS.map(s=>{
-    const h=hero(state.result[s.id]),fits=h&&candidates(s).includes(h),none=!candidates(s).length;
+    const h=hero(state.result[s.id]),fits=h&&candidates(s).includes(h),none=!candidates(s).length,t=state.useTeamUps&&teamUp(s);
     return '<li class="result'+(h?'':' empty')+'"><span class="r-name">'+esc(s.name)+'</span>'+
-      '<span class="r-pick">'+(none?'<span class="muted">No hero left for this pick. '+(state.usePlayed&&state.played.length?'Reset your played heroes':'Add some heroes to your strike team')+'.</span>':
-        h?roleTag(h)+'<b>'+esc(h.name)+'</b>'+(fits?'':' <span class="stale">'+(played(h)?'played':'not on your strike team')+', roll again</span>'):
+      '<span class="r-pick">'+(none?'<span class="muted">No hero left</span>':
+        h?roleTag(h)+'<b>'+esc(h.name)+'</b>'+(fits?'':' <span class="stale">'+(played(h)?'played':'not on your team')+', reroll</span>')+
+          (t?'<span class="teamup">Team-up: '+esc(t)+'</span>':''):
         '<span class="muted">'+(Object.keys(state.result).length?'Not enough heroes to go around':'Not rolled yet')+'</span>')+'</span>'+
       '<span class="r-buttons">'+(state.usePlayed&&fits?'<button type="button" class="mark" data-h="'+h.hero+'" aria-label="'+esc('Mark '+h.name+' as played')+'">Played</button>':'')+
-      (none?'':'<button type="button" class="reroll" data-s="'+s.id+'" aria-label="'+esc('Roll again for '+s.name)+'">Roll again</button>')+'</span></li>';
+      (none?'':'<button type="button" class="reroll" data-s="'+s.id+'" aria-label="'+esc('Reroll '+s.name)+'">Reroll</button>')+'</span></li>';
   }).join('');
   const list=state.played.map(id=>HEROES.find(h=>h.hero===id)).filter(Boolean);
-  $('played').hidden=!state.usePlayed;
-  $('played-list').innerHTML=list.length?'<b>Played ('+list.length+'):</b> '+list.map(h=>esc(h.name)).join(', '):
-    '<span class="muted">Press Played on a hero above to leave them out of rolls until you reset.</span>';
-  $('played-reset').disabled=!list.length;
+  $('played').hidden=!state.usePlayed||!list.length;
+  $('played-list').innerHTML='<b>Played ('+list.length+'):</b> '+list.map(h=>esc(h.name)).join(', ');
   $('heroes').querySelectorAll('.hero').forEach(el=>el.classList.toggle('is-played',played(hero(el.querySelector('input').value))));
 }
 
 function renderCount(){
   const n=new Set(state.team.map(id=>hero(id)?.hero).filter(Boolean)).size;
-  $('team-count').textContent=n?n+' of '+HERO_COUNT+' heroes on your team.':'Your strike team is empty.';
+  $('team-count').textContent=n+' of '+HERO_COUNT+' heroes.';
 }
 
 function render(){
   $('use-team').checked=state.useTeam;
   $('use-played').checked=state.usePlayed;
+  $('use-teamups').checked=state.useTeamUps;
   $('heroes').innerHTML=ROLES.map(r=>'<div class="pill-group"><h3>'+r.name+'</h3><div class="pills">'+
     HEROES.filter(h=>h.role===r.id).map(h=>'<label class="hero pill"><input type="checkbox" value="'+h.id+'"'+(state.team.includes(h.id)?' checked':'')+'>'+esc(h.name)+'</label>').join('')+
     '</div></div>').join('');
@@ -107,6 +173,7 @@ $('results').addEventListener('click',e=>{
 });
 $('use-team').addEventListener('change',e=>{state.useTeam=e.target.checked;save();renderResults();});
 $('use-played').addEventListener('change',e=>{state.usePlayed=e.target.checked;save();renderResults();});
+$('use-teamups').addEventListener('change',e=>{state.useTeamUps=e.target.checked;if(state.useTeamUps)rollTeamUps();save();renderResults();});
 $('played-reset').addEventListener('click',()=>{state.played=[];save();renderResults();});
 $('heroes').addEventListener('change',()=>{
   state.team=[...$('heroes').querySelectorAll('input:checked')].map(el=>el.value);

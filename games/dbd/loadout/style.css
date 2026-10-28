@@ -1,0 +1,55 @@
+/* Dead by Daylight loadout randomizer. Buttons, pills, the roll panel and result rows come from shared/base.css.
+   Loaded after shared/base.css. */
+
+/* Survivor or killer */
+.side-pick{display:flex;gap:8px;margin:0 0 16px}
+.side-pick .pill{font-size:1rem;padding:6px 14px 6px 10px}
+
+/* The roll */
+.rolls{margin-bottom:26px}
+.parts{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 12px;font-size:.9rem;font-weight:600}
+.result{grid-template-columns:6em 1fr auto}
+.owner{font-size:.85rem;color:var(--muted)}
+.result.locked{background:var(--surface)}
+.lock{display:inline-flex;align-items:center;justify-content:center;padding:4px 8px}
+.lock svg{display:block}
+.lock[aria-pressed="true"]{background:var(--ink);color:var(--tile);border-color:var(--ink)}
+
+/* Things marked played */
+.played{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-top:12px}
+.played-list{margin:0;font-size:.9rem;flex:1 1 20em}
+.played-cat{display:block}
+.pill.is-played{text-decoration:line-through}
+
+/* What can be rolled: a dropdown per category */
+.pool{background:var(--surface);border:2px solid var(--rim);padding:0 10px;margin-bottom:6px}
+.pool summary{display:flex;flex-wrap:wrap;align-items:center;gap:2px 12px;padding:8px 0;font-weight:700}
+.pool summary .p-name{flex:1 1 8em}
+.pool summary:hover .p-name{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
+.p-count{font-size:.85rem;font-weight:600;color:var(--muted)}
+.p-tools{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 10px}
+.p-tools input{flex:1 1 12em;font:inherit;font-size:.9rem;color:var(--ink);background:var(--tile);border:2px solid var(--rim);padding:3px 8px}
+.pool .pill-group:last-child{margin-bottom:12px}
+
+/* Rarity in the game's colours: a tag on rolled things, and a thick left edge on pills */
+.rarity-common{background:#c99a6b}
+.rarity-uncommon{background:#ecc955}
+.rarity-rare{background:#7fd07a}
+.rarity-very-rare{background:#b993f0}
+.rarity-ultra-rare{background:#ff8fbf}
+.rarity-event{background:#ffa64d}
+.pill[data-r]{border-left-width:7px}
+.pill[data-r="common"]{border-left-color:#c99a6b}
+.pill[data-r="uncommon"]{border-left-color:#ecc955}
+.pill[data-r="rare"]{border-left-color:#7fd07a}
+.pill[data-r="very-rare"]{border-left-color:#b993f0}
+.pill[data-r="ultra-rare"]{border-left-color:#ff8fbf}
+.pill[data-r="event"]{border-left-color:#ffa64d}
+
+@media (max-width:560px){
+  .result{grid-template-columns:1fr}
+  .r-buttons{justify-content:flex-start;margin-top:4px}
+  .r-buttons button{flex:1 1 auto}
+  .r-buttons .lock{flex:0 0 auto}
+}
+@media print{fieldset,.r-buttons,button.roll,.parts,.side-pick,.played button{display:none}}

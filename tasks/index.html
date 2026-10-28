@@ -134,7 +134,7 @@ function eventGroup(g,now){
       return '<li class="item" data-id="'+ev.id+'"><span class="i-name">'+esc(ev.name)+'<span class="i-meta">'+
         (ev.finished?'Finished '+when(ev.finished):'Ended '+when(endOf(ev)))+(ev.target>1?' · '+countOf(ev,eventSince(ev,now))+' / '+ev.target:'')+'</span></span>'+
         '<span class="i-buttons">'+(early?'<button type="button" data-act="reopen" id="reopen-'+ev.id+'" aria-label="'+esc('Reopen '+ev.name)+'">Reopen</button>':'')+editButton(ev,ev.name)+'</span></li>';
-    }).join('')+'</ul><button type="button" data-act="clear-ended" id="clear-'+g.id+'">Delete every ended event</button></details>':'')+
+    }).join('')+'</ul><button type="button" data-act="clear-ended" id="clear-'+g.id+'">Delete ended</button></details>':'')+
     '<div class="g-buttons"><button type="button" data-act="add-item" id="add-'+g.id+'">Add an event</button>';
 }
 function renderGroups(now){
@@ -338,5 +338,5 @@ $('dialog').addEventListener('close',()=>{const o=editing&&$(editing.opener);if(
 // Keeps the countdowns current, and clears done marks as resets pass
 setInterval(()=>{if(!$('dialog').open&&!document.activeElement.matches('.c-input'))render();},30000);
 render();
-backups({what:'tasks',keys:['tasks'],file:'tasks-and-events.json',save:'Save',load:'Load'});
+backups({what:'tasks',keys:['tasks'],file:'tasks-and-events.json'});
 </script></body></html>

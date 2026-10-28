@@ -4,10 +4,13 @@
 /* The roll */
 .rolls{margin-bottom:26px}
 .result{grid-template-columns:7em 1fr auto}
+.teamup{flex-basis:100%;font-size:.9rem;color:var(--muted)}
+
+/* Strike team */
+#heroes+.button-row{margin-top:24px}
 
 /* Heroes marked as played */
 .played{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-top:12px}
-.played[hidden]{display:none}
 .played-list{margin:0;font-size:.9rem;flex:1 1 20em}
 .hero.is-played{text-decoration:line-through}
 /* Role tags */

@@ -1,13 +1,13 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Aniimo Collection Checklists</title>
-<link rel="stylesheet" href="../../shared/base.css">
-<script src="../../shared/site.js"></script>
+<link rel="stylesheet" href="../../../shared/base.css">
+<script src="../../../shared/site.js"></script>
 <link rel="stylesheet" href="../aniimo.css">
 <link rel="stylesheet" href="style.css"></head><body><main>
 <a class="back" href="../">Back to Aniimo</a>
-<h1>Aniimo Collection Checklists</h1>
-<p class="intro">Every form, by region and sub-region or as one list in Aniilog order, with ♂ and ♀ gender forms listed separately and keepsake and event exclusives in their own section. Mark what’s in your collection. A form that spawns in more than one place is marked everywhere at once. Your collection is saved in this browser.</p>
+<h1>Collection Checklists</h1>
+<p class="intro">Every form, by sub-region or in one list in Aniilog order.</p>
 <fieldset><legend>What to show</legend>
 <div class="opt mode" role="radiogroup" aria-label="List"><span><input type="radio" name="mode" id="mode-region" value="region" checked><label for="mode-region">By region</label></span>
 <span><input type="radio" name="mode" id="mode-all" value="all"><label for="mode-all">All forms in Aniilog order</label></span></div>
@@ -54,9 +54,9 @@ const byOrder=(a,b)=>ORDER.get(a.form)-ORDER.get(b.form);
 
 // Keepsake and event exclusives from categories.js, plus #10001+ forms not listed there, which count as events.
 // They can't be caught in the wild, so they're left off the regions and get their own section.
-const EXCLUSIVE=[["keepsake","Season 1 keepsakes","Season 1 keepsake","Only from Season 1 keepsakes."],
-  ["keepsake2","Season 2 keepsakes","Season 2 keepsake","Only from Season 2 keepsakes."],
-  ["event","One-time events","One-time event","Only from one-time events. No duplicates possible."]];
+const EXCLUSIVE=[["keepsake","Season 1 keepsakes","Season 1 keepsake",""],
+  ["keepsake2","Season 2 keepsakes","Season 2 keepsake",""],
+  ["event","One-time events","One-time event","No duplicates possible."]];
 const LISTED=new Set(EXCLUSIVE.flatMap(([c])=>CATEGORIES[c]||[]));
 const autoEvent=FORMS.filter(f=>f.region==="special"&&!LISTED.has(keyOf(f))).map(keyOf);
 const skip=k=>EXCLUDE.has(k)||PICKED.has(k)||LISTED.has(k)||autoEvent.includes(k);
@@ -69,7 +69,7 @@ const REGIONS=Object.keys(REGION_NAMES).map(r=>{
   const rest=FORMS.map(keyOf).filter(k=>BY_KEY.get(k).region===r&&!wild.has(k)&&!skip(k)).map(k=>({form:k})).flatMap(expand);
   if(rest.length)subs.push(subs.length
     ?{name:"Not found in the wild",place:"Not found in the wild in "+REGION_NAMES[r],note:"Get these by evolving, hatching or switching forms with a Morph Orb.",rows:rest}
-    :{name:"Sub-region not known yet",place:REGION_NAMES[r]+", sub-region not known yet",note:"Sub-region spawn data isn’t out yet.",rows:rest});
+    :{name:"Sub-region not known yet",place:REGION_NAMES[r]+", sub-region not known yet",rows:rest});
   return {id:r,name:REGION_NAMES[r],subs};
 });
 REGIONS.push({id:"exclusive",name:"Exclusives",subs:EXCLUSIVE.map(([c,name,place,note])=>({name,place,note,
@@ -158,7 +158,7 @@ function render(){
     const rows=ALL.map(k=>({form:k,places:PLACES.get(k)})),s=stats(ALL),vis=rows.filter(show);
     $('regions').innerHTML='<section class="region panel all" id="all-forms" aria-labelledby="all-h"><header><h2 id="all-h">All forms</h2>'+bar(s,'All forms')+
       '<p class="counts">'+ALL.length+' forms · '+counts(s)+'</p></header>'+
-      (vis.length?'<ul class="rows">'+vis.map(rowHTML).join('')+'</ul>':'<p class="sub-note">No forms match these options.</p>')+'</section>';
+      (vis.length?'<ul class="rows">'+vis.map(rowHTML).join('')+'</ul>':'<p class="sub-note">No forms match.</p>')+'</section>';
     return;
   }
   const html=REGIONS.map(r=>{
@@ -170,13 +170,13 @@ function render(){
       return '<details class="sub" id="'+id+'"'+(open[id]?' open':'')+'><summary><span class="sub-name">'+esc(s.name)+
         (s.levels?'<small>Lv '+esc(s.levels)+'</small>':'')+'</span>'+bar(ss,s.name)+'<span class="counts">'+counts(ss)+'</span></summary>'+
         (s.note?'<p class="sub-note">'+esc(s.note)+'</p>':'')+
-        (vis.length?'<ul class="rows">'+vis.map(rowHTML).join('')+'</ul>':'<p class="sub-note">Nothing to show with these options.</p>')+'</details>';
+        (vis.length?'<ul class="rows">'+vis.map(rowHTML).join('')+'</ul>':'<p class="sub-note">No forms match.</p>')+'</details>';
     }).join('');
     if(!subs)return '';
     return '<section class="region panel" aria-labelledby="'+r.id+'-h"><header><h2 id="'+r.id+'-h">'+esc(r.name)+'</h2>'+bar(rs,r.name)+
       '<p class="counts">'+all.length+' forms · '+counts(rs)+'</p></header>'+subs+'</section>';
   }).join('');
-  $('regions').innerHTML=html||'<p class="warn">No forms match these options.</p>';
+  $('regions').innerHTML=html||'<p class="warn">No forms match.</p>';
 }
 
 $('regions').addEventListener('change',e=>{
