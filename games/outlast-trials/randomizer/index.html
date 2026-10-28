@@ -78,9 +78,10 @@ function renderResults(){
     (t?kindTag(t)+'<b>'+esc(t.name)+'</b>'+(fits?'':' <span class="stale">'+(played(t)?'played':'left out')+', reroll</span>'):
       '<span class="muted">'+(none?'No trial left':'Not rolled yet')+'</span>')+'</span>'+
     '<span class="r-buttons">'+(state.usePlayed&&fits?'<button type="button" class="mark" aria-label="'+esc('Mark '+t.name+' as played')+'">Played</button>':'')+'</span></li>';
-  const list=state.played.map(trial).filter(Boolean);
+  // Counts against the ticked trials only
+  const on=TRIALS.filter(t=>!state.off.includes(t.id)),list=state.played.map(trial).filter(t=>on.includes(t));
   $('played').hidden=!state.usePlayed||!list.length;
-  $('played-list').innerHTML='<b>Played ('+list.length+' of '+TRIALS.length+'):</b> '+list.map(t=>esc(t.name)).join(', ');
+  $('played-list').innerHTML='<b>Played ('+list.length+' of '+on.length+'):</b> '+list.map(t=>esc(t.name)).join(', ');
   $('kinds').querySelectorAll('.trial').forEach(el=>el.classList.toggle('is-played',played(trial(el.querySelector('input').value))));
 }
 
