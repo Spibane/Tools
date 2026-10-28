@@ -1,0 +1,342 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tasks and Events</title>
+<link rel="stylesheet" href="../shared/base.css">
+<script src="../shared/site.js"></script>
+<link rel="stylesheet" href="style.css"></head><body><main>
+<a class="back" href="../">Back to All Tools</a>
+<h1>Tasks and Events</h1>
+<p class="intro">Checklists that reset daily, weekly or monthly, and events that last until a date.</p>
+<div id="groups"></div>
+<div class="add-row"><button type="button" id="add-group" data-act="add-group">Add a group</button><button type="button" id="add-event-group" data-act="add-event-group">Add an event group</button></div>
+<dialog id="dialog" aria-labelledby="form-h"><form id="form" autocomplete="off"></form></dialog>
+</main>
+<script>
+const LOCAL_TZ=(()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';}catch(_){return 'UTC';}})();
+const ZONES=(()=>{let z=[];try{z=Intl.supportedValuesOf('timeZone');}catch(_){}return [...new Set(['UTC',LOCAL_TZ,...z])];})();
+const WEEKDAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+
+// Saved data. groups: {id, name, open, kind, items}. kind is 'tasks' or 'events'.
+// Task groups also have rule, when the group resets:
+// {every: 'day'|'week'|'month', time: 'HH:MM', weekday: 0-6 (Sunday first), day: 1-31, tz: a time zone name}.
+// The time is kept with its zone, so a reset at your midnight stays at your midnight when the clocks change.
+// Event groups also have endedOpen, whether their Ended list is open.
+// tasks and events both have target (how many times to do it, 0 or 1 for once), count and at (when count last changed, in ms UTC).
+// A count from before the last reset doesn't count, so nothing has to run at reset time.
+// An event is {id, name, notes, tz, start, startTime, end, endTime, repeat: null or {every, time, weekday}, target, count, at, finished}.
+// Dates are 'YYYY-MM-DD' in the event's zone; an empty end time means the event lasts the whole end day.
+// finished is when it was marked finished, which moves it to the Ended list early.
+let state=Object.assign({groups:[]},store.load('tasks'));
+// Events used to sit in one list of their own; they become an event group
+state.groups.forEach(g=>{g.kind=g.kind||'tasks';});
+if(state.events){if(state.events.length)state.groups.push({id:uid(),name:'Events',open:true,kind:'events',items:state.events});delete state.events;}
+const save=()=>store.save('tasks',state);
+
+// Time zone maths. partsIn gives the wall-clock date and time in a zone at an instant.
+const fmts={};
+function partsIn(ts,tz){
+  const f=fmts[tz]||(fmts[tz]=new Intl.DateTimeFormat('en-US',{timeZone:tz,hourCycle:'h23',year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric',second:'numeric'}));
+  const p={};f.formatToParts(ts).forEach(x=>{if(x.type!=='literal')p[x.type]=+x.value;});
+  return p;
+}
+const offset=(ts,tz)=>{const p=partsIn(ts,tz);return Date.UTC(p.year,p.month-1,p.day,p.hour%24,p.minute,p.second)-Math.floor(ts/1000)*1000;};
+// The instant a wall-clock time happens in a zone. Days past the month's end roll into the next month.
+function zoned(y,m,d,time,tz){
+  const [h,min]=time.split(':').map(Number),guess=Date.UTC(y,m-1,d,h,min);
+  return guess-offset(guess-offset(guess,tz),tz);
+}
+const civil=(y,m,d)=>{const t=new Date(Date.UTC(y,m-1,d));return {y:t.getUTCFullYear(),m:t.getUTCMonth()+1,d:t.getUTCDate()};};
+const daysIn=(y,m)=>new Date(Date.UTC(y,m,0)).getUTCDate();
+
+// When a rule last reset (at or before now) and when it resets next.
+// A monthly reset on a day the month doesn't have (the 31st in April) happens on its last day.
+function resetWindow(rule,now=Date.now()){
+  const p=partsIn(now,rule.tz);
+  const at=k=>{
+    if(rule.every==='month'){const c=civil(p.year,p.month+k,1);return zoned(c.y,c.m,Math.min(rule.day,daysIn(c.y,c.m)),rule.time,rule.tz);}
+    const back=rule.every==='week'?(new Date(Date.UTC(p.year,p.month-1,p.day)).getUTCDay()-rule.weekday+7)%7:0;
+    const c=civil(p.year,p.month,p.day-back+k*(rule.every==='week'?7:1));
+    return zoned(c.y,c.m,c.d,rule.time,rule.tz);
+  };
+  let k=0;
+  while(at(k)>now)k--;
+  while(at(k+1)<=now)k++;
+  return {last:at(k),next:at(k+1)};
+}
+
+const countOf=(it,since)=>it.at>=since?it.count:0;
+const isDone=(it,since)=>countOf(it,since)>=(it.target||1);
+const eventRule=ev=>Object.assign({day:1,tz:ev.tz},ev.repeat);
+const eventSince=(ev,now)=>ev.repeat?resetWindow(eventRule(ev),now).last:0;
+const dateParts=s=>s.split('-').map(Number);
+const startOf=ev=>{const [y,m,d]=dateParts(ev.start);return zoned(y,m,d,ev.startTime||'00:00',ev.tz);};
+const endOf=ev=>{const [y,m,d]=dateParts(ev.end);return ev.endTime?zoned(y,m,d,ev.endTime,ev.tz):zoned(y,m,d+1,'00:00',ev.tz);};
+const isEnded=(ev,now)=>!!ev.finished||now>=endOf(ev);
+
+// Text
+const LOCAL_FMT=new Intl.DateTimeFormat(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+const when=ts=>LOCAL_FMT.format(ts);
+function span(ms){
+  ms=Math.max(0,ms);
+  const d=Math.floor(ms/864e5),h=Math.floor(ms%864e5/36e5),m=Math.floor(ms%36e5/6e4);
+  return d?d+'d '+h+'h':h?h+'h '+m+'m':m?m+'m':'under a minute';
+}
+const zoneName=tz=>tz.replace(/_/g,' ');
+const ordinal=n=>n+(n%100>10&&n%100<14?'th':['th','st','nd','rd'][n%10]||'th');
+function ruleText(r){
+  const how=r.every==='day'?'Daily':r.every==='week'?WEEKDAYS[r.weekday]+'s':'Monthly on the '+ordinal(r.day);
+  return how+' at '+r.time+(r.tz===LOCAL_TZ?'':' '+zoneName(r.tz));
+}
+// The local time of an instant, when the setting was made in another zone
+const yours=(tz,ts)=>tz===LOCAL_TZ?'':' ('+when(ts)+' your time)';
+
+// The Done button, which fills the count to its goal or empties it. Something done more than once also gets
+// − [n] / target +, where n can be typed. A one-off event shows a progress bar instead of Done, since Finish does that job.
+function tally(it,since,label,oneOff){
+  const n=countOf(it,since),t=it.target||1;
+  const done='<button type="button" class="mark" data-act="mark" id="mark-'+it.id+'" aria-pressed="'+(n>=t)+'" aria-label="'+esc(label+' done')+'">'+(n>=t?'✓ Done':'Done')+'</button>';
+  if(t===1)return done;
+  return '<span class="counter"><button type="button" data-act="less" id="less-'+it.id+'" aria-label="'+esc('One less for '+label)+'"'+(n?'':' disabled')+'>−</button>'+
+    '<span class="c-num"><input type="number" class="c-input" id="set-'+it.id+'" min="0" max="'+t+'" value="'+n+'" aria-label="'+esc('Count for '+label)+'"> / '+t+
+    (oneOff?' <span class="meter" aria-hidden="true"><span style="width:'+Math.round(100*n/t)+'%"></span></span>':'')+'</span>'+
+    '<button type="button" data-act="more" id="more-'+it.id+'" aria-label="'+esc('One more for '+label)+'"'+(n>=t?' disabled':'')+'>+</button></span>'+(oneOff?'':done);
+}
+const editButton=(it,label)=>'<button type="button" data-act="edit" id="edit-'+it.id+'" aria-label="'+esc('Edit '+label)+'">Edit</button>';
+
+// Each group is a dropdown of its own, showing how many are done and when it next resets
+function taskGroup(g,now){
+  const w=resetWindow(g.rule,now),done=g.items.filter(it=>isDone(it,w.last)).length,all=g.items.length&&done===g.items.length;
+  return '<span class="g-name">'+esc(g.name)+'</span><span class="g-count'+(all?' all':'')+'">'+done+' / '+g.items.length+' done</span>'+
+    '<span class="g-reset">'+esc(ruleText(g.rule))+' · resets in '+span(w.next-now)+yours(g.rule.tz,w.next)+'</span></summary>'+
+    '<ul class="items">'+g.items.map(it=>'<li class="item'+(isDone(it,w.last)?' done':'')+'" data-id="'+it.id+'"><span class="i-name">'+esc(it.name)+'</span>'+
+      '<span class="i-buttons">'+tally(it,w.last,it.name)+editButton(it,it.name)+'</span></li>').join('')+'</ul>'+
+    '<div class="g-buttons"><button type="button" data-act="add-item" id="add-'+g.id+'">Add a task</button>';
+}
+// Events still running, soonest ending first, then the ones that ended in a dropdown.
+// One that doesn't repeat shows a counter only when it has a goal above 1.
+function eventGroup(g,now){
+  const live=g.items.filter(ev=>!isEnded(ev,now)).sort((a,b)=>endOf(a)-endOf(b));
+  const ended=g.items.filter(ev=>isEnded(ev,now)).sort((a,b)=>(b.finished||endOf(b))-(a.finished||endOf(a)));
+  return '<span class="g-name">'+esc(g.name)+'</span><span class="g-count">'+live.length+' running</span></summary>'+
+    '<ul class="items">'+live.map(ev=>{
+      const since=eventSince(ev,now),end=endOf(ev),meta=[];
+      if(ev.start&&startOf(ev)>now)meta.push('Starts in '+span(startOf(ev)-now));
+      meta.push('Ends in '+span(end-now)+' · '+when(end)+(ev.tz===LOCAL_TZ?'':' your time'));
+      if(ev.repeat){const r=eventRule(ev);meta.push(ruleText(r)+' · resets in '+span(resetWindow(r,now).next-now));}
+      return '<li class="item'+(ev.repeat&&isDone(ev,since)?' done':'')+'" data-id="'+ev.id+'"><span class="i-name">'+esc(ev.name)+
+        meta.map(t=>'<span class="i-meta">'+esc(t)+'</span>').join('')+(ev.notes?'<span class="i-notes">'+esc(ev.notes)+'</span>':'')+'</span>'+
+        '<span class="i-buttons">'+(ev.repeat||ev.target>1?tally(ev,since,ev.name,!ev.repeat):'')+
+        '<button type="button" data-act="finish" id="finish-'+ev.id+'" aria-label="'+esc('Finish '+ev.name)+'">Finish</button>'+editButton(ev,ev.name)+'</span></li>';
+    }).join('')+'</ul>'+
+    (ended.length?'<details class="ended"'+(g.endedOpen?' open':'')+'><summary id="ended-'+g.id+'">Ended ('+ended.length+')</summary><ul class="items">'+ended.map(ev=>{
+      const early=ev.finished&&endOf(ev)>now;
+      return '<li class="item" data-id="'+ev.id+'"><span class="i-name">'+esc(ev.name)+'<span class="i-meta">'+
+        (ev.finished?'Finished '+when(ev.finished):'Ended '+when(endOf(ev)))+(ev.target>1?' · '+countOf(ev,eventSince(ev,now))+' / '+ev.target:'')+'</span></span>'+
+        '<span class="i-buttons">'+(early?'<button type="button" data-act="reopen" id="reopen-'+ev.id+'" aria-label="'+esc('Reopen '+ev.name)+'">Reopen</button>':'')+editButton(ev,ev.name)+'</span></li>';
+    }).join('')+'</ul><button type="button" data-act="clear-ended" id="clear-'+g.id+'">Delete every ended event</button></details>':'')+
+    '<div class="g-buttons"><button type="button" data-act="add-item" id="add-'+g.id+'">Add an event</button>';
+}
+function renderGroups(now){
+  $('groups').innerHTML=state.groups.map(g=>'<details class="group" data-g="'+g.id+'"'+(g.open?' open':'')+'><summary id="sum-'+g.id+'">'+
+    (g.kind==='events'?eventGroup(g,now):taskGroup(g,now))+
+    '<button type="button" data-act="edit-group" id="edit-'+g.id+'">Edit group</button></div></details>').join('');
+}
+
+// Redraws without losing your place: whatever had keyboard focus gets it back
+function render(focusId){
+  const focus=focusId||document.activeElement&&document.activeElement.id,now=Date.now();
+  renderGroups(now);
+  if(focus&&$(focus))$(focus).focus();
+}
+
+function find(id){
+  for(const g of state.groups){const it=g.items.find(x=>x.id===id);if(it)return {it,g};}
+}
+const groupById=id=>state.groups.find(g=>g.id===id);
+const sinceFor=(group,it,now)=>group.kind==='tasks'?resetWindow(group.rule,now).last:eventSince(it,now);
+// Sets a count, kept between 0 and the goal. An event that doesn't repeat finishes when its goal is reached.
+function setCount(group,it,n){
+  const now=Date.now();
+  it.count=Math.min(it.target||1,Math.max(0,n));it.at=now;
+  if(group.kind==='events'&&!it.repeat&&it.target>1&&it.count>=it.target)it.finished=now;
+}
+
+document.querySelector('main').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-act]');if(!b)return;
+  const act=b.dataset.act,g=b.closest('[data-g]'),row=b.closest('[data-id]');
+  if(act==='add-group')return openForm('group',{kind:'tasks'},b.id);
+  if(act==='add-event-group')return openForm('group',{kind:'events'},b.id);
+  const group=g&&groupById(g.dataset.g),kind=group&&group.kind==='events'?'event':'task';
+  if(act==='add-item')return openForm(kind,{group:group.id},b.id);
+  if(act==='edit-group')return openForm('group',group,b.id);
+  if(act==='clear-ended'){
+    if(!confirm('Delete every ended event in “'+group.name+'”? This can’t be undone.'))return;
+    const now=Date.now();
+    group.items=group.items.filter(ev=>!isEnded(ev,now));
+    save();return render('add-'+group.id);
+  }
+  const it=find(row.dataset.id).it,now=Date.now();
+  if(act==='edit')return openForm(kind,it,b.id);
+  const since=sinceFor(group,it,now);
+  if(act==='mark')setCount(group,it,isDone(it,since)?0:it.target||1);
+  else if(act==='more'||act==='less')setCount(group,it,countOf(it,since)+(act==='more'?1:-1));
+  else if(act==='finish')it.finished=now;
+  else if(act==='reopen')it.finished=null;
+  save();render();
+  // A button that went away with its row (an event that just finished or reopened) hands focus to the row's new place
+  if(!$(b.id)){const to=$(act==='reopen'?'finish-'+it.id:'ended-'+group.id);(to&&to.offsetParent?to:$('add-'+group.id)).focus();}
+});
+// A typed count saves when you leave the box or press Enter
+$('groups').addEventListener('change',e=>{
+  if(!e.target.matches('.c-input'))return;
+  const group=groupById(e.target.closest('[data-g]').dataset.g),it=find(e.target.closest('[data-id]').dataset.id).it;
+  setCount(group,it,parseInt(e.target.value)||0);
+  save();render();
+  if(!$(e.target.id))$('ended-'+group.id).focus();
+});
+// Remembers which groups and Ended lists are open
+$('groups').addEventListener('toggle',e=>{
+  const g=groupById(e.target.closest('[data-g]').dataset.g),key=e.target.matches('.ended')?'endedOpen':'open';
+  if(g[key]!==e.target.open){g[key]=e.target.open;save();}
+},true);
+
+// The add and edit form, in a dialog. Each kind of thing builds its own fields.
+const opts=(list,val)=>list.map(([v,t])=>'<option value="'+esc(v)+'"'+(String(v)===String(val)?' selected':'')+'>'+esc(t)+'</option>').join('');
+// Zones as game sites write them: "UTC−08:00 · Los Angeles (PST)", sorted by offset, with UTC and yours first
+function zoneLabel(z,now){
+  const m=Math.round(offset(now,z)/6e4);
+  // US English names American zones (PST), British English names European ones (CET)
+  const name=loc=>new Intl.DateTimeFormat(loc,{timeZone:z,timeZoneName:'short'}).formatToParts(now).find(p=>p.type==='timeZoneName').value;
+  const abbr=[name('en-US'),name('en-GB')].find(a=>!/^(GMT|UTC)/.test(a))||'GMT';
+  const off=z==='UTC'?'UTC':'UTC'+(m<0?'−':'+')+String(Math.floor(Math.abs(m)/60)).padStart(2,'0')+':'+String(Math.abs(m)%60).padStart(2,'0');
+  return {m,text:off+(z==='UTC'?'':' · '+zoneName(z.split('/').pop()))+(/^(GMT|UTC)/.test(abbr)?'':' ('+abbr+')')+(z===LOCAL_TZ?' · yours':'')};
+}
+function zoneOpts(tz){
+  const now=Date.now(),list=[...new Set([tz,...ZONES])].map(z=>Object.assign({z},zoneLabel(z,now)));
+  const top=list.filter(x=>x.z==='UTC'||x.z===LOCAL_TZ),rest=list.filter(x=>!top.includes(x)).sort((a,b)=>a.m-b.m||a.text.localeCompare(b.text));
+  return opts([...top,...rest].map(x=>[x.z,x.text]),tz);
+}
+const row=(label,control,cls)=>'<label class="f-row'+(cls?' '+cls:'')+'">'+label+control+'</label>';
+// Reset fields for a group (every: day, week or month) or a repeating event (none, day or week)
+const ruleFields=(r,everyOpts,timeLabel)=>
+  row('Resets','<select name="every">'+opts(everyOpts,r.every)+'</select>')+
+  '<div class="f-pair">'+row('On','<select name="weekday">'+opts(WEEKDAYS.map((d,i)=>[i,d]),r.weekday)+'</select>','if-week')+
+  row('On day','<input type="number" name="day" min="1" max="31" value="'+r.day+'" required>','if-month')+
+  row(timeLabel,'<input type="time" name="time" value="'+r.time+'" required>','if-repeat')+'</div>';
+
+let editing=null;
+function openForm(kind,obj,opener){
+  editing={kind,obj,opener};
+  const isNew=!obj.id,v=(k,d='')=>esc(obj[k]!=null?obj[k]:d);
+  let h;
+  // The groups of the same kind a task or event can move between
+  const groupPick=()=>{
+    const g=groupById(obj.group)||state.groups.find(g=>g.items.includes(obj)),same=state.groups.filter(x=>x.kind===g.kind);
+    return same.length>1?row('Group','<select name="group">'+opts(same.map(x=>[x.id,x.name]),g.id)+'</select>'):'';
+  };
+  if(kind==='group'){
+    const r=obj.rule||{every:'day',time:'00:00',weekday:1,day:1,tz:LOCAL_TZ},events=obj.kind==='events';
+    h='<h2 id="form-h">'+(isNew?events?'Add an event group':'Add a group':'Edit group')+'</h2>'+
+      row('Name','<input name="name" required maxlength="80" value="'+v('name')+'">')+
+      (events?'':ruleFields(r,[['day','Every day'],['week','Every week'],['month','Every month']],'At')+
+      row('Time zone','<select name="tz">'+zoneOpts(r.tz)+'</select>'));
+  }else if(kind==='task'){
+    h='<h2 id="form-h">'+(isNew?'Add a task':'Edit task')+'</h2>'+
+      row('Name','<input name="name" required maxlength="120" value="'+v('name')+'">')+
+      row('Times each reset','<input type="number" name="target" min="1" max="999" value="'+v('target',1)+'">')+
+      groupPick();
+  }else{
+    const r=Object.assign({every:'none',time:'00:00',weekday:1,day:1},obj.repeat);
+    h='<h2 id="form-h">'+(isNew?'Add an event':'Edit event')+'</h2>'+
+      row('Name','<input name="name" required maxlength="120" value="'+v('name')+'">')+
+      row('Notes','<textarea name="notes" rows="2" maxlength="1000">'+v('notes')+'</textarea>')+
+      '<div class="f-pair">'+row('Ends','<input type="date" name="end" required value="'+v('end')+'">')+
+      row('At (optional)','<input type="time" name="endTime" value="'+v('endTime')+'">')+'</div>'+
+      '<div class="f-pair">'+row('Starts (optional)','<input type="date" name="start" value="'+v('start')+'">')+
+      row('At (optional)','<input type="time" name="startTime" value="'+v('startTime')+'">')+'</div>'+
+      row('Time zone','<select name="tz">'+zoneOpts(obj.tz||LOCAL_TZ)+'</select>')+
+      ruleFields(r,[['none','Doesn’t repeat'],['day','Every day'],['week','Every week']],'Resets at')+
+      row('Goal (optional)','<input type="number" name="target" min="0" max="99999" value="'+(obj.target||'')+'">')+
+      groupPick();
+  }
+  h+='<p class="hint" id="preview" aria-live="polite"></p><div class="f-buttons"><button type="submit" class="primary">Save</button><button type="button" data-f="cancel">Cancel</button>'+
+    (isNew?'':(kind!=='event'?'<button type="button" data-f="up">Move up</button><button type="button" data-f="down">Move down</button>':'')+
+    '<button type="button" data-f="delete" class="delete">Delete</button>')+'</div>';
+  $('form').innerHTML=h;
+  formChanged();
+  $('dialog').showModal();
+}
+
+// Reads a reset rule from the form; events take theirs from the same fields
+const ruleFrom=d=>({every:d.every,time:d.time||'00:00',weekday:+d.weekday||0,day:Math.min(31,Math.max(1,parseInt(d.day)||1)),tz:d.tz});
+// Shows the right reset fields and the next reset or end in your own time
+function formChanged(){
+  const form=$('form'),d=Object.fromEntries(new FormData(form)),kind=editing.kind;
+  form.dataset.every=d.every||'';
+  let t='';
+  try{
+    const now=Date.now();
+    if(kind==='group'&&d.every)t='Next reset: '+when(resetWindow(ruleFrom(d),now).next)+' your time.';
+    else if(kind==='event'&&d.end){
+      const ev={tz:d.tz,end:d.end,endTime:d.endTime};
+      t='Ends '+when(endOf(ev))+' your time.';
+      if(d.every!=='none')t+=' Next reset: '+when(resetWindow(ruleFrom(d),now).next)+' your time.';
+    }
+  }catch(_){}
+  $('preview').textContent=t;
+}
+$('form').addEventListener('input',formChanged);
+$('form').addEventListener('change',formChanged);
+
+$('form').addEventListener('submit',e=>{
+  e.preventDefault();
+  const d=Object.fromEntries(new FormData(e.target)),{kind,obj}=editing,isNew=!obj.id;
+  let focus=editing.opener;
+  if(kind==='group'){
+    const g=isNew?Object.assign({id:uid(),open:true,items:[]},obj):obj;
+    g.name=d.name.trim();
+    if(g.kind==='tasks')g.rule=ruleFrom(d);
+    if(isNew){state.groups.push(g);focus='add-'+g.id;}
+  }else{
+    const it=isNew?{id:uid(),count:0,at:0}:obj;
+    if(kind==='task')Object.assign(it,{name:d.name.trim(),target:Math.max(1,parseInt(d.target)||1)});
+    else{
+      const ev={name:d.name.trim(),notes:d.notes.trim(),tz:d.tz,end:d.end,endTime:d.endTime,start:d.start,startTime:d.startTime,
+        repeat:d.every==='none'?null:{every:d.every,time:d.time||'00:00',weekday:+d.weekday||0},target:Math.max(0,parseInt(d.target)||0)};
+      const endInput=e.target.elements.end;
+      if(ev.start&&startOf(ev)>=endOf(ev)){endInput.setCustomValidity('The event has to end after it starts.');endInput.reportValidity();endInput.setCustomValidity('');return;}
+      Object.assign(it,ev);
+      if(isNew)it.finished=null;
+    }
+    // A new one goes in the group it was added from; an edited one can move to another group
+    const from=state.groups.find(g=>g.items.includes(it)),to=groupById(d.group||obj.group)||from;
+    if(from!==to){if(from)from.items.splice(from.items.indexOf(it),1);to.items.push(it);if(!isNew)to.open=true;}
+  }
+  save();$('dialog').close();render(focus);
+});
+$('form').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-f]');if(!b)return;
+  const {kind,obj}=editing,f=b.dataset.f;
+  if(f==='cancel')return $('dialog').close();
+  const list=kind==='group'?state.groups:state.groups.find(g=>g.items.includes(obj)).items;
+  const i=list.indexOf(obj);
+  if(f==='delete'){
+    const n=kind==='group'&&obj.items.length,noun=obj.kind==='events'?'event':'task';
+    if(!confirm(n?'Delete “'+obj.name+'” and its '+n+' '+noun+(n===1?'':'s')+'?':'Delete “'+obj.name+'”?'))return;
+    list.splice(i,1);save();$('dialog').close();
+    return render(kind==='group'?'add-group':'add-'+state.groups.find(g=>g.items===list).id);
+  }
+  // Moving happens straight away, behind the dialog, and keeps anything typed in it
+  const j=i+(f==='up'?-1:1);
+  if(j<0||j>=list.length)return;
+  [list[i],list[j]]=[list[j],list[i]];
+  save();render();
+});
+$('dialog').addEventListener('close',()=>{const o=editing&&$(editing.opener);if(o&&!document.activeElement.closest('#groups'))o.focus();});
+
+// Keeps the countdowns current, and clears done marks as resets pass
+setInterval(()=>{if(!$('dialog').open&&!document.activeElement.matches('.c-input'))render();},30000);
+render();
+backups({what:'tasks',keys:['tasks'],file:'tasks-and-events.json',save:'Save',load:'Load'});
+</script></body></html>
