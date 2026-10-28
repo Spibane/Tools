@@ -1,0 +1,213 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dead by Daylight Loadout Randomizer</title>
+<link rel="stylesheet" href="../../shared/base.css">
+<script src="../../shared/site.js"></script>
+<script src="../data/loadout.js"></script>
+<link rel="stylesheet" href="style.css"></head><body><main>
+<a class="back" href="../">Back to Dead by Daylight</a>
+<h1>Loadout Randomizer</h1>
+<p class="intro">Rolls a character, four perks, add-ons and an offering, plus an item for survivors. Turn off anything you don't want rolled, and mark what you've played to leave it out until you reset. Survivor and killer settings are kept apart and saved in this browser.</p>
+<div class="side-pick" role="radiogroup" aria-label="Play as">
+<label class="pill"><input type="radio" name="side" value="survivor"> Survivor</label>
+<label class="pill"><input type="radio" name="side" value="killer"> Killer</label>
+</div>
+<section class="rolls panel" aria-labelledby="rolls-h">
+<div class="roll-head"><h2 id="rolls-h">Your loadout</h2><button type="button" class="roll" id="roll">Roll loadout</button></div>
+<div class="parts" id="parts"></div>
+<ol class="results" id="results" aria-live="polite"></ol>
+<div class="played" id="played">
+<p class="played-list" id="played-list"></p>
+<button type="button" id="played-reset">Reset played</button>
+</div>
+</section>
+<fieldset><legend>What can be rolled</legend>
+<p class="hint">Untick anything you don't want rolled. Event items and offerings start off.</p>
+<div id="pools"></div>
+</fieldset>
+</main>
+<script>
+const RARITIES={common:'Common',uncommon:'Uncommon',rare:'Rare','very-rare':'Very rare','ultra-rare':'Ultra rare',event:'Event'};
+const ITEM_TYPES={flashlight:'Flashlights',medkit:'Med-kits',toolbox:'Toolboxes',key:'Keys',map:'Maps',fogvial:'Fog vials',firecracker:'Firecrackers'};
+const OFFERING_KINDS={world:'Realms',proceduralgeneration:'Blueprints and wards',lighting:'Bouquets',atmosphere:'Reagents',points:'Bloodpoints',luck:'Luck',chest:'Coins',hook:'Oaks',position:'Shrouds',protection:'Wards',killing:'Memento Moris',killer:'Splinters'};
+const CATS={char:'Characters',perk:'Perks',item:'Items',addon:'Add-ons',offering:'Offerings'};
+const charName=id=>(DBD.survivors.find(c=>c.id===id)||DBD.killers.find(c=>c.id===id)||{}).name;
+
+// Everything one side can roll, by category. Each entry gets key (category:id, used to save it) and group (its heading below).
+// Groups keep the data's order: general perks first, then each character's in release order.
+function build(side){
+  const chars=side==='survivor'?DBD.survivors:DBD.killers;
+  const order=list=>(a,b)=>list.indexOf(a.group)-list.indexOf(b.group);
+  const groups=['General',...chars.map(c=>c.name)];
+  const tag=(cat,list,group)=>list.map(e=>({...e,cat,key:cat+':'+e.id,group:group(e)}));
+  return{
+    char:tag('char',chars,()=>''),
+    perk:tag('perk',DBD.perks.filter(p=>p.side===side),p=>p.owner?charName(p.owner):'General').sort(order(groups)),
+    item:side==='survivor'?tag('item',DBD.items,i=>ITEM_TYPES[i.type]).sort(order(Object.values(ITEM_TYPES))):[],
+    addon:side==='survivor'?tag('addon',DBD.itemAddons,a=>ITEM_TYPES[a.type]).sort(order(Object.values(ITEM_TYPES))):
+      tag('addon',DBD.killerAddons,a=>charName(a.killer)).sort(order(groups)),
+    offering:tag('offering',DBD.offerings.filter(o=>!o.side||o.side===side),o=>OFFERING_KINDS[o.kind]||'Other').sort(order(Object.values(OFFERING_KINDS))),
+  };
+}
+const POOLS={survivor:build('survivor'),killer:build('killer')};
+const entry=(side,key)=>key&&POOLS[side][key.split(':')[0]].find(e=>e.key===key);
+
+// The picks for each side, in order. part = the "Roll" tickbox that turns it off; needs = the pick its options depend on.
+const perks=[1,2,3,4].map(n=>({id:'perk'+n,cat:'perk',name:'Perk '+n}));
+const SLOTS={
+  survivor:[{id:'char',cat:'char',name:'Survivor'},...perks,{id:'item',cat:'item',name:'Item',part:'item'},
+    {id:'addon1',cat:'addon',name:'Add-on 1',part:'addons',needs:'item'},{id:'addon2',cat:'addon',name:'Add-on 2',part:'addons',needs:'item'},
+    {id:'offering',cat:'offering',name:'Offering',part:'offering'}],
+  killer:[{id:'char',cat:'char',name:'Killer'},...perks,
+    {id:'addon1',cat:'addon',name:'Add-on 1',part:'addons',needs:'char'},{id:'addon2',cat:'addon',name:'Add-on 2',part:'addons',needs:'char'},
+    {id:'offering',cat:'offering',name:'Offering',part:'offering',needs:'char'}],
+};
+const PARTS={survivor:[['item','Item'],['addons','Add-ons'],['offering','Offering']],killer:[['addons','Add-ons'],['offering','Offering']]};
+
+// Settings, kept apart for each side: flip = keys switched from their default (on, or off for event things);
+// played = keys marked played; skip = parts not rolled; locked = picks Roll loadout leaves alone; result = the last roll
+const blank=()=>({flip:[],played:[],skip:[],locked:[],result:{}});
+let state={side:'survivor',survivor:blank(),killer:blank()};
+const saved=store.load('dbd',{});
+state={...state,...saved,survivor:{...blank(),...saved.survivor},killer:{...blank(),...saved.killer}};
+const save=()=>store.save('dbd',state);
+const S=()=>state[state.side];
+const slots=()=>SLOTS[state.side].filter(s=>!S().skip.includes(s.part)&&!(s.needs==='item'&&S().skip.includes('item')));
+
+const enabled=e=>S().flip.includes(e.key)!==!e.event;
+const isPlayed=e=>S().played.includes(e.key);
+// Whether e goes with the item or killer it depends on
+const matches=(s,e)=>{
+  if(!s.needs)return true;
+  const parent=entry(state.side,S().result[s.needs]);
+  if(s.cat==='offering')return !e.killer||(parent&&e.killer===parent.id);
+  return !!parent&&(state.side==='survivor'?e.type===parent.type:e.killer===parent.id);
+};
+const candidates=s=>POOLS[state.side][s.cat].filter(e=>enabled(e)&&!isPlayed(e)&&matches(s,e));
+
+// Rolls the given picks, keeping the others. Picks that depend on a changed one (add-ons on an item or killer)
+// are rolled again if what they had no longer goes with it, unless locked. Nothing is picked twice.
+function roll(ids){
+  const r=S().result,todo=new Set(ids);
+  const taken=new Set(Object.entries(r).filter(([id])=>!todo.has(id)).map(([,k])=>k));
+  slots().forEach(s=>{
+    const cur=entry(state.side,r[s.id]);
+    if(!todo.has(s.id)){
+      if(S().locked.includes(s.id)||!(s.needs&&todo.has(s.needs)&&!(cur&&matches(s,cur))))return;
+      todo.add(s.id);taken.delete(r[s.id]);
+    }
+    const free=candidates(s).filter(e=>!taken.has(e.key));
+    if(!free.length){delete r[s.id];return;}
+    r[s.id]=pick(free).key;taken.add(r[s.id]);
+  });
+  save();renderResults();
+}
+
+const tag=e=>e.rarity?'<span class="role rarity-'+e.rarity+'">'+RARITIES[e.rarity]+'</span>':'';
+const padlock=shackle=>'<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="'+shackle+'"/><rect x="2.5" y="7" width="11" height="8" fill="currentColor" stroke="none"/></svg>';
+const LOCKED=padlock('M4.5 7V4.5a3.5 3.5 0 0 1 7 0V7'),UNLOCKED=padlock('M4.5 7V4.5a3.5 3.5 0 0 1 7 0');
+
+function why(s,e){
+  if(isPlayed(e))return 'played';
+  if(!enabled(e))return 'turned off';
+  return s.needs==='item'?'doesn\'t fit this item':'not for this killer';
+}
+function emptyText(s){
+  const parent=s.needs&&entry(state.side,S().result[s.needs]);
+  if(s.needs==='item'&&!parent)return 'No item to fit.';
+  if(s.needs==='item'&&!DBD.itemAddons.some(a=>a.type===parent.type))return 'This item takes no add-ons.';
+  if(s.needs==='char'&&s.cat==='addon'&&!parent)return 'No killer rolled.';
+  return candidates(s).length?'Not enough to go around.':'Nothing left. Turn more on below or reset played.';
+}
+
+function renderResults(){
+  const r=S().result,rolled=Object.keys(r).length;
+  $('parts').innerHTML='<span>Roll:</span>'+PARTS[state.side].map(([id,name])=>
+    '<label class="pill"><input type="checkbox" value="'+id+'"'+(S().skip.includes(id)?'':' checked')+'>'+name+'</label>').join('');
+  $('results').innerHTML=slots().map(s=>{
+    const e=entry(state.side,r[s.id]),fits=e&&candidates(s).includes(e),locked=S().locked.includes(s.id);
+    return '<li class="result'+(e?'':' empty')+(locked?' locked':'')+'"><span class="r-name">'+esc(s.name)+'</span>'+
+      '<span class="r-pick">'+(e?tag(e)+'<b>'+esc(e.name)+'</b>'+(e.owner?'<span class="owner">'+esc(charName(e.owner))+'</span>':'')+
+        (fits?'':' <span class="stale">'+why(s,e)+', roll again</span>'):
+        '<span class="muted">'+(rolled?emptyText(s):'Not rolled yet')+'</span>')+'</span>'+
+      '<span class="r-buttons">'+(fits?'<button type="button" class="mark" data-s="'+s.id+'" aria-label="'+esc('Mark '+e.name+' as played')+'">Played</button>':'')+
+      '<button type="button" class="reroll" data-s="'+s.id+'"'+(locked?' disabled':'')+' aria-label="'+esc('Roll again for '+s.name)+'">Roll again</button>'+
+      '<button type="button" class="lock" data-s="'+s.id+'" aria-pressed="'+locked+'" aria-label="'+esc('Lock '+s.name)+'" title="'+(locked?'Unlock':'Lock')+'">'+(locked?LOCKED:UNLOCKED)+'</button></span></li>';
+  }).join('');
+  const list=S().played.map(k=>entry(state.side,k)).filter(Boolean);
+  $('played-list').innerHTML=list.length?'<b>Played ('+list.length+'):</b> '+Object.keys(CATS).map(c=>{
+    const names=list.filter(e=>e.cat===c).map(e=>esc(e.name));
+    return names.length?'<span class="played-cat">'+CATS[c]+': '+names.join(', ')+'</span>':'';
+  }).join(''):'<span class="muted">Nothing marked played.</span>';
+  $('played-reset').disabled=!list.length;
+  $('pools').querySelectorAll('.pill input').forEach(el=>el.parentNode.classList.toggle('is-played',S().played.includes(el.value)));
+}
+
+// One dropdown per category, with a filter and buttons that turn on or off whatever the filter shows
+function renderPools(){
+  $('pools').innerHTML=Object.entries(POOLS[state.side]).filter(([,list])=>list.length).map(([cat,list])=>{
+    const groups=[...new Set(list.map(e=>e.group))];
+    return '<details class="pool" data-cat="'+cat+'"><summary><span class="p-name">'+(cat==='char'?(state.side==='survivor'?'Survivors':'Killers'):CATS[cat])+'</span><span class="p-count"></span></summary>'+
+      '<div class="p-tools"><input type="search" placeholder="Filter" aria-label="'+esc('Filter '+CATS[cat].toLowerCase())+'">'+
+      '<button type="button" data-on="1">Turn on</button><button type="button" data-on="">Turn off</button></div>'+
+      groups.map(g=>'<div class="pill-group">'+(g?'<h3>'+esc(g)+'</h3>':'')+'<div class="pills">'+list.filter(e=>e.group===g).map(e=>
+        '<label class="pill"'+(e.rarity?' data-r="'+e.rarity+'"':'')+' data-f="'+esc((e.name+' '+g).toLowerCase())+'"><input type="checkbox" value="'+e.key+'"'+(enabled(e)?' checked':'')+'>'+esc(e.name)+'</label>').join('')+
+        '</div></div>').join('')+'</details>';
+  }).join('');
+  renderCounts();
+}
+function renderCounts(){
+  $('pools').querySelectorAll('.pool').forEach(d=>{
+    const list=POOLS[state.side][d.dataset.cat];
+    d.querySelector('.p-count').textContent=list.filter(enabled).length+' of '+list.length+' on';
+  });
+}
+function setEnabled(key,on){
+  const e=entry(state.side,key),flip=on===!!e.event;
+  S().flip=S().flip.filter(k=>k!==key).concat(flip?[key]:[]);
+}
+
+function render(){
+  document.querySelectorAll('[name=side]').forEach(el=>{el.checked=el.value===state.side;});
+  renderPools();renderResults();
+}
+
+document.querySelectorAll('[name=side]').forEach(el=>el.addEventListener('change',()=>{state.side=el.value;save();render();}));
+$('roll').addEventListener('click',()=>{
+  const keep=S().locked;
+  Object.keys(S().result).forEach(id=>{if(!keep.includes(id))delete S().result[id];});
+  roll(slots().map(s=>s.id).filter(id=>!keep.includes(id)));
+});
+$('parts').addEventListener('change',e=>{
+  S().skip=S().skip.filter(p=>p!==e.target.value).concat(e.target.checked?[]:[e.target.value]);
+  save();renderResults();
+});
+$('results').addEventListener('click',e=>{
+  const b=e.target.closest('button');
+  if(!b)return;
+  const id=b.dataset.s;
+  if(b.matches('.reroll'))roll([id]);
+  if(b.matches('.mark')){S().played.push(S().result[id]);save();renderResults();}
+  if(b.matches('.lock')){S().locked=S().locked.filter(x=>x!==id).concat(S().locked.includes(id)?[]:[id]);save();renderResults();}
+});
+$('played-reset').addEventListener('click',()=>{S().played=[];save();renderResults();});
+$('pools').addEventListener('change',e=>{
+  if(e.target.type!=='checkbox')return;
+  setEnabled(e.target.value,e.target.checked);save();renderCounts();renderResults();
+});
+$('pools').addEventListener('input',e=>{
+  if(e.target.type!=='search')return;
+  const q=e.target.value.trim().toLowerCase(),d=e.target.closest('.pool');
+  d.querySelectorAll('.pill').forEach(p=>{p.hidden=!p.dataset.f.includes(q);});
+  d.querySelectorAll('.pill-group').forEach(g=>{g.hidden=!g.querySelector('.pill:not([hidden])');});
+});
+$('pools').addEventListener('click',e=>{
+  if(!e.target.matches('[data-on]'))return;
+  const on=!!e.target.dataset.on;
+  e.target.closest('.pool').querySelectorAll('.pill:not([hidden]) input').forEach(el=>{el.checked=on;setEnabled(el.value,on);});
+  save();renderCounts();renderResults();
+});
+
+render();
+backups({what:'loadout settings',keys:['dbd'],file:'dead-by-daylight-loadout-settings.json'});
+</script></body></html>
