@@ -22,7 +22,6 @@ const CATEGORIES = {
     "Dazmand",
     "Fulmintis",
     "Sparkelf",
-    "Prismana Sparkelf",
     "Hoptail",
     "Hypnyto",
     "Jaguaraun",
@@ -44,6 +43,7 @@ const CATEGORIES = {
     "Prismana Fulmintis",
     "Prismana Hypnyto",
     "Prismana Ekrim",
+    "Prismana Sparkelf",
   ],
 
   // Pick one: a player can only own one form from each group, so each group shares one tile,
