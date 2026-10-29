@@ -1,7 +1,7 @@
 // Your own groupings, kept by hand. Refreshing forms.js never changes this file.
 //
 // How to write an entry:
-//   "Irisalis"          - the base form
+//   "Irisal"            - the base form
 //   "Prismana Iris"     - the Prismana form
 //   "Highland Iris"     - a regional form (form name, then species name)
 //
@@ -18,20 +18,14 @@ const CATEGORIES = {
     "Prismana Melloblum",
     "Prismana Glynsera",
     "Prismana Waleetle",
-    "Prismana Infergon",
-    "Irisalis",
+    "Prismana Irisalis",
     "Dazmand",
     "Fulmintis",
-    "Prismana Fulmintis",
     "Sparkelf",
     "Prismana Sparkelf",
-  ],
-
-  // Season 2 (Whisperwake Isles) keepsake exclusives
-  keepsake2: [
-    "Prismana Hypnyto",
-    "Prismana Ekrim",
     "Hoptail",
+    "Hypnyto",
+    "Jaguaraun",
     "Prismana Pouchwisp",
     "Prismana Royalby",
     "Prismana Jeburst",
@@ -46,6 +40,10 @@ const CATEGORIES = {
     "Prismana Sherro",
     "Prismana Fenmane",
     "Besauce",
+    "Prismana Infergon",
+    "Prismana Fulmintis",
+    "Prismana Hypnyto",
+    "Prismana Ekrim",
   ],
 
   // Pick one: a player can only own one form from each group, so each group shares one tile,

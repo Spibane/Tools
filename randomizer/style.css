@@ -1,0 +1,27 @@
+/* Randomizer. Buttons, the roll panel and result rows come from shared/base.css.
+   Loaded after shared/base.css. */
+
+/* The roll */
+.rolls{margin-bottom:26px}
+.opts{display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;margin-bottom:12px}
+.opts .toggle{margin:0}
+.count{display:flex;align-items:center;gap:8px;font-size:.9rem;font-weight:600}
+.result{grid-template-columns:1fr auto}
+/* Lock: an open padlock, or a closed one on an inverted button */
+.lock{display:inline-flex;align-items:center;justify-content:center;padding:4px 8px}
+.lock svg{display:block}
+.lock[aria-pressed="true"]{background:var(--ink);color:var(--tile);border-color:var(--ink)}
+
+/* Items used this round */
+.used{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-top:12px}
+.used-list{margin:0;font-size:.9rem;flex:1 1 20em;overflow-wrap:anywhere}
+
+/* Lists */
+.list-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.list-row select{flex:1 1 12em;min-width:0}
+.field{display:grid;gap:4px;margin-bottom:10px;font-weight:600}
+.field .hint{font-weight:400;margin:0}
+input[type="text"],input[type="number"],select,textarea{font:inherit;font-weight:400;color:var(--ink);background:var(--tile);border:2px solid var(--rim);padding:4px 8px}
+.count input{width:4.5em}
+textarea{width:100%;resize:vertical}
+@media print{fieldset,.r-buttons,button.roll,.opts,.used button{display:none}}

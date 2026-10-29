@@ -1,0 +1,39 @@
+/* Dice roller. Buttons, panels and the roll button come from shared/base.css.
+   Loaded after shared/base.css. */
+
+/* What to roll */
+.roll-form{display:flex;gap:8px;margin-bottom:4px}
+#expr{flex:1;min-width:0;font:inherit;font-size:1.15rem;font-weight:600;color:var(--ink);background:var(--tile);border:2px solid var(--rim);padding:6px 10px}
+.quick,.saved-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+/* Die-shaped quick buttons: the outline and number follow the text colour, so they invert on hover like other buttons */
+.die-btn{display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;padding:0}
+.die-btn svg{display:block;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linejoin:round}
+.die-btn .inner{stroke-width:1.25;opacity:.45}
+.die-btn text{fill:currentColor;stroke:none;font-size:12px;font-weight:700;text-anchor:middle;dominant-baseline:central}
+.die-btn text.small{font-size:10px}
+/* Saved rolls: the roll and a remove button joined together */
+.chip{display:inline-flex}
+.chip .s-del{border-left:0;padding:4px 8px}
+
+/* Results: the expression, the dice and the total */
+.last{min-height:3.2em}
+.big{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin:6px 0 0;padding:10px 12px;background:var(--tile);border:2px solid var(--rim)}
+.big .h-total{font-size:2.2rem;line-height:1.1;margin-left:auto}
+.error{margin:6px 0 0;font-weight:600}
+.h-expr{font-weight:700}
+.h-break{color:var(--muted);overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.h-total{font-variant-numeric:tabular-nums}
+/* A d2 roll's number, after its heads and tails */
+.paren{font-size:.6em;font-weight:600;color:var(--muted)}
+.die{color:var(--ink)}
+s.die{color:var(--muted)}
+.die.top{background:var(--brand);color:#121212;padding:0 3px}
+.die.bottom{text-decoration:underline;text-decoration-thickness:2px}
+
+/* History */
+.history-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.rolls-list{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.rolls-list li{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px;background:var(--surface);border:2px solid var(--rim);padding:4px 10px}
+.rolls-list .h-total{margin-left:auto;font-size:1.1rem}
+.rolls-list .paren{font-size:.8em}
+@media print{.roll-form,.quick,.saved-row,.hint,#history-clear{display:none}}

@@ -1,0 +1,20 @@
+/* Drop odds. Panels come from shared/base.css. Loaded after shared/base.css. */
+
+/* The inputs, side by side when there's room */
+.inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(11em,1fr));gap:10px 16px;padding-bottom:14px}
+/* The panel's gradient strip is a grid item too, so it spans the whole row */
+.inputs::before{grid-column:1/-1;margin-bottom:4px}
+.field{display:grid;align-content:start;gap:4px;font-weight:600}
+.field .hint{margin:0}
+.field input{width:100%;min-width:0;font:inherit;font-weight:400;color:var(--ink);background:var(--tile);border:2px solid var(--rim);padding:4px 8px}
+.field input[aria-invalid="true"]{border-color:#d33}
+.tries{display:flex;gap:6px}
+
+/* The odds */
+.big{font-size:1.15rem;margin:8px 0 4px}
+.big b{font-size:1.6rem}
+table{width:100%;border-collapse:collapse;margin-top:6px;background:var(--tile);font-variant-numeric:tabular-nums}
+th,td{border:2px solid var(--rim);padding:4px 10px;text-align:right}
+th:first-child,td:first-child{text-align:left}
+th{background:var(--surface)}
+tr.past td{color:var(--muted)}

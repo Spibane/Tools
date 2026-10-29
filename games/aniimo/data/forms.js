@@ -1,35 +1,30 @@
 // Every Aniimo form, in Aniilog order (number, then the game's form order).
-// This file is refreshed from fan sites when new Aniimo are released.
+// This file is refreshed from the official wiki and fan sites when new Aniimo are released.
 // Your own groupings live in categories.js, so refreshing this never touches them.
 //
 // Fields:
-//   n        - Aniilog number as text ("001"), or "—" if unnumbered
+//   n        - Aniilog number as text ("001"), or "—" if unnumbered. Each region numbers its
+//              own Aniimo from 001.
 //   name     - species name
 //   element  - fire, water, grass, electric, ice, earth, wind, light, dark, none,
 //              or unknown (not confirmed yet)
 //   element2 - optional second element, same values, for Aniimo with two elements.
 //              The species' own element comes first.
 //   form     - "Base", "Prismana", or the regional form name without "Form"
-//   region   - breezy (#001–#082), whisperwake (Whisperwake Isles), unreleased
+//   region   - breezy (Breezy Plains), whisperwake (Whisperwake Isles), unreleased
 //              (not yet in game), special (#10001 and up)
 //   umbral   - optional, false for forms that can never be Umbral (every Prismana form, and
 //              the one-off specials), from AniimoTools' per-form Umbral data. Left out when the
 //              form can be Umbral or it isn't known yet. Set by hand for Sparkelf, which AniimoTools
 //              lists as never Umbral but can be.
 //
-// Whisperwake numbers stay "—" until the region is out and the game confirms them.
-// The beta numbers fan sites list aren't reliable. Until then, Whisperwake forms keep
-// their beta order, with the hand-added ones after them.
-//
-// Source: AniimoTools (aniimotools.dev/creatures/, Form mode), checked 25 October 2026.
-// Elements, including second elements, match Aniidex (aniidex.com/aniimo/forms/).
-// Added by hand: Prismana Somniwing (not on AniimoTools; element assumed Wind).
-// Added from the Aniidex Upcoming page (25 October 2026): Saws and Prawnch, elements unknown.
-// Added by hand from the official Whisperwake Isles announcement images (25 October 2026),
-// before numbers and elements were out: Whirlbite, Sugartini, Pouchwisp, Royalby,
-// Jeburst and Hoptail, their Prismana forms, Prismana Gachapus, Prismana Jabster,
-// Prismana Hypnyto and Prismana Ekrim. Prismana Gachapus and Prismana Jabster are
-// assumed to keep the base element. Replace these with fan-site data once it's published.
+// Source: the official Aniimo wiki (wiki.aniimo.com), checked 29 October 2026.
+// The wiki calls the Earth element Rock and the Light element Holy.
+// The wiki leaves out some Aniimo on purpose, so these are kept from the earlier fan-site data:
+//   Somniwing - base form, only so categories.js can exclude it (it only exists as Prismana).
+//   Cheekie, Wavwal, Malangel, Malevsera, Morphling - not on the wiki yet, listed as unreleased.
+// Irisalis is a Prismana form even though it has no other form. The game leaves the Prismana
+// tag off a species' only form, so Irisalis and Somniwing are tagged Prismana here by hand.
 
 const FORMS = [
   {"n": "001", "name": "Emberpup", "element": "fire", "form": "Base", "region": "breezy"},
@@ -44,7 +39,7 @@ const FORMS = [
   {"n": "003", "name": "Scorchhowl", "element": "fire", "form": "Prismana", "umbral": false, "region": "breezy"},
   {"n": "003", "name": "Scorchhowl", "element": "fire", "form": "Timberline", "region": "breezy"},
   {"n": "004", "name": "Inferlupa", "element": "fire", "element2": "dark", "form": "Base", "region": "breezy"},
-  {"n": "004", "name": "Inferlupa", "element": "dark", "element2": "fire", "form": "Prismana", "umbral": false, "region": "breezy"},
+  {"n": "004", "name": "Inferlupa", "element": "fire", "element2": "dark", "form": "Prismana", "umbral": false, "region": "breezy"},
   {"n": "005", "name": "Celestis", "element": "dark", "form": "Base", "region": "breezy"},
   {"n": "006", "name": "Stellarys", "element": "dark", "form": "Base", "region": "breezy"},
   {"n": "006", "name": "Stellarys", "element": "dark", "element2": "water", "form": "Rainfall", "region": "breezy"},
@@ -130,7 +125,7 @@ const FORMS = [
   {"n": "029", "name": "Gracewing", "element": "wind", "element2": "dark", "form": "Nighttime", "region": "breezy"},
   {"n": "029", "name": "Gracewing", "element": "wind", "element2": "earth", "form": "Timberline", "region": "breezy"},
   {"n": "030", "name": "Somniwing", "element": "wind", "element2": "grass", "form": "Base", "umbral": false, "region": "breezy"},
-  {"n": "030", "name": "Somniwing", "element": "wind", "form": "Prismana", "region": "breezy"},
+  {"n": "030", "name": "Somniwing", "element": "wind", "element2": "grass", "form": "Prismana", "umbral": false, "region": "breezy"},
   {"n": "031", "name": "Eko", "element": "wind", "form": "Base", "region": "breezy"},
   {"n": "032", "name": "Eklue", "element": "wind", "form": "Base", "region": "breezy"},
   {"n": "033", "name": "Budsquire", "element": "grass", "form": "Base", "region": "breezy"},
@@ -233,42 +228,66 @@ const FORMS = [
   {"n": "080", "name": "Fahloo", "element": "water", "form": "Base", "region": "breezy"},
   {"n": "081", "name": "Erlath", "element": "water", "form": "Base", "region": "breezy"},
   {"n": "082", "name": "Besauce", "element": "electric", "form": "Base", "umbral": false, "region": "breezy"},
-  {"n": "—", "name": "Reefish", "element": "earth", "element2": "water", "form": "Base", "region": "whisperwake"},
-  {"n": "—", "name": "Reefish", "element": "earth", "form": "Rainfall", "region": "whisperwake"},
-  {"n": "—", "name": "Coraliz", "element": "earth", "element2": "water", "form": "Base", "region": "whisperwake"},
-  {"n": "—", "name": "Coraliz", "element": "earth", "form": "Rainfall", "region": "whisperwake"},
-  {"n": "—", "name": "Saws", "element": "unknown", "form": "Base", "region": "whisperwake"},
-  {"n": "—", "name": "Prawnch", "element": "unknown", "form": "Base", "region": "whisperwake"},
-  {"n": "—", "name": "Cheekie", "element": "ice", "form": "Base", "region": "whisperwake"},
-  {"n": "—", "name": "Wavwal", "element": "ice", "form": "Base", "region": "whisperwake"},
-  {"n": "—", "name": "Bubbeep", "element": "grass", "element2": "water", "form": "Base", "region": "whisperwake"},
-  {"n": "—", "name": "Glameep", "element": "grass", "element2": "water", "form": "Base", "region": "whisperwake"},
-  {"n": "—", "name": "Glameep", "element": "grass", "element2": "dark", "form": "Prismana", "umbral": false, "region": "whisperwake"},
-  {"n": "—", "name": "Popapus", "element": "water", "form": "Base", "region": "whisperwake"},
-  {"n": "—", "name": "Gachapus", "element": "water", "form": "Base", "region": "whisperwake"},
-  {"n": "—", "name": "Gachapus", "element": "water", "form": "Prismana", "region": "whisperwake"},
-  {"n": "—", "name": "Malangel", "element": "ice", "form": "Base", "region": "whisperwake"},
-  {"n": "—", "name": "Malevsera", "element": "ice", "form": "Base", "region": "whisperwake"},
-  {"n": "—", "name": "Jabster", "element": "water", "form": "Base", "region": "whisperwake"},
-  {"n": "—", "name": "Jabster", "element": "water", "form": "Prismana", "region": "whisperwake"},
-  {"n": "—", "name": "Whirlbite", "element": "unknown", "form": "Base", "region": "whisperwake"},
-  {"n": "—", "name": "Whirlbite", "element": "unknown", "form": "Prismana", "region": "whisperwake"},
-  {"n": "—", "name": "Sugartini", "element": "unknown", "form": "Base", "region": "whisperwake"},
-  {"n": "—", "name": "Sugartini", "element": "unknown", "form": "Prismana", "region": "whisperwake"},
-  {"n": "—", "name": "Pouchwisp", "element": "unknown", "form": "Base", "region": "whisperwake"},
-  {"n": "—", "name": "Pouchwisp", "element": "unknown", "form": "Prismana", "region": "whisperwake"},
-  {"n": "—", "name": "Royalby", "element": "unknown", "form": "Base", "region": "whisperwake"},
-  {"n": "—", "name": "Royalby", "element": "unknown", "form": "Prismana", "region": "whisperwake"},
-  {"n": "—", "name": "Jeburst", "element": "unknown", "form": "Base", "region": "whisperwake"},
-  {"n": "—", "name": "Jeburst", "element": "unknown", "form": "Prismana", "region": "whisperwake"},
-  {"n": "—", "name": "Hoptail", "element": "unknown", "form": "Base", "region": "whisperwake"},
-  {"n": "—", "name": "Hypnyto", "element": "unknown", "form": "Prismana", "region": "whisperwake"},
-  {"n": "—", "name": "Ekrim", "element": "unknown", "form": "Prismana", "region": "whisperwake"},
+  {"n": "001", "name": "Reefish", "element": "earth", "element2": "water", "form": "Base", "region": "whisperwake"},
+  {"n": "001", "name": "Reefish", "element": "earth", "form": "Rainfall", "region": "whisperwake"},
+  {"n": "002", "name": "Coraliz", "element": "earth", "element2": "water", "form": "Base", "region": "whisperwake"},
+  {"n": "002", "name": "Coraliz", "element": "earth", "form": "Rainfall", "region": "whisperwake"},
+  {"n": "003", "name": "Hypnowl", "element": "wind", "form": "Base", "region": "whisperwake"},
+  {"n": "004", "name": "Mesmerowl", "element": "wind", "form": "Base", "region": "whisperwake"},
+  {"n": "005", "name": "Dewlop", "element": "water", "form": "Base", "region": "whisperwake"},
+  {"n": "005", "name": "Dewlop", "element": "water", "form": "Waterfall", "region": "whisperwake"},
+  {"n": "006", "name": "Dewple", "element": "water", "form": "Base", "region": "whisperwake"},
+  {"n": "006", "name": "Dewple", "element": "water", "form": "Waterfall", "region": "whisperwake"},
+  {"n": "007", "name": "Coinwisp", "element": "dark", "form": "Base", "region": "whisperwake"},
+  {"n": "008", "name": "Pouchwisp", "element": "dark", "form": "Base", "region": "whisperwake"},
+  {"n": "008", "name": "Pouchwisp", "element": "dark", "form": "Prismana", "umbral": false, "region": "whisperwake"},
+  {"n": "009", "name": "Bubbeep", "element": "grass", "element2": "water", "form": "Base", "region": "whisperwake"},
+  {"n": "010", "name": "Glameep", "element": "grass", "element2": "water", "form": "Base", "region": "whisperwake"},
+  {"n": "010", "name": "Glameep", "element": "grass", "element2": "dark", "form": "Prismana", "umbral": false, "region": "whisperwake"},
+  {"n": "010", "name": "Glameep", "element": "grass", "element2": "wind", "form": "Tempest", "region": "whisperwake"},
+  {"n": "011", "name": "Popapus", "element": "water", "form": "Base", "region": "whisperwake"},
+  {"n": "012", "name": "Gachapus", "element": "water", "form": "Base", "region": "whisperwake"},
+  {"n": "012", "name": "Gachapus", "element": "water", "element2": "dark", "form": "Prismana", "umbral": false, "region": "whisperwake"},
+  {"n": "013", "name": "Sugarfish", "element": "ice", "form": "Base", "region": "whisperwake"},
+  {"n": "014", "name": "Sugarslime", "element": "ice", "form": "Base", "region": "whisperwake"},
+  {"n": "015", "name": "Sugartini", "element": "ice", "form": "Base", "region": "whisperwake"},
+  {"n": "015", "name": "Sugartini", "element": "ice", "element2": "water", "form": "Prismana", "umbral": false, "region": "whisperwake"},
+  {"n": "016", "name": "Lilipole", "element": "water", "form": "Base", "region": "whisperwake"},
+  {"n": "017", "name": "Scrubbit", "element": "water", "form": "Base", "region": "whisperwake"},
+  {"n": "017", "name": "Scrubbit", "element": "water", "form": "Rainfall", "region": "whisperwake"},
+  {"n": "018", "name": "Salabask", "element": "grass", "element2": "water", "form": "Base", "region": "whisperwake"},
+  {"n": "019", "name": "Crocobask", "element": "grass", "element2": "water", "form": "Base", "region": "whisperwake"},
+  {"n": "020", "name": "Puffby", "element": "wind", "form": "Base", "region": "whisperwake"},
+  {"n": "021", "name": "Buffby", "element": "wind", "form": "Base", "region": "whisperwake"},
+  {"n": "022", "name": "Royalby", "element": "wind", "form": "Base", "region": "whisperwake"},
+  {"n": "022", "name": "Royalby", "element": "wind", "element2": "light", "form": "Prismana", "umbral": false, "region": "whisperwake"},
+  {"n": "023", "name": "Saws", "element": "water", "form": "Base", "region": "whisperwake"},
+  {"n": "024", "name": "Whirlbite", "element": "water", "form": "Base", "region": "whisperwake"},
+  {"n": "024", "name": "Whirlbite", "element": "water", "element2": "dark", "form": "Prismana", "umbral": false, "region": "whisperwake"},
+  {"n": "025", "name": "Prawnch", "element": "ice", "form": "Base", "region": "whisperwake"},
+  {"n": "026", "name": "Jabster", "element": "dark", "element2": "ice", "form": "Base", "region": "whisperwake"},
+  {"n": "026", "name": "Jabster", "element": "electric", "element2": "ice", "form": "Prismana", "umbral": false, "region": "whisperwake"},
+  {"n": "026", "name": "Jabster", "element": "water", "element2": "ice", "form": "Rainfall", "region": "whisperwake"},
+  {"n": "027", "name": "Jeglid", "element": "water", "form": "Base", "region": "whisperwake"},
+  {"n": "027", "name": "Jeglid", "element": "water", "element2": "wind", "form": "Tempest", "region": "whisperwake"},
+  {"n": "028", "name": "Jeburst", "element": "water", "form": "Base", "region": "whisperwake"},
+  {"n": "028", "name": "Jeburst", "element": "water", "element2": "dark", "form": "Prismana", "umbral": false, "region": "whisperwake"},
+  {"n": "028", "name": "Jeburst", "element": "water", "element2": "wind", "form": "Tempest", "region": "whisperwake"},
+  {"n": "029", "name": "Ekrim", "element": "dark", "form": "Base", "region": "whisperwake"},
+  {"n": "029", "name": "Ekrim", "element": "dark", "element2": "fire", "form": "Prismana", "umbral": false, "region": "whisperwake"},
+  {"n": "—", "name": "Cheekie", "element": "ice", "form": "Base", "region": "unreleased"},
+  {"n": "—", "name": "Wavwal", "element": "ice", "form": "Base", "region": "unreleased"},
+  {"n": "—", "name": "Malangel", "element": "ice", "form": "Base", "region": "unreleased"},
+  {"n": "—", "name": "Malevsera", "element": "ice", "form": "Base", "region": "unreleased"},
   {"n": "—", "name": "Morphling", "element": "none", "form": "Base", "region": "unreleased"},
-  {"n": "10001", "name": "Irisalis", "element": "grass", "form": "Base", "umbral": false, "region": "special"},
+  {"n": "10001", "name": "Irisalis", "element": "grass", "form": "Prismana", "umbral": false, "region": "special"},
   {"n": "10002", "name": "Dazmand", "element": "electric", "form": "Base", "region": "special"},
   {"n": "10003", "name": "Fulmintis", "element": "electric", "form": "Base", "region": "special"},
   {"n": "10003", "name": "Fulmintis", "element": "electric", "element2": "light", "form": "Prismana", "umbral": false, "region": "special"},
+  {"n": "10004", "name": "Hoptail", "element": "wind", "element2": "electric", "form": "Base", "region": "special"},
+  {"n": "10006", "name": "Hypnyto", "element": "wind", "form": "Base", "region": "special"},
+  {"n": "10006", "name": "Hypnyto", "element": "wind", "element2": "light", "form": "Prismana", "umbral": false, "region": "special"},
+  {"n": "10007", "name": "Jaguaraun", "element": "electric", "form": "Base", "region": "special"},
   {"n": "11001", "name": "Sparkelf", "element": "fire", "form": "Base", "region": "special"},
   {"n": "11001", "name": "Sparkelf", "element": "fire", "form": "Prismana", "umbral": false, "region": "special"},
   {"n": "99996", "name": "Lunara", "element": "light", "form": "Base", "umbral": false, "region": "special"},

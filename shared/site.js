@@ -43,17 +43,21 @@ const SITE_ROOT = new URL("../", document.currentScript.src);
 //   file     the download's file name
 //   renamed  {old key: new key} for keys the tool has renamed, so older backup files still load
 //   legacy   turns an older kind of backup file into {key: value} data, or returns nothing
+//   merge    adds a file's {key: value} data to what's saved without removing anything, and returns a message.
+//            Giving it adds an Import button; it throws if the data can't be used.
 //   title, intro, save, load: override the heading, the text under it and the button labels
-// Loading or clearing reloads the page, so it starts fresh from the new data.
+// Loading or clearing reloads the page, so it starts fresh from the new data. Importing leaves the redraw to merge.
 const BACKUP_SITE = "spibane-tools";
-function backups({ what, keys, file, renamed = {}, legacy, title, intro, save, load }) {
+function backups({ what, keys, file, renamed = {}, legacy, merge, title, intro, save, load }) {
   const section = document.querySelector(".saves") || document.querySelector("main").appendChild(document.createElement("section"));
   section.className = "saves";
   section.setAttribute("aria-labelledby", "saves-h");
   section.innerHTML = `<h2 id="saves-h">${esc(title || "Back up your " + what)}</h2>` +
-    `<p class="muted">${intro || `Saved in this browser only. Back up every tool at once from the <a href="${SITE_ROOT}">main page</a>.`}</p>` +
+    `<p class="muted">${intro || `Saved in this browser only. Back up every tool at once from the <a href="${SITE_ROOT}">main page</a>.`}` +
+    (merge ? ` Import adds a file’s ${esc(what)} to yours.` : "") + `</p>` +
     `<div class="save-row"><button type="button" class="b-save">${esc(save || "Save")}</button>` +
     `<input type="file" id="saves-file" class="vh" accept=".json,application/json"><label class="button" for="saves-file">${esc(load || "Load")}</label>` +
+    (merge ? `<input type="file" id="saves-import" class="vh" accept=".json,application/json"><label class="button" for="saves-import">Import</label>` : "") +
     (keys ? `<button type="button" class="b-clear">Clear</button>` : "") + `</div>` +
     `<p class="muted" aria-live="polite"></p>`;
   const msg = t => { section.querySelector("[aria-live]").textContent = t; };
@@ -70,7 +74,8 @@ function backups({ what, keys, file, renamed = {}, legacy, title, intro, save, l
     downloadJSON(file, { site: BACKUP_SITE, saved: new Date().toISOString(), data });
     msg(keys ? `Saved your ${what} to a file.` : `Saved everything from every tool (${Object.keys(data).length} items) to a file.`);
   });
-  section.querySelector("#saves-file").addEventListener("change", async e => {
+  // The tool's own {key: value} entries from a chosen backup file, or nothing after saying what was wrong
+  const read = async e => {
     const f = e.target.files[0]; e.target.value = "";
     if (!f) return;
     let entries;
@@ -81,6 +86,11 @@ function backups({ what, keys, file, renamed = {}, legacy, title, intro, save, l
       entries = Object.entries(data).filter(([, v]) => typeof v === "string").map(([k, v]) => [renamed[k] || k, v]).filter(([k]) => mine(k));
     } catch (_) { msg("That file isn’t a backup from this site."); return; }
     if (!entries.length) { msg(`That backup doesn’t have any ${what || "saved data"} in it.`); return; }
+    return entries;
+  };
+  section.querySelector("#saves-file").addEventListener("change", async e => {
+    const entries = await read(e);
+    if (!entries) return;
     if (!confirm(keys ? `Replace your ${what} with this backup? Save yours to a file first if you might want it back.`
       : "Replace everything saved on every page of this site with this backup? Save your current progress first if you might want it back.")) return;
     try {
@@ -88,6 +98,12 @@ function backups({ what, keys, file, renamed = {}, legacy, title, intro, save, l
       for (const [k, v] of entries) localStorage.setItem(k, v);
     } catch (_) { msg("Couldn’t save the backup in this browser."); return; }
     reload(keys ? `Loaded your ${what} from the file.` : "Loaded your backup into every tool.");
+  });
+  if (merge) section.querySelector("#saves-import").addEventListener("change", async e => {
+    const entries = await read(e);
+    if (!entries) return;
+    try { msg(merge(Object.fromEntries(entries))); }
+    catch (_) { msg("That file isn’t a backup from this site."); }
   });
   if (keys) section.querySelector(".b-clear").addEventListener("click", () => {
     if (!confirm(`Clear your ${what} on this page? Save it to a file first if you might want it back.`)) return;
