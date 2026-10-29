@@ -97,9 +97,12 @@ const die=(p,v,i)=>{
 function breakdown(h){
   if(h.coin)return '';
   const parts=h.parts.map((p,j)=>(j?(p.sign<0?' − ':' + '):p.sign<0?'−':'')+
-    (p.value!==undefined?p.value:'['+p.rolls.map((v,i)=>die(p,v,i)).join(' ')+']'));
+    (p.value!==undefined?p.value:'['+p.rolls.map((v,i)=>die(p,v,i)).join(' | ')+']'));
+  // Coin flips (d2s) get a tally of heads and tails, with 1 as heads like the Coin button
+  const flips=h.parts.filter(p=>p.sides===2&&p.rolls.length>1).flatMap(p=>p.kept.map(i=>p.rolls[i]));
+  const tally=flips.length?' <span class="tally">'+flips.filter(v=>v===1).length+' heads | '+flips.filter(v=>v===2).length+' tails</span>':'';
   // A single die, or a plain number, has nothing more to show
-  return h.parts.length===1&&(!h.parts[0].rolls||h.parts[0].rolls.length===1)?'':parts.join('');
+  return h.parts.length===1&&(!h.parts[0].rolls||h.parts[0].rolls.length===1)?'':parts.join('')+tally;
 }
 const entry=h=>'<span class="h-expr">'+esc(h.coin?'Coin':h.expr)+'</span><span class="h-break">'+breakdown(h)+'</span><b class="h-total">'+esc(h.coin||h.total)+'</b>';
 
