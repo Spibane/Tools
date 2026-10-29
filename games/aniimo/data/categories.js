@@ -1,7 +1,7 @@
 // Your own groupings, kept by hand. Refreshing forms.js never changes this file.
 //
 // How to write an entry:
-//   "Irisalis"          - the base form
+//   "Irisal"            - the base form
 //   "Prismana Iris"     - the Prismana form
 //   "Highland Iris"     - a regional form (form name, then species name)
 //
@@ -19,19 +19,17 @@ const CATEGORIES = {
     "Prismana Glynsera",
     "Prismana Waleetle",
     "Prismana Infergon",
-    "Irisalis",
+    "Prismana Irisalis",
     "Dazmand",
     "Fulmintis",
     "Prismana Fulmintis",
     "Sparkelf",
     "Prismana Sparkelf",
-  ],
-
-  // Season 2 (Whisperwake Isles) keepsake exclusives
-  keepsake2: [
-    "Prismana Hypnyto",
-    "Prismana Ekrim",
     "Hoptail",
+    "Hypnyto",
+    "Prismana Hypnyto",
+    "Jaguaraun",
+    "Prismana Ekrim",
     "Prismana Pouchwisp",
     "Prismana Royalby",
     "Prismana Jeburst",

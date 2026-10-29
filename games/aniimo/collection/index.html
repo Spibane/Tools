@@ -20,14 +20,13 @@
 <p class="intro">Every form in Aniilog order, laid out as in-game boxes.</p>
 <fieldset><legend>What to show</legend>
 <div class="opt"><input type="checkbox" id="opt-breezy"><label for="opt-breezy">Breezy Plains<small>#001–#082 and their regional forms.</small></label></div>
-<div class="opt"><input type="checkbox" id="opt-whisperwake"><label for="opt-whisperwake">Whisperwake Isles<small>And their regional forms. Not numbered yet.</small></label></div>
+<div class="opt"><input type="checkbox" id="opt-whisperwake"><label for="opt-whisperwake">Whisperwake Isles<small>#001–#029 and their regional forms.</small></label></div>
 <div class="opt"><input type="checkbox" id="opt-unreleased"><label for="opt-unreleased">Unknown<small>Not in the game yet.</small></label></div>
 <hr class="opt-rule">
 <div class="opt"><input type="checkbox" id="opt-pris"><label for="opt-pris">Include Prismana forms<small>Keepsake and event Prismana follow their own options.</small></label></div>
 <div class="opt sub"><input type="checkbox" id="opt-prisgroup"><label for="opt-prisgroup">Group Prismana as their own category<small>After the regions.</small></label></div>
 <div class="opt"><input type="checkbox" id="opt-gender"><label for="opt-gender"><span class="ref" data-ref="gender">Include gender forms</span><small>♂ and ♀ as separate tiles.</small></label></div>
 <div class="opt"><input type="checkbox" id="opt-keep"><label for="opt-keep"><span class="ref" data-ref="keepsake">Include Season 1 keepsake exclusives</span></label></div>
-<div class="opt"><input type="checkbox" id="opt-keep2"><label for="opt-keep2"><span class="ref" data-ref="keepsake2">Include Season 2 keepsake exclusives</span></label></div>
 <div class="opt"><input type="checkbox" id="opt-event"><label for="opt-event"><span class="ref" data-ref="event">Include one-time event specials</span><small>Includes #10001+ forms. No duplicates possible.</small></label></div>
 <div class="opt sub"><input type="checkbox" id="opt-eventgroup"><label for="opt-eventgroup">Group event specials as their own category<small>After the keepsakes.</small></label></div>
 <div class="opt"><input type="checkbox" id="opt-break"><label for="opt-break">Start each category on a new page</label></div>
@@ -42,11 +41,11 @@
 <script src="../data/forms.js"></script>
 <script src="../data/categories.js"></script>
 <script>
-const CATS={breezy:"Breezy Plains",whisperwake:"Whisperwake Isles",unreleased:"Unknown",prismana:"Prismana",keepsake:"Season 1 keepsakes",keepsake2:"Season 2 keepsakes",event:"One-time events"};
-const ORDER=["breezy","whisperwake","unreleased","prismana","keepsake","keepsake2","event"];
+const CATS={breezy:"Breezy Plains",whisperwake:"Whisperwake Isles",unreleased:"Unknown",prismana:"Prismana",keepsake:"Season 1 keepsakes",event:"One-time events"};
+const ORDER=["breezy","whisperwake","unreleased","prismana","keepsake","event"];
 const keyOf=f=>f.form==="Base"?f.name:f.form+" "+f.name;
 const IN={};const missing=[];
-for(const c of ["keepsake","keepsake2","event"]){for(const k of (CATEGORIES[c]||[])){
+for(const c of ["keepsake","event"]){for(const k of (CATEGORIES[c]||[])){
   if(!FORMS.some(f=>keyOf(f)===k))missing.push(k);IN[k]=c;}}
 FORMS.forEach(f=>{f.category=IN[keyOf(f)]||(f.region==="special"?"event":f.region);f.oneTime=f.category==="event";f.prismana=f.form==="Prismana";});
 // Excluded forms from categories.js don't exist in the game, so drop them
@@ -66,7 +65,7 @@ const autoEvent=FORMS.filter(f=>f.region==="special"&&!IN[keyOf(f)]).map(keyOf);
 const EL={"fire": "Fire", "water": "Water", "grass": "Grass", "electric": "Lightning", "ice": "Ice", "earth": "Earth", "wind": "Wind", "light": "Light", "dark": "Dark", "none": "No element", "unknown": "Element unknown"};
 const ROWS=[4,5,6,5,4];
 const REGIONS=["breezy","whisperwake","unreleased"];
-const OPTS=[...REGIONS,"pris","prisgroup","gender","keep","keep2","event","eventgroup","break","joinregions"];
+const OPTS=[...REGIONS,"pris","prisgroup","gender","keep","event","eventgroup","break","joinregions"];
 // Forms that come as both ♂ and ♀, from categories.js
 const GENDERED=CATEGORIES.genders||[];
 GENDERED.forEach(k=>{if(!FORMS.some(f=>keyOf(f)===k)&&!missing.includes(k))missing.push(k);});
@@ -80,7 +79,6 @@ function render(){
   $('opt-joinregions').disabled=!o.break;
   const list=FORMS.filter(f=>{
     if(f.category==='keepsake')return o.keep;
-    if(f.category==='keepsake2')return o.keep2;
     if(f.category==='event')return o.event;
     if(REGIONS.includes(f.category)&&!o[f.category])return false;
     if(f.prismana&&!o.pris)return false;
@@ -88,7 +86,7 @@ function render(){
   }).flatMap(f=>o.gender&&GENDERED.includes(keyOf(f))?[{...f,gender:'♂'},{...f,gender:'♀'}]:[f]);
   list.forEach((f,i)=>{
     if(f.category==='event')f._c=(o.eventgroup||f.region==='special')?'event':f.region;
-    else f._c=(o.prisgroup&&f.prismana&&!f.category.startsWith('keepsake'))?'prismana':f.category;
+    else f._c=(o.prisgroup&&f.prismana&&f.category!=='keepsake')?'prismana':f.category;
     f._i=i;
   });
   list.sort((a,b)=>ORDER.indexOf(a._c)-ORDER.indexOf(b._c)||a._i-b._i);
@@ -137,7 +135,6 @@ if(missing.length){$('warn').hidden=false;$('warn').innerHTML='These <span class
 // Hover boxes on each categories.js mention, showing the entries that mention refers to
 const TIPS={
   keepsake:['Season 1 keepsake exclusives (keepsake)',CATEGORIES.keepsake||[]],
-  keepsake2:['Season 2 keepsake exclusives (keepsake2)',CATEGORIES.keepsake2||[]],
   event:['One-time event specials (event)',CATEGORIES.event||[],autoEvent],
   gender:['Gender forms (genders)',GENDERED],
   missing:['Entries with no matching form',missing]
