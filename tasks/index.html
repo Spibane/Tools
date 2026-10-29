@@ -37,10 +37,14 @@ const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 // An event is {id, name, notes, tz, start, startTime, end, endTime, repeat: null or {every, time, weekday}, target, count, at, finished}.
 // Dates are 'YYYY-MM-DD' in the event's zone; an empty end time means the event lasts the whole end day.
 // finished is when it was marked finished, which moves it to the Ended list early.
-let state=Object.assign({groups:[]},store.load('tasks'));
 // Events used to sit in one list of their own; they become an event group
-state.groups.forEach(g=>{g.kind=g.kind||'tasks';});
-if(state.events){if(state.events.length)state.groups.push({id:uid(),name:'Events',open:true,kind:'events',items:state.events});delete state.events;}
+function upgrade(s){
+  s=Object.assign({groups:[]},s);
+  s.groups.forEach(g=>{g.kind=g.kind||'tasks';});
+  if(s.events){if(s.events.length)s.groups.push({id:uid(),name:'Events',open:true,kind:'events',items:s.events});delete s.events;}
+  return s;
+}
+let state=upgrade(store.load('tasks'));
 const save=()=>store.save('tasks',state);
 
 // Time zone maths. partsIn gives the wall-clock date and time in a zone at an instant.
@@ -348,5 +352,24 @@ $('dialog').addEventListener('close',()=>{const o=editing&&$(editing.opener);if(
 // Keeps the countdowns current, and clears done marks as resets pass
 setInterval(()=>{if(!$('dialog').open&&!document.activeElement.matches('.c-input'))render();},30000);
 render();
-backups({what:'tasks',keys:['tasks'],file:'tasks-and-events.json'});
+// Importing adds a file's groups after yours. A group you already have (the same one, from your own backup) only gets the
+// tasks and events it's missing. Imported ones start with no progress, since it was someone else's.
+function importTasks(data){
+  const add=upgrade(JSON.parse(data.tasks));
+  if(!Array.isArray(add.groups))throw 0;
+  const have=new Set(state.groups.flatMap(g=>g.items.map(it=>it.id)));
+  let groups=0,items=0;
+  for(const g of add.groups){
+    if(!g||!Array.isArray(g.items))continue;
+    const fresh=g.items.filter(it=>it&&!have.has(it.id)).map(it=>Object.assign(it,{count:0,at:0},g.kind==='events'?{finished:null}:{}));
+    const mine=groupById(g.id);
+    if(mine&&mine.kind===g.kind)mine.items.push(...fresh);
+    else if(fresh.length||!g.items.length){state.groups.push(Object.assign(g,{id:mine?uid():g.id,items:fresh}));groups++;}
+    items+=fresh.length;
+  }
+  if(!groups&&!items)return 'You already have everything in that file.';
+  save();render();
+  return 'Imported '+(groups?groups+' group'+(groups===1?'':'s')+' and ':'')+items+' item'+(items===1?'':'s')+'.';
+}
+backups({what:'tasks',keys:['tasks'],file:'tasks-and-events.json',merge:importTasks});
 </script></body></html>
