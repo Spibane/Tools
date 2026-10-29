@@ -1,0 +1,30 @@
+/* Bingo cards. Buttons, panels and the roll button come from shared/base.css.
+   Loaded after shared/base.css. */
+
+/* The card: a square grid, --n squares wide */
+.card-panel{margin-bottom:26px}
+.status{min-height:1.5em;margin:0 0 8px;font-weight:700;font-size:1.2rem}
+.card{display:grid;grid-template-columns:repeat(var(--n),1fr);gap:4px;max-width:560px;margin:0 auto}
+.sq{aspect-ratio:1;display:flex;align-items:center;justify-content:center;min-width:0;padding:4px;
+  background:var(--tile);border:2px solid var(--rim);color:var(--ink);font-size:clamp(.62rem,2.3vw,.9rem);font-weight:600;
+  line-height:1.2;text-align:center;overflow:hidden;overflow-wrap:anywhere;hyphens:auto}
+.sq.free{font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+/* Marked squares are filled; squares in a finished line get the gradient */
+.sq[aria-pressed="true"],.sq.free{background:var(--ink);color:var(--tile);border-color:var(--ink)}
+.sq.win{background:var(--brand);color:#121212;border-color:#121212}
+.sq:hover{border-color:var(--ink)}
+button.sq:hover:not([aria-pressed="true"]):not(.win){background:var(--surface)}
+.card-buttons{display:flex;justify-content:flex-end;margin-top:10px}
+
+/* Card settings */
+.field{display:grid;gap:4px;margin-bottom:10px;font-weight:600}
+.field .hint{font-weight:400;margin:0}
+.hint.short{color:var(--ink);font-weight:600}
+.opts{display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;margin-bottom:10px}
+.opts .toggle{margin:0}
+.toggle:has(input:disabled){opacity:.5;cursor:default}
+.size{display:flex;align-items:center;gap:8px;font-size:.9rem;font-weight:600}
+input[type="text"],select,textarea{font:inherit;font-weight:400;color:var(--ink);background:var(--tile);border:2px solid var(--rim);padding:4px 8px}
+textarea{width:100%;resize:vertical}
+.share-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+@media print{fieldset,.roll,.card-buttons,.status{display:none}.card-panel{border:0;background:none}.card-panel::before{display:none}}

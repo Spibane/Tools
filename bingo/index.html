@@ -1,0 +1,129 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bingo Cards</title>
+<meta name="description" content="Bingo cards made from your own list of things that might happen.">
+<meta property="og:title" content="Bingo Cards">
+<meta property="og:description" content="Bingo cards made from your own list of things that might happen.">
+<meta property="og:url" content="https://spibane.com/bingo/">
+<meta property="og:site_name" content="Spibane's Tools for Everything">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://spibane.com/shared/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../shared/base.css">
+<script src="../shared/site.js"></script>
+<link rel="stylesheet" href="style.css"></head><body><main>
+<a class="back" href="../">Back to All Tools</a>
+<h1>Bingo Cards</h1>
+<p class="intro">Bingo cards made from your own list of things that might happen.</p>
+<section class="card-panel panel" aria-labelledby="card-h">
+<div class="roll-head"><h2 id="card-h"></h2><button type="button" class="roll" id="new">New card</button></div>
+<p class="status" id="status" aria-live="polite"></p>
+<div class="card" id="card"></div>
+<div class="card-buttons"><button type="button" id="clear">Clear marks</button></div>
+</section>
+<fieldset>
+<legend>Card</legend>
+<label class="field">Title <input type="text" id="title" autocomplete="off"></label>
+<div class="opts">
+<label class="size">Size <select id="size"><option value="3">3 × 3</option><option value="4">4 × 4</option><option value="5">5 × 5</option></select></label>
+<label class="toggle"><input type="checkbox" id="free"> Free middle square</label>
+</div>
+<label class="field">Squares <span class="hint" id="need"></span>
+<textarea id="entries" rows="12" spellcheck="false"></textarea></label>
+<div class="share-row"><button type="button" id="share">Copy share link</button><span class="muted" id="share-msg" aria-live="polite"></span></div>
+</fieldset>
+</main>
+<script>
+// Saved data: title, entries (one per line), size (3-5), free (a free middle square on odd sizes),
+// card (the squares, row by row, with null for the free one) and marked (indexes of marked squares)
+let state=Object.assign({title:'Bingo',entries:'',size:5,free:true,card:[],marked:[]},store.load('bingo'));
+const save=()=>store.save('bingo',state);
+const entries=()=>[...new Set(state.entries.split('\n').map(s=>s.trim()).filter(Boolean))];
+const hasFree=()=>state.free&&state.size%2===1;
+const needed=()=>state.size*state.size-(hasFree()?1:0);
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+
+function newCard(){
+  const pool=shuffle(entries());
+  if(pool.length<needed())return;
+  const mid=hasFree()?(state.size*state.size-1)/2:-1;
+  state.card=Array.from({length:state.size*state.size},(_,i)=>i===mid?null:pool.pop());
+  state.marked=mid<0?[]:[mid];
+  save();renderCard();
+}
+
+// Every full row, column and diagonal, as lists of square indexes
+function lines(n){
+  const r=[...Array(n).keys()],out=[];
+  r.forEach(i=>{out.push(r.map(j=>i*n+j));out.push(r.map(j=>j*n+i));});
+  out.push(r.map(i=>i*n+i),r.map(i=>i*n+n-1-i));
+  return out;
+}
+
+function renderCard(){
+  $('card-h').textContent=state.title||'Bingo';
+  const n=Math.round(Math.sqrt(state.card.length)),have=entries().length,need=needed();
+  $('need').textContent='One per line. A card uses '+need+', and you have '+have+'.';
+  $('need').classList.toggle('short',have<need);
+  $('new').disabled=have<need;
+  $('clear').hidden=!state.card.length;
+  if(!state.card.length){
+    $('card').innerHTML='';
+    $('status').textContent=have<need?'Add '+(need-have)+' more square'+(need-have===1?'':'s')+' below to make a card.':'Not made yet.';
+    return;
+  }
+  const won=lines(n).filter(l=>l.every(i=>state.marked.includes(i))),inWin=new Set(won.flat());
+  $('card').style.setProperty('--n',n);
+  $('card').innerHTML=state.card.map((s,i)=>s===null?'<div class="sq free'+(inWin.has(i)?' win':'')+'">Free</div>':
+    '<button type="button" class="sq'+(inWin.has(i)?' win':'')+'" data-i="'+i+'" aria-pressed="'+state.marked.includes(i)+'">'+esc(s)+'</button>').join('');
+  $('status').textContent=won.length?'Bingo!'+(won.length>1?' ×'+won.length:''):'';
+}
+
+function render(){
+  $('title').value=state.title;$('entries').value=state.entries;
+  $('size').value=state.size;$('free').checked=state.free;$('free').disabled=state.size%2===0;
+  renderCard();
+}
+
+$('new').addEventListener('click',()=>{
+  if(state.marked.length>(hasFree()?1:0)&&!confirm('Make a new card? Your marks on this one will go.'))return;
+  newCard();
+});
+$('clear').addEventListener('click',()=>{state.marked=state.card.flatMap((s,i)=>s===null?[i]:[]);save();renderCard();});
+$('card').addEventListener('click',e=>{
+  const b=e.target.closest('button.sq');if(!b)return;
+  const i=+b.dataset.i;
+  state.marked=state.marked.includes(i)?state.marked.filter(x=>x!==i):state.marked.concat(i);
+  save();renderCard();
+  $('card').querySelector('[data-i="'+i+'"]').focus();
+});
+$('title').addEventListener('input',e=>{state.title=e.target.value;save();$('card-h').textContent=state.title||'Bingo';});
+$('entries').addEventListener('input',e=>{state.entries=e.target.value;save();renderCard();});
+$('size').addEventListener('change',e=>{state.size=+e.target.value;$('free').disabled=state.size%2===0;save();renderCard();});
+$('free').addEventListener('change',e=>{state.free=e.target.checked;save();renderCard();});
+
+// Share links carry the title, squares and size in the address after #, so everyone makes their own card from the same list
+const encode=o=>btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const decode=s=>JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0))));
+$('share').addEventListener('click',async()=>{
+  const url=location.href.split('#')[0]+'#list='+encode({t:state.title,e:entries(),s:state.size,f:state.free});
+  try{await navigator.clipboard.writeText(url);$('share-msg').textContent='Copied.';}
+  catch(_){prompt('Copy this link:',url);}
+});
+function openShared(){
+  const m=location.hash.match(/^#list=(.+)$/);if(!m)return;
+  history.replaceState(null,'',location.pathname+location.search);
+  let o;try{o=decode(m[1]);if(!Array.isArray(o.e))throw 0;}catch(_){$('share-msg').textContent='That share link didn’t work.';return;}
+  const list=o.e.map(String).join('\n');
+  if(list===entries().join('\n')&&o.t===state.title)return;
+  if(state.entries.trim()&&!confirm('Replace your squares with the shared list'+(o.t?' “'+o.t+'”':'')+'?'))return;
+  Object.assign(state,{title:String(o.t||'Bingo'),entries:list,size:[3,4,5].includes(o.s)?o.s:5,free:o.f!==false,card:[],marked:[]});
+  save();render();newCard();
+}
+
+render();openShared();
+addEventListener('hashchange',openShared);
+backups({what:'bingo card',keys:['bingo'],file:'bingo-card.json'});
+</script></body></html>
