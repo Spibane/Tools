@@ -125,5 +125,15 @@ function openShared(){
 
 render();openShared();
 addEventListener('hashchange',openShared);
-backups({what:'bingo card',keys:['bingo'],file:'bingo-card.json'});
+// Importing adds a file's squares to yours, leaving out ones you already have. Your card stays as it is.
+function importSquares(data){
+  const add=JSON.parse(data.bingo);
+  if(!add||typeof add.entries!=='string')throw 0;
+  const have=new Set(entries()),fresh=[...new Set(add.entries.split('\n').map(s=>s.trim()).filter(s=>s&&!have.has(s)))];
+  if(!fresh.length)return 'You already have every square in that file.';
+  state.entries=state.entries.replace(/\n*$/,state.entries.trim()?'\n':'')+fresh.join('\n');
+  save();render();
+  return 'Added '+fresh.length+' square'+(fresh.length===1?'':'s')+' to yours.';
+}
+backups({what:'bingo squares',keys:['bingo'],file:'bingo-card.json',merge:importSquares});
 </script></body></html>
