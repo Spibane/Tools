@@ -129,5 +129,26 @@ $('name').addEventListener('input',e=>{
 $('items').addEventListener('input',e=>{L().text=e.target.value;save();renderResults();});
 
 render();
-backups({what:'lists',keys:['randomizer'],file:'randomizer-lists.json'});
+// Importing adds a file's lists after yours. A list you already have (the same one, from your own backup) only gets
+// the lines it's missing. Imported lists start with no picks.
+function importLists(data){
+  const add=JSON.parse(data.randomizer);
+  if(!add||!Array.isArray(add.lists))throw 0;
+  let lists=0,lines=0;
+  for(const l of add.lists){
+    if(!l||typeof l.text!=='string')continue;
+    const mine=state.lists.find(x=>x.id===l.id);
+    if(mine){
+      const have=new Set(items(mine)),fresh=items(l).filter(x=>!have.has(x));
+      if(!fresh.length)continue;
+      mine.text=mine.text.replace(/\n*$/,mine.text.trim()?'\n':'')+fresh.join('\n');
+      lines+=fresh.length;
+    }
+    else{state.lists.push(Object.assign(blank(String(l.name||'Untitled')),{id:typeof l.id==='string'&&l.id?l.id:uid(),text:l.text,count:+l.count||1,cycle:!!l.cycle}));lists++;}
+  }
+  if(!lists&&!lines)return 'You already have everything in that file.';
+  save();render();
+  return 'Imported '+[lists?lists+' list'+(lists===1?'':'s'):'',lines?lines+' line'+(lines===1?'':'s')+' into lists you have':''].filter(Boolean).join(' and ')+'.';
+}
+backups({what:'lists',keys:['randomizer'],file:'randomizer-lists.json',merge:importLists});
 </script></body></html>
