@@ -2,6 +2,8 @@
 
 /* The inputs, side by side when there's room */
 .inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(11em,1fr));gap:10px 16px;padding-bottom:14px}
+/* The panel's gradient strip is a grid item too, so it spans the whole row */
+.inputs::before{grid-column:1/-1;margin-bottom:4px}
 .field{display:grid;align-content:start;gap:4px;font-weight:600}
 .field .hint{margin:0}
 .field input{width:100%;min-width:0;font:inherit;font-weight:400;color:var(--ink);background:var(--tile);border:2px solid var(--rim);padding:4px 8px}
