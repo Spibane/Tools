@@ -105,11 +105,8 @@ function breakdown(h){
   if(h.coin)return '';
   const parts=h.parts.map((p,j)=>(j?(p.sign<0?' − ':' + '):p.sign<0?'−':'')+
     (p.value!==undefined?p.value:'['+p.rolls.map((v,i)=>die(p,v,i)).join(' | ')+']'));
-  // Other rolls with several d2s in them get the tally after the dice
-  const flips=coinRoll(h)?[]:flipsOf(h.parts.filter(p=>p.rolls&&p.rolls.length>1));
-  const extra=flips.length?' <span class="tally">'+tally(flips)+'</span>':'';
   // A single die, or a plain number, has nothing more to show
-  return h.parts.length===1&&(!h.parts[0].rolls||h.parts[0].rolls.length===1)?'':parts.join('')+extra;
+  return h.parts.length===1&&(!h.parts[0].rolls||h.parts[0].rolls.length===1)?'':parts.join('');
 }
 const result=h=>h.coin?esc(h.coin):coinRoll(h)?tally(flipsOf(h.parts))+' <span class="paren">('+h.total+')</span>':h.total;
 const entry=h=>'<span class="h-expr">'+esc(h.coin?'Coin':h.expr)+'</span><span class="h-break">'+breakdown(h)+'</span><b class="h-total">'+result(h)+'</b>';

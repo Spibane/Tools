@@ -26,7 +26,6 @@
 /* A d2 roll's number, after its heads and tails */
 .paren{font-size:.6em;font-weight:600;color:var(--muted)}
 .die{color:var(--ink)}
-.tally{margin-left:6px;color:var(--ink);font-weight:600;white-space:nowrap}
 s.die{color:var(--muted)}
 .die.top{background:var(--brand);color:#121212;padding:0 3px}
 .die.bottom{text-decoration:underline;text-decoration-thickness:2px}
