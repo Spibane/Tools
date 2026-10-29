@@ -94,17 +94,25 @@ const die=(p,v,i)=>{
   const kept=p.kept.includes(i),edge=v===p.sides?' top':v===1?' bottom':'';
   return kept?'<b class="die'+edge+'">'+v+'</b>':'<s class="die">'+v+'</s>';
 };
+// Coin flips are d2s, with 1 as heads like the Coin button. A roll of only d2s shows heads and tails as its result.
+const flipsOf=parts=>parts.filter(p=>p.sides===2).flatMap(p=>p.kept.map(i=>p.rolls[i]));
+const coinRoll=h=>!h.coin&&h.parts.every(p=>p.sides===2&&p.sign>0);
+function tally(flips){
+  const heads=flips.filter(v=>v===1).length;
+  return flips.length===1?(heads?'Heads':'Tails'):heads+(heads===1?' head':' heads')+' | '+(flips.length-heads)+(flips.length-heads===1?' tail':' tails');
+}
 function breakdown(h){
   if(h.coin)return '';
   const parts=h.parts.map((p,j)=>(j?(p.sign<0?' − ':' + '):p.sign<0?'−':'')+
     (p.value!==undefined?p.value:'['+p.rolls.map((v,i)=>die(p,v,i)).join(' | ')+']'));
-  // Coin flips (d2s) get a tally of heads and tails, with 1 as heads like the Coin button
-  const flips=h.parts.filter(p=>p.sides===2&&p.rolls.length>1).flatMap(p=>p.kept.map(i=>p.rolls[i]));
-  const tally=flips.length?' <span class="tally">'+flips.filter(v=>v===1).length+' heads | '+flips.filter(v=>v===2).length+' tails</span>':'';
+  // Other rolls with several d2s in them get the tally after the dice
+  const flips=coinRoll(h)?[]:flipsOf(h.parts.filter(p=>p.rolls&&p.rolls.length>1));
+  const extra=flips.length?' <span class="tally">'+tally(flips)+'</span>':'';
   // A single die, or a plain number, has nothing more to show
-  return h.parts.length===1&&(!h.parts[0].rolls||h.parts[0].rolls.length===1)?'':parts.join('')+tally;
+  return h.parts.length===1&&(!h.parts[0].rolls||h.parts[0].rolls.length===1)?'':parts.join('')+extra;
 }
-const entry=h=>'<span class="h-expr">'+esc(h.coin?'Coin':h.expr)+'</span><span class="h-break">'+breakdown(h)+'</span><b class="h-total">'+esc(h.coin||h.total)+'</b>';
+const result=h=>h.coin?esc(h.coin):coinRoll(h)?tally(flipsOf(h.parts))+' <span class="paren">('+h.total+')</span>':h.total;
+const entry=h=>'<span class="h-expr">'+esc(h.coin?'Coin':h.expr)+'</span><span class="h-break">'+breakdown(h)+'</span><b class="h-total">'+result(h)+'</b>';
 
 function render(){
   const h=state.history[0];

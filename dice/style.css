@@ -23,6 +23,8 @@
 .h-expr{font-weight:700}
 .h-break{color:var(--muted);overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
 .h-total{font-variant-numeric:tabular-nums}
+/* A d2 roll's number, after its heads and tails */
+.paren{font-size:.6em;font-weight:600;color:var(--muted)}
 .die{color:var(--ink)}
 .tally{margin-left:6px;color:var(--ink);font-weight:600;white-space:nowrap}
 s.die{color:var(--muted)}
@@ -34,4 +36,5 @@ s.die{color:var(--muted)}
 .rolls-list{list-style:none;margin:0;padding:0;display:grid;gap:4px}
 .rolls-list li{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px;background:var(--surface);border:2px solid var(--rim);padding:4px 10px}
 .rolls-list .h-total{margin-left:auto;font-size:1.1rem}
+.rolls-list .paren{font-size:.8em}
 @media print{.roll-form,.quick,.saved-row,.hint,#history-clear{display:none}}
