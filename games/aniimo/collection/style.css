@@ -53,6 +53,14 @@ nav a:hover{background:var(--brand) left bottom/100% 5px no-repeat}
   /* The colored band: one element fills it; with two, the left half is the first and the right half the second */
   --band:linear-gradient(90deg,var(--el) 50%,var(--el2,var(--el)) 50%) 0 0/100% 33% no-repeat;
   background:var(--band),var(--tile)}
+/* Owned: a thin grey band with a check along the bottom, echoing the element band on top */
+.hex>div{position:relative}
+.ok{position:absolute;left:0;right:0;bottom:0;height:17%;display:flex;align-items:flex-start;padding-top:calc(var(--hw)*0.015);justify-content:center;
+  background:var(--own);color:var(--tile);font-size:calc(var(--hw)*0.13);font-weight:700;line-height:1}
+:root{--own:color-mix(in srgb,var(--ink) 85%,var(--tile))}
+.hex[data-key]{cursor:pointer}
+.hex[data-key]:focus-visible{outline:none;background:var(--focus,var(--ink))}
+.legend .sw-own{background:var(--own)}
 .legend .sw-two{background:linear-gradient(90deg,var(--fire) 50%,var(--water) 50%)}
 .hex.one{background:var(--rim-one);padding:6px}
 /* Prismana: rainbow stripes, softened toward the tile color so text stays readable. --s is the stripe width. */
