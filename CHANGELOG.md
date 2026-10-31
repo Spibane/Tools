@@ -6,6 +6,7 @@ The site has no version numbers; changes are grouped by the day they were made.
 - Added a README and this changelog
 - Added a link back to all tools at the top of each game tool page
 - Added a Turn Tracker with skips, delays, holds, and notes that count down
+- Made the main page tiles a compact grid, so every tool fits on about one screen
 
 ### 2026-10-30
 - Added select and clear for a whole page, a reset, and checklist data shared with the checklists to the Aniimo collection manager

@@ -195,6 +195,15 @@ button.roll:hover { background: var(--tile); color: var(--ink); border-color: va
 .link-list a:hover::before { width: 12px; }
 .link-list strong { display: block; font-size: 1.1rem; }
 .link-list span { color: var(--muted); font-size: 0.95rem; }
+/* A compact grid of smaller tiles, used by the main hub so it stays short as tools are added */
+.link-list.grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 155px), 1fr)); gap: 8px; }
+.link-list.grid a { height: 100%; padding: 8px 10px 8px 18px; border-width: 2px; }
+.link-list.grid a::before { width: 6px; }
+.link-list.grid a:hover::before { width: 9px; }
+.link-list.grid strong { font-size: 1rem; line-height: 1.25; }
+.link-list.grid span { display: block; font-size: 0.82rem; line-height: 1.35; margin-top: 2px; }
+.category:has(.grid) { margin-top: 18px; }
+.category:has(.grid) h2 { margin-bottom: 6px; }
 
 /* Site header (hub page) and footer (project pages). The logo lives at
    shared/logo.svg and is also used as the favicon. */
