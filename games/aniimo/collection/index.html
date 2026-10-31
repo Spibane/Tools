@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="style.css"></head><body><main>
 <a class="back" href="../">Back to Aniimo</a>
 <h1>Collection Management</h1>
-<p class="intro">Every form in Aniilog order, laid out as in-game boxes.</p>
+<p class="intro">Every form in Aniilog order, laid out as in-game boxes. Click a tile to mark it owned.</p>
 <fieldset><legend>What to show</legend>
 <div class="opt"><input type="checkbox" id="opt-breezy"><label for="opt-breezy">Breezy Plains<small>#001–#082 and their regional forms.</small></label></div>
 <div class="opt"><input type="checkbox" id="opt-whisperwake"><label for="opt-whisperwake">Whisperwake Isles<small>#001–#029 and their regional forms.</small></label></div>
@@ -34,7 +34,7 @@
 </fieldset>
 <p class="warn" id="warn" hidden></p>
 <p class="count" id="count" aria-live="polite"></p>
-<ul class="legend"><li><span style="background:var(--fire)"></span>Fire</li><li><span style="background:var(--water)"></span>Water</li><li><span style="background:var(--grass)"></span>Grass</li><li><span style="background:var(--electric)"></span>Lightning</li><li><span style="background:var(--ice)"></span>Ice</li><li><span style="background:var(--earth)"></span>Earth</li><li><span style="background:var(--wind)"></span>Wind</li><li><span style="background:var(--light)"></span>Light</li><li><span style="background:var(--dark)"></span>Dark</li><li><span style="background:var(--none)"></span>No element</li><li><span style="background:var(--unknown)"></span>Element unknown</li><li><span class="sw-two"></span>Two elements</li><li><span class="sw-pris"></span>Prismana</li><li><span class="sw-one"></span>One-time event</li></ul>
+<ul class="legend"><li><span style="background:var(--fire)"></span>Fire</li><li><span style="background:var(--water)"></span>Water</li><li><span style="background:var(--grass)"></span>Grass</li><li><span style="background:var(--electric)"></span>Lightning</li><li><span style="background:var(--ice)"></span>Ice</li><li><span style="background:var(--earth)"></span>Earth</li><li><span style="background:var(--wind)"></span>Wind</li><li><span style="background:var(--light)"></span>Light</li><li><span style="background:var(--dark)"></span>Dark</li><li><span style="background:var(--none)"></span>No element</li><li><span style="background:var(--unknown)"></span>Element unknown</li><li><span class="sw-two"></span>Two elements</li><li><span class="sw-pris"></span>Prismana</li><li><span class="sw-one"></span>One-time event</li><li><span class="sw-own"></span>Owned</li></ul>
 <nav aria-label="Pages" id="nav"></nav>
 <div id="pages"></div>
 </main>
@@ -71,6 +71,10 @@ const GENDERED=CATEGORIES.genders||[];
 GENDERED.forEach(k=>{if(!FORMS.some(f=>keyOf(f)===k)&&!missing.includes(k))missing.push(k);});
 // Text under a tile's name: the form (none for Base), plus ♂/♀ for gender forms
 const formLabel=f=>[f.form==='Base'?'':f.form,f.gender||''].filter(Boolean).join(' ');
+// Tiles marked owned, saved under aniimo-collection.owned and keyed by form, with ♂/♀ added for split gender tiles
+const OWN_KEY='aniimo-collection.owned';
+const owned=store.load(OWN_KEY,{});
+const tileKey=f=>keyOf(f)+(f.gender?' '+f.gender:'');
 function chunk(a){const o=[];for(let i=0;i<a.length;i+=24)o.push(a.slice(i,i+24));return o;}
 function render(){
   const o={};OPTS.forEach(k=>o[k]=$('opt-'+k).checked);
@@ -97,7 +101,8 @@ function render(){
     [...new Set(ORDER.map(grp))].forEach(g=>chunk(list.filter(f=>grp(f._c)===g)).forEach(p=>pages.push(p)));
   }
   else pages=chunk(list);
-  $('count').textContent=list.length+' forms over '+pages.length+' page'+(pages.length===1?'':'s')+'.';
+  const nOwned=list.filter(f=>owned[tileKey(f)]).length;
+  $('count').textContent=list.length+' forms over '+pages.length+' page'+(pages.length===1?'':'s')+'. '+nOwned+' owned.';
   $('nav').innerHTML=pages.map((_,i)=>'<a href="#page-'+(i+1)+'">'+(i+1)+'</a>').join(' ');
   let slot=0;
   $('pages').innerHTML=pages.map((p,pi)=>{
@@ -108,8 +113,9 @@ function render(){
       if(!f){c+='<li class="hex empty" aria-hidden="true"><div></div></li>';continue;}
       const base=f.form==='Base';
       const lbl=f.name+(base?'':', '+f.form+' Form')+(f.gender?', '+(f.gender==='♂'?'male':'female'):'')+', '+EL[f.element]+(f.element2?' and '+EL[f.element2]:'')+(f.oneTime?', one-time event':'');
-      const cls='hex e-'+f.element+(f.element2?' e2-'+f.element2:'')+(f.prismana?' pris':'')+(f.oneTime?' one':'');
-      c+='<li class="'+cls+'" title="'+esc(lbl)+'"><div><span class="n">'+esc(f.n)+'</span><span class="nm'+(f.names?' multi':'')+'">'+(f.names?f.names.map(esc).join('<br>'):esc(f.name))+'</span>'+(formLabel(f)?'<span class="f">'+esc(formLabel(f))+'</span>':'')+'</div></li>';
+      const own=!!owned[tileKey(f)];
+      const cls='hex e-'+f.element+(f.element2?' e2-'+f.element2:'')+(f.prismana?' pris':'')+(f.oneTime?' one':'')+(own?' own':'');
+      c+='<li class="'+cls+'" title="'+esc(lbl)+'" role="checkbox" tabindex="0" aria-checked="'+own+'" data-key="'+esc(tileKey(f))+'"><div><span class="n">'+esc(f.n)+'</span><span class="nm'+(f.names?' multi':'')+'">'+(f.names?f.names.map(esc).join('<br>'):esc(f.name))+'</span>'+(formLabel(f)?'<span class="f">'+esc(formLabel(f))+'</span>':'')+(own?'<span class="ok" aria-hidden="true">✓</span>':'')+'</div></li>';
     }return '<ul class="row">'+c+'</ul>';}).join('');
     const text=p.map((f,i)=>(i+first)+'. '+f.n+' '+f.name+(f.form==='Base'?'':' ('+f.form+' Form)')+(f.gender?' '+f.gender:'')+(f.oneTime?' [one-time]':'')).join('\n');
     return '<section class="page panel" id="page-'+(pi+1)+'" aria-labelledby="h'+(pi+1)+'"><header><h2 id="h'+(pi+1)+'">Page '+(pi+1)+'</h2><p>'+esc(cats)+', slots '+first+'–'+last+' of '+list.length+'</p><button type="button" class="copy" data-text="'+esc(text)+'">Copy as text</button></header><div class="comb">'+rows+'</div></section>';
@@ -125,7 +131,18 @@ OPTS.forEach(k=>{
   const v=store.get(KEY(k));if(v!==null)el.checked=v==='1';
   el.addEventListener('change',()=>{store.set(KEY(k),el.checked?'1':'0');render();});
 });
+function toggle(t){
+  const k=t.dataset.key;
+  if(owned[k])delete owned[k];else owned[k]=true;
+  store.save(OWN_KEY,owned);
+  render();
+}
+$('pages').addEventListener('keydown',e=>{
+  const t=e.target.closest('.hex[data-key]');
+  if(t&&(e.key===' '||e.key==='Enter')){e.preventDefault();toggle(t);document.querySelector('.hex[data-key="'+CSS.escape(t.dataset.key)+'"]').focus();}
+});
 $('pages').addEventListener('click',async e=>{
+  const h=e.target.closest('.hex[data-key]');if(h){toggle(h);return;}
   const b=e.target.closest('.copy');if(!b)return;const t=b.dataset.text,old=b.textContent;
   try{await navigator.clipboard.writeText(t);b.textContent='Copied';}
   catch(_){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');b.textContent='Copied';}catch(__){b.textContent='Copy failed';}a.remove();}
@@ -148,7 +165,7 @@ document.querySelectorAll('.ref').forEach(r=>{
 // The hover box sits inside a checkbox label, so stop clicks inside it from toggling the box
 document.addEventListener('click',e=>{if(e.target.closest('.tip'))e.preventDefault();});
 render();
-backups({what:'options',keys:OPTS.map(KEY),file:'aniimo-collection-options.json',renamed:RENAMED});
+backups({what:'options and owned forms',keys:[...OPTS.map(KEY),OWN_KEY],file:'aniimo-collection-options.json',renamed:RENAMED});
 // Size tile text to the widest name and form name in the data, so every tile matches and nothing wraps
 function measureText(){
   const ctx=document.createElement('canvas').getContext('2d');
