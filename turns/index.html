@@ -39,6 +39,7 @@
 <div class="list-buttons">
 <button type="button" id="sort">Sort by number</button>
 <button type="button" id="shuffle">Shuffle</button>
+<button type="button" id="number" title="Shuffle and give everyone a number from 1 to 20">Shuffle and number</button>
 <button type="button" id="restart">Start over</button>
 </div>
 </fieldset>
@@ -109,15 +110,18 @@ function renderTurn(){
   $('c-who').innerHTML=state.entries.map(e=>'<option value="'+e.id+'">'+esc(nm(e))+'</option>').join('');
   $('c-who').value=whoPicked&&byId(keep)?keep:state.current||(state.entries[0]||{}).id||'';
   $('cond').querySelectorAll('input,select,button').forEach(x=>x.disabled=!n);
-  $('sort').disabled=!state.entries.some(e=>e.num!=null);
-  $('shuffle').disabled=n<2;$('restart').disabled=!n;
+  const nums=state.entries.filter(e=>e.num!=null).length;
+  $('sort').hidden=!nums;$('number').hidden=!!nums;
+  $('shuffle').title=!nums?'':nums<n?'Give everyone without a number one from 1 to 20, then sort':'Give everyone a new number from 1 to 20, then sort';
+  $('shuffle').disabled=$('number').disabled=n<2;$('restart').disabled=!n;
 }
 function renderOrder(){
-  const last=state.entries.length-1;
+  const last=state.entries.length-1,nums=state.entries.some(e=>e.num!=null);
+  $('order').classList.toggle('no-num',!nums);
   $('order').innerHTML=state.entries.map((e,i)=>{
     const now=e.id===state.current,who=nm(e);
     return '<li class="entry'+(now?' now':'')+(e.hold?' held':'')+'" data-id="'+e.id+'"'+(now?' aria-current="true"':'')+'>'+
-      '<input type="number" class="e-num num" value="'+(e.num??'')+'" aria-label="'+esc('Number for '+who)+'">'+
+      (nums?'<input type="number" class="e-num num" value="'+(e.num??'')+'" aria-label="'+esc('Number for '+who)+'">':'')+
       '<input type="text" class="e-name" value="'+esc(e.name)+'" aria-label="Name" autocomplete="off">'+
       '<span class="e-buttons">'+(e.hold?'<button type="button" data-act="now">Go now</button>':'')+
       '<button type="button" data-act="hold" aria-pressed="'+e.hold+'" aria-label="'+esc('Hold '+who)+'">'+(e.hold?'Held':'Hold')+'</button>'+
@@ -177,7 +181,7 @@ $('order').addEventListener('input',e=>{
 $('order').addEventListener('change',e=>{
   if(!e.target.classList.contains('e-num'))return;
   const p=byId(e.target.closest('li').dataset.id),v=e.target.value.trim();
-  p.num=v===''||isNaN(+v)?null:+v;save();renderTurn();
+  p.num=v===''||isNaN(+v)?null:+v;save();render();
 });
 
 // A new player goes before the first one with a lower number, or none, so a sorted order stays sorted
@@ -192,13 +196,21 @@ $('add').addEventListener('submit',e=>{
   });
   $('add-name').value='';$('add-num').value='';$('add-name').focus();
 });
-$('sort').addEventListener('click',()=>act(()=>{
-  state.entries=state.entries.map((e,i)=>[e,i]).sort((a,b)=>(b[0].num??-Infinity)-(a[0].num??-Infinity)||a[1]-b[1]).map(x=>x[0]);
-}));
-$('shuffle').addEventListener('click',()=>act(()=>{
-  const a=state.entries;
-  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
-}));
+const sortByNum=()=>{state.entries=state.entries.map((e,i)=>[e,i]).sort((a,b)=>(b[0].num??-Infinity)-(a[0].num??-Infinity)||a[1]-b[1]).map(x=>x[0]);};
+$('sort').addEventListener('click',()=>act(sortByNum));
+// Shuffle mixes up the order. Once anyone has a number it rolls 1 to 20 instead: for everyone without one, or for
+// everyone when they all have one, then sorts. Ties land in shuffled order.
+function shuffle(number){
+  act(()=>{
+    const a=state.entries,all=a.every(e=>e.num!=null);
+    for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+    if(!number&&!a.some(e=>e.num!=null))return;
+    a.forEach(e=>{if(all||e.num==null)e.num=1+Math.floor(Math.random()*20);});
+    sortByNum();
+  });
+}
+$('shuffle').addEventListener('click',()=>shuffle(false));
+$('number').addEventListener('click',()=>shuffle(true));
 $('restart').addEventListener('click',()=>{
   if(!confirm('Start over at round 1? Holds, notes and conditions will be cleared.'))return;
   act(()=>{state.round=1;state.current=null;state.entries.forEach(e=>{e.hold=false;e.conds=[];});});

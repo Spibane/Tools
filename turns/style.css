@@ -20,6 +20,7 @@
 .order{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:6px}
 .order:empty{display:none}
 .entry{position:relative;display:grid;grid-template-columns:4.5em 1fr auto;align-items:center;gap:6px 8px;background:var(--surface);border:2px solid var(--rim);padding:6px 8px 6px 16px}
+.order.no-num .entry{grid-template-columns:1fr auto}
 .entry.now{border-width:3px}
 .entry.now::before{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;background:var(--brand-v)}
 .entry.held>:not(.e-buttons){opacity:.55}
@@ -41,6 +42,7 @@ input[type="text"],input[type="number"],select{font:inherit;font-weight:400;colo
 
 @media (max-width:520px){
   .entry{grid-template-columns:4em 1fr}
+  .order.no-num .entry{grid-template-columns:1fr}
   .e-buttons{grid-column:1/-1;justify-content:flex-start}
 }
 @media print{.turn-buttons,.e-buttons,.c-del,form,.list-buttons,.hint{display:none}}
