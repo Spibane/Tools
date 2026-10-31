@@ -1,0 +1,220 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Turn Tracker</title>
+<meta name="description" content="Turn order for any game, with skips, delays, holds and notes.">
+<meta property="og:title" content="Turn Tracker">
+<meta property="og:description" content="Turn order for any game, with skips, delays, holds and notes.">
+<meta property="og:url" content="https://spibane.com/turns/">
+<meta property="og:site_name" content="Spibane's Tools for Everything">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://spibane.com/shared/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../shared/base.css">
+<script src="../shared/site.js"></script>
+<link rel="stylesheet" href="style.css"></head><body><main>
+<a class="back" href="../">Back to All Tools</a>
+<h1>Turn Tracker</h1>
+<p class="intro">Turn order for any game, with skips, delays, holds and notes.</p>
+<section class="turn panel" aria-labelledby="turn-h">
+<div class="roll-head"><h2 id="turn-h"></h2><button type="button" class="roll" id="next">Next</button></div>
+<div id="now" aria-live="polite"></div>
+<div class="turn-buttons">
+<button type="button" id="delay" title="Go after the next player">Delay</button>
+<button type="button" id="hold" title="Sit out until brought back">Hold</button>
+<button type="button" id="undo">Undo</button>
+</div>
+<p class="said" id="said" aria-live="polite"></p>
+</section>
+<fieldset>
+<legend>Order</legend>
+<ol class="order" id="order"></ol>
+<form class="form-row" id="add" autocomplete="off">
+<label class="field grow">Name <input type="text" id="add-name"></label>
+<label class="field">Number <input type="number" id="add-num" class="num" aria-describedby="num-hint"></label>
+<button type="submit">Add</button>
+</form>
+<p class="hint" id="num-hint">Number is optional. Higher numbers go first.</p>
+<div class="list-buttons">
+<button type="button" id="sort">Sort by number</button>
+<button type="button" id="shuffle">Shuffle</button>
+<button type="button" id="restart">Start over</button>
+</div>
+</fieldset>
+<fieldset>
+<legend>Notes and conditions</legend>
+<form class="form-row" id="cond" autocomplete="off">
+<label class="field">Who <select id="c-who"></select></label>
+<label class="field grow">Note <input type="text" id="c-text"></label>
+<label class="field">Turns <input type="number" id="c-turns" class="num" min="1" max="999"></label>
+<label class="toggle"><input type="checkbox" id="c-skip"> Skips their turns</label>
+<button type="submit">Add</button>
+</form>
+<p class="hint">Leave turns empty to keep it until you remove it. Turns count down as that player's turns end.</p>
+</fieldset>
+</main>
+<script>
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+// Saved data. entries: the turn order, {id, name, num (optional, higher goes first), hold (sitting out until brought back),
+// conds: [{id, text, turns (left, or null to keep until removed), skip (skips their turns), fresh (added on their own turn,
+// so that turn doesn't count down)}]}. current is the id of whose turn it is (null before Start), and round counts up.
+let state=Object.assign({entries:[],current:null,round:1},store.load('turns'));
+const save=()=>store.save('turns',state);
+const byId=id=>state.entries.find(e=>e.id===id);
+const at=id=>state.entries.findIndex(e=>e.id===id);
+const nm=e=>e.name||'Unnamed';
+let undo=[],said=[],whoPicked=false;
+// Makes a change that Undo can take back, then saves and redraws. said collects what happened along the way.
+function act(fn){undo.push(JSON.stringify(state));if(undo.length>50)undo.shift();said=[];fn();save();render();}
+
+// Counts down a player's timed notes as their turn ends
+function tick(e){
+  e.conds=e.conds.filter(c=>{
+    if(c.fresh){delete c.fresh;return true;}
+    if(c.turns==null||--c.turns>0)return true;
+    said.push(c.text+' ended for '+nm(e)+'.');return false;
+  });
+}
+// Moves the turn to the next player who can go. Held players are passed over, and skipping ones lose that turn.
+function advance(){
+  const n=state.entries.length;let j=at(state.current);
+  for(let s=0;s<n;s++){
+    if(++j>=n){j=0;state.round++;}
+    const e=state.entries[j];
+    if(e.hold)continue;
+    const skip=e.conds.find(c=>c.skip);
+    if(skip){said.push(nm(e)+' skipped: '+skip.text+'.');tick(e);continue;}
+    state.current=e.id;return;
+  }
+  state.current=null;said.push('Nobody can take a turn.');
+}
+
+const chips=e=>e.conds.map(c=>'<span class="cond'+(c.skip?' skip':'')+'"><span>'+esc(c.text)+'</span>'+
+  (c.skip&&c.text!=='Skip'?'<span class="c-tag">skips</span>':'')+
+  (c.turns!=null?'<span class="c-left">'+c.turns+(c.turns===1?' turn':' turns')+'</span>':'')+
+  '<button type="button" class="c-del" data-id="'+e.id+'" data-cond="'+c.id+'" aria-label="'+esc('Remove '+c.text+' from '+nm(e))+'">×</button></span>').join('');
+
+function renderTurn(){
+  const c=byId(state.current),n=state.entries.length;
+  $('turn-h').textContent='Round '+state.round;
+  $('now').innerHTML=c?'<p class="now-name">'+esc(nm(c))+'</p>'+(c.conds.length?'<div class="conds">'+chips(c)+'</div>':''):
+    '<p class="muted">'+(!n?'Add players below.':state.round===1?'Not started.':'Nobody can take a turn.')+'</p>';
+  $('next').textContent=!c&&state.round===1?'Start':'Next';
+  $('next').disabled=!n;
+  $('delay').disabled=!c||state.entries.filter(e=>!e.hold).length<2;
+  $('hold').disabled=!c;$('undo').disabled=!undo.length;
+  $('said').textContent=said.join(' ');
+  const keep=$('c-who').value;
+  $('c-who').innerHTML=state.entries.map(e=>'<option value="'+e.id+'">'+esc(nm(e))+'</option>').join('');
+  $('c-who').value=whoPicked&&byId(keep)?keep:state.current||(state.entries[0]||{}).id||'';
+  $('cond').querySelectorAll('input,select,button').forEach(x=>x.disabled=!n);
+  $('sort').disabled=!state.entries.some(e=>e.num!=null);
+  $('shuffle').disabled=n<2;$('restart').disabled=!n;
+}
+function renderOrder(){
+  const last=state.entries.length-1;
+  $('order').innerHTML=state.entries.map((e,i)=>{
+    const now=e.id===state.current,who=nm(e);
+    return '<li class="entry'+(now?' now':'')+(e.hold?' held':'')+'" data-id="'+e.id+'"'+(now?' aria-current="true"':'')+'>'+
+      '<input type="number" class="e-num num" value="'+(e.num??'')+'" aria-label="'+esc('Number for '+who)+'">'+
+      '<input type="text" class="e-name" value="'+esc(e.name)+'" aria-label="Name" autocomplete="off">'+
+      '<span class="e-buttons">'+(e.hold?'<button type="button" data-act="now">Go now</button>':'')+
+      '<button type="button" data-act="hold" aria-pressed="'+e.hold+'" aria-label="'+esc('Hold '+who)+'">'+(e.hold?'Held':'Hold')+'</button>'+
+      '<button type="button" data-act="up" aria-label="'+esc('Move '+who+' up')+'"'+(i?'':' disabled')+'>↑</button>'+
+      '<button type="button" data-act="down" aria-label="'+esc('Move '+who+' down')+'"'+(i<last?'':' disabled')+'>↓</button>'+
+      '<button type="button" data-act="del" aria-label="'+esc('Remove '+who)+'">×</button></span>'+
+      (e.conds.length?'<div class="conds">'+chips(e)+'</div>':'')+'</li>';
+  }).join('');
+}
+function render(){renderTurn();renderOrder();}
+
+$('next').addEventListener('click',()=>act(()=>{const c=byId(state.current);if(c)tick(c);advance();}));
+// Delay: the next player goes now, and this one goes right after them
+$('delay').addEventListener('click',()=>{
+  const back=JSON.stringify(state);
+  act(()=>{
+    const c=byId(state.current);advance();
+    const t=byId(state.current);
+    if(!t||t===c){state=JSON.parse(back);undo.pop();said=['Nobody to go before '+nm(c)+'.'];return;}
+    state.entries.splice(at(c.id),1);state.entries.splice(at(t.id)+1,0,c);
+    said.unshift(nm(c)+' goes after '+nm(t)+'.');
+  });
+});
+$('hold').addEventListener('click',()=>act(()=>{const c=byId(state.current);c.hold=true;said.push(nm(c)+' is on hold.');advance();}));
+$('undo').addEventListener('click',()=>{if(!undo.length)return;state=JSON.parse(undo.pop());said=[];save();render();});
+
+$('order').addEventListener('click',e=>{
+  const del=e.target.closest('.c-del');
+  if(del){const p=byId(del.dataset.id);act(()=>{p.conds=p.conds.filter(c=>c.id!==del.dataset.cond);});return;}
+  const b=e.target.closest('[data-act]');if(!b)return;
+  const id=b.closest('li').dataset.id,i=at(id),p=byId(id),a=b.dataset.act;
+  act(()=>{
+    if(a==='up'||a==='down'){const j=i+(a==='up'?-1:1);[state.entries[i],state.entries[j]]=[state.entries[j],state.entries[i]];}
+    else if(a==='hold'){
+      if(p.hold)p.hold=false;
+      else{p.hold=true;said.push(nm(p)+' is on hold.');if(id===state.current)advance();}
+    }
+    // Go now: a held player jumps in ahead of whoever's turn it is, who carries on after them
+    else if(a==='now'){
+      p.hold=false;const c=byId(state.current);
+      if(c){state.entries.splice(i,1);state.entries.splice(at(c.id),0,p);}
+      state.current=id;
+    }
+    else if(a==='del'){
+      if(id===state.current){advance();if(state.current===id)state.current=null;}
+      state.entries.splice(at(id),1);
+    }
+  });
+  const again=$('order').querySelector('[data-id="'+id+'"] [data-act="'+a+'"]');
+  if(again&&!again.disabled)again.focus();
+});
+// Typing a name or number saves it without redrawing the list, so the box keeps focus
+$('order').addEventListener('input',e=>{
+  const p=byId(e.target.closest('li').dataset.id);
+  if(e.target.classList.contains('e-name')){p.name=e.target.value;save();renderTurn();}
+});
+$('order').addEventListener('change',e=>{
+  if(!e.target.classList.contains('e-num'))return;
+  const p=byId(e.target.closest('li').dataset.id),v=e.target.value.trim();
+  p.num=v===''||isNaN(+v)?null:+v;save();renderTurn();
+});
+
+// A new player goes before the first one with a lower number, or none, so a sorted order stays sorted
+$('add').addEventListener('submit',e=>{
+  e.preventDefault();
+  const name=$('add-name').value.trim(),v=$('add-num').value.trim(),num=v===''?null:+v;
+  if(!name){$('add-name').focus();return;}
+  act(()=>{
+    let i=num==null?-1:state.entries.findIndex(x=>x.num==null||x.num<num);
+    if(i<0)i=state.entries.length;
+    state.entries.splice(i,0,{id:uid(),name,num,hold:false,conds:[]});
+  });
+  $('add-name').value='';$('add-num').value='';$('add-name').focus();
+});
+$('sort').addEventListener('click',()=>act(()=>{
+  state.entries=state.entries.map((e,i)=>[e,i]).sort((a,b)=>(b[0].num??-Infinity)-(a[0].num??-Infinity)||a[1]-b[1]).map(x=>x[0]);
+}));
+$('shuffle').addEventListener('click',()=>act(()=>{
+  const a=state.entries;
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+}));
+$('restart').addEventListener('click',()=>{
+  if(!confirm('Start over at round 1? Holds, notes and conditions will be cleared.'))return;
+  act(()=>{state.round=1;state.current=null;state.entries.forEach(e=>{e.hold=false;e.conds=[];});});
+});
+
+$('c-who').addEventListener('change',()=>{whoPicked=true;});
+$('cond').addEventListener('submit',e=>{
+  e.preventDefault();
+  const p=byId($('c-who').value),skip=$('c-skip').checked,text=$('c-text').value.trim()||(skip?'Skip':'');
+  if(!p)return;
+  if(!text){$('c-text').focus();return;}
+  const t=Math.floor(+$('c-turns').value);
+  act(()=>p.conds.push({id:uid(),text,turns:t>0?Math.min(t,999):null,skip,fresh:p.id===state.current}));
+  $('c-text').value='';$('c-turns').value='';$('c-skip').checked=false;whoPicked=false;renderTurn();
+});
+
+render();
+backups({what:'turn order',keys:['turns'],file:'turn-order.json'});
+</script></body></html>

@@ -39,6 +39,7 @@ A static site with no build step, framework or server. Each tool is a folder wit
 | General | [Drop Odds](https://spibane.com/odds/) | The chance a drop has dropped by now |
 | General | [Bingo Cards](https://spibane.com/bingo/) | Bingo cards from your own list |
 | General | [Dice Roller](https://spibane.com/dice/) | Dice like 2d6+3, and coin flips |
+| General | [Turn Tracker](https://spibane.com/turns/) | Turn order with skips, holds and notes |
 | Games | [Aniimo](https://spibane.com/games/aniimo/) | Collection boxes and checklists |
 | Games | [Dead by Daylight](https://spibane.com/games/dbd/) | Loadout randomizer |
 | Games | [Final Fantasy XIV](https://spibane.com/games/ffxiv/) | Relic checklists and roulette job picker |
@@ -57,6 +58,7 @@ A static site with no build step, framework or server. Each tool is a folder wit
 ├── odds/
 ├── bingo/
 ├── dice/
+├── turns/
 └── games/
     ├── aniimo/         # collection/, checklist/, data/ (forms, spawns, categories)
     ├── dbd/            # loadout/, data/ (loadout.js + update.py)

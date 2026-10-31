@@ -1,0 +1,46 @@
+/* Turn Tracker. Buttons, panels and the Next button come from shared/base.css.
+   Loaded after shared/base.css. */
+
+/* Whose turn it is */
+.turn{margin-bottom:26px}
+.now-name{font-size:2rem;font-weight:700;line-height:1.15;margin:0 0 6px;overflow-wrap:anywhere}
+.turn-buttons{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.said{margin:8px 0 0;font-size:.9rem}
+.said:empty{display:none}
+
+/* Notes and conditions, as chips with a remove button on the end */
+.conds{display:flex;flex-wrap:wrap;gap:4px}
+.cond{display:inline-flex;align-items:center;gap:6px;background:var(--tile);border:2px solid var(--rim);padding-left:7px;font-size:.85rem;font-weight:600}
+.c-tag{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:0 5px;border:2px solid #121212;background:var(--brand);color:#121212}
+.cond.skip{border-left:6px solid var(--mint)}
+.c-left{color:var(--muted);font-weight:400}
+.c-del{border:0;border-left:2px solid var(--rim);padding:0 7px;font-size:1rem;line-height:1.4}
+
+/* The order. The current player gets a thicker outline and a gradient bar down the side. */
+.order{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:6px}
+.order:empty{display:none}
+.entry{position:relative;display:grid;grid-template-columns:4.5em 1fr auto;align-items:center;gap:6px 8px;background:var(--surface);border:2px solid var(--rim);padding:6px 8px 6px 16px}
+.entry.now{border-width:3px}
+.entry.now::before{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;background:var(--brand-v)}
+.entry.held>:not(.e-buttons){opacity:.55}
+.entry .conds{grid-column:1/-1}
+.e-name{min-width:0;font-weight:600}
+.e-buttons{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px}
+.e-buttons button{padding:2px 9px}
+[data-act="hold"][aria-pressed="true"]{background:var(--ink);color:var(--tile);border-color:var(--ink)}
+
+/* Adding players and notes */
+.form-row{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 10px;margin-bottom:6px}
+.form-row .toggle{margin:0 0 7px}
+.field{display:grid;gap:4px;font-weight:600;font-size:.9rem}
+.grow{flex:1 1 12em}
+.list-buttons{display:flex;flex-wrap:wrap;gap:6px}
+input[type="text"],input[type="number"],select{font:inherit;font-weight:400;color:var(--ink);background:var(--tile);border:2px solid var(--rim);padding:4px 8px;min-width:0}
+.num{width:4.5em}
+.entry .num{width:100%}
+
+@media (max-width:520px){
+  .entry{grid-template-columns:4em 1fr}
+  .e-buttons{grid-column:1/-1;justify-content:flex-start}
+}
+@media print{.turn-buttons,.e-buttons,.c-del,form,.list-buttons,.hint{display:none}}
