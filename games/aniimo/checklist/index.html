@@ -21,6 +21,7 @@
 <fieldset><legend>What to show</legend>
 <div class="opt mode" role="radiogroup" aria-label="List"><span><input type="radio" name="mode" id="mode-region" value="region" checked><label for="mode-region">By region</label></span>
 <span><input type="radio" name="mode" id="mode-all" value="all"><label for="mode-all">All forms in Aniilog order</label></span></div>
+<div class="opt split-opt"><input type="checkbox" id="opt-split"><label for="opt-split">Mark each sub-region separately<small>Your marks are kept for each sub-region. In the all-forms list, a box shows ticked if it’s ticked anywhere and can’t be changed there.</small></label></div>
 <div class="opt need-opt"><label for="opt-need">Only forms that need</label>
 <select id="opt-need"><option value="">Anything</option><option value="none">Nothing special</option><option value="Rain">Rain</option><option value="Thunderstorm">Thunderstorm</option><option value="Snow">Snow</option><option value="Night">Night</option><option value="Prismana Flow">Prismana Flow</option><option value="Quest">Quest</option><option value="Title">Title</option></select></div>
 <div class="opt marked"><span class="opt-title">Only forms marked<small>Percentages still count every form.</small></span>
@@ -101,27 +102,39 @@ if(store.get('opt-hide')==='1'&&store.get('opt-own')===null)store.set('opt-own',
 store.remove('opt-hide');
 store.rename(RENAMED);
 
-// Collection: one entry per form, so a form is marked in every sub-region it spawns in
+// Collection: one entry per form, so a form is marked in every sub-region it spawns in.
+// With "Mark each sub-region separately", marks go in places instead: {sub-region id: {form: boxes}}.
+// The two are kept apart, so switching the option back and forth loses nothing.
 const collection=store.load(KEY('collection'),{});
-const save=()=>store.save(KEY('collection'),collection);
+const places=store.load(KEY('places'),{});
+let split=store.get(KEY('split'))==='1';
+const save=()=>{store.save(KEY('collection'),collection);store.save(KEY('places'),places);};
 // Irisalis used to be listed as a Base form
 if(collection.Irisalis){collection['Prismana Irisalis']=collection.Irisalis;delete collection.Irisalis;save();}
-const has=(k,b)=>!!(collection[k]&&collection[k][b]);
-function setBox(k,b,on){
-  const t=collection[k]||(collection[k]={});
+// p is the sub-region id. Split, with no sub-region (the all-forms list), a box counts if it's marked in any sub-region.
+const has=(k,b,p)=>{
+  if(split&&!p)return Object.values(places).some(o=>o[k]&&o[k][b]);
+  const o=split?places[p]||{}:collection;
+  return !!(o[k]&&o[k][b]);
+};
+function setBox(k,b,on,p){
+  const o=split?places[p]||(places[p]={}):collection;
+  const t=o[k]||(o[k]={});
   if(on){t[b]=true;if(b!=='own')t.own=true;if(b==='umbra')t.perfect=true;}// Umbral Aniimo always have Perfect potential
-  else if(b==='own')delete collection[k];// Unchecking Own clears the rest of the row
+  else if(b==='own')delete o[k];// Unchecking Own clears the rest of the row
   else delete t[b];
-  if(collection[k]&&!Object.keys(collection[k]).length)delete collection[k];
+  if(o[k]&&!Object.keys(o[k]).length)delete o[k];
+  if(split&&!Object.keys(o).length)delete places[p];
   save();
 }
 
 const open=store.load(KEY('open'),{});
 const pct=(n,d)=>d?Math.floor(n/d*100):0;
-// Each box counts out of the forms that can have it, so Umbral leaves out Prismana forms
-function stats(keys){
-  const o={total:keys.length};
-  BOXES.forEach(([b])=>{const able=keys.filter(k=>canHave(BY_KEY.get(k),b));o[b]=able.filter(k=>has(k,b)).length;o[b+'Of']=able.length;});
+// Each box counts out of the forms that can have it, so Umbral leaves out Prismana forms.
+// items are [form, sub-region id] pairs; the id is left out in the all-forms list.
+function stats(items){
+  const o={total:items.length};
+  BOXES.forEach(([b])=>{const able=items.filter(([k])=>canHave(BY_KEY.get(k),b));o[b]=able.filter(([k,p])=>has(k,b,p)).length;o[b+'Of']=able.length;});
   return o;
 }
 const bar=(s,label)=>'<span class="pct"><span class="pct-n">'+pct(s.own,s.total)+'%</span><span class="meter" role="img" aria-label="'+esc(label)+' '+pct(s.own,s.total)+'% owned"><span style="width:'+pct(s.own,s.total)+'%"></span></span></span>';
@@ -145,43 +158,45 @@ function placesHTML(places){
   return '<ul class="where">'+[...groups.values()].map(p=>'<li><span class="place">'+esc(p.names.join(', '))+'</span>'+needHTML(p)+
     (p.note?'<p class="note">'+esc(p.note)+'</p>':'')+'</li>').join('')+'</ul>';
 }
-function rowHTML(row){
-  const f=BY_KEY.get(row.form),k=row.form;
+function rowHTML(row,p){
+  const f=BY_KEY.get(row.form),k=row.form,ro=split&&!p;
   const name=esc(f.name)+(f.form==='Base'?'':' <span class="form">'+esc(f.form)+' Form</span>')+(f.gender?' <span class="form">'+f.gender+'</span>':'');
   const plain=f.name+(f.form==='Base'?'':', '+f.form+' Form')+(f.gender?', '+(f.gender==='♂'?'male':'female'):'');
-  return '<li class="row'+(has(k,'own')?' owned':'')+'" data-key="'+esc(k)+'">'+
+  return '<li class="row'+(has(k,'own',p)?' owned':'')+'" data-key="'+esc(k)+'"'+(p?' data-place="'+p+'"':'')+'>'+
     '<span class="sw e-'+f.element+(f.element2?' e2-'+f.element2:'')+'" aria-hidden="true"></span>'+
     '<div class="who"><span class="n">'+esc(f.n==='—'?'':'#'+f.n)+'</span> <b>'+name+'</b>'+
     (row.places?placesHTML(row.places):needHTML(row)+(row.note?'<p class="note">'+esc(row.note)+'</p>':''))+'</div>'+
     '<div class="boxes">'+BOXES.map(([b,l])=>canHave(f,b)
-      ?'<label class="box"><input type="checkbox" data-box="'+b+'"'+(has(k,b)?' checked':'')+' aria-label="'+esc(l+': '+plain)+'"><span aria-hidden="true">'+l+'</span></label>'
+      ?'<label class="box'+(ro?' ro':'')+'"><input type="checkbox" data-box="'+b+'"'+(has(k,b,p)?' checked':'')+(ro?' disabled':'')+' aria-label="'+esc(l+': '+plain)+'"><span aria-hidden="true">'+l+'</span></label>'
       :'<label class="box off" title="'+esc(plain+' can’t be '+l)+'"><input type="checkbox" disabled aria-label="'+esc(l+': '+plain+', not possible')+'"><span aria-hidden="true">'+l+'</span></label>').join('')+'</div></li>';
 }
+const subId=(r,s)=>r.id+'-'+slug(s.name);
 function render(){
   const need=$('opt-need').value;
   const needs=tags=>!need||(need==='none'?!(tags||[]).length:(tags||[]).some(t=>t.toLowerCase().includes(need.toLowerCase())));// "Rain" also finds "Rain or thunderstorm"
   // Collection filters: each box can be required marked (yes) or unmarked (no). Forms that can't have a box are left out.
   const marked=BOXES.map(([b])=>[b,$('opt-'+b).value]).filter(([,v])=>v);
-  const fits=k=>marked.every(([b,v])=>canHave(BY_KEY.get(k),b)&&has(k,b)===(v==='yes'));
+  const fits=(k,p)=>marked.every(([b,v])=>canHave(BY_KEY.get(k),b)&&has(k,b,p)===(v==='yes'));
   const filtered=need||marked.length;
-  const show=row=>fits(row.form)&&(row.places?row.places.some(p=>needs(p.need)):needs(row.need));
+  const show=(row,p)=>fits(row.form,p)&&(row.places?row.places.some(p=>needs(p.need)):needs(row.need));
   if($('mode-all').checked){
-    const rows=ALL.map(k=>({form:k,places:PLACES.get(k)})),s=stats(ALL),vis=rows.filter(show);
+    const rows=ALL.map(k=>({form:k,places:PLACES.get(k)})),s=stats(ALL.map(k=>[k])),vis=rows.filter(row=>show(row));
     $('regions').innerHTML='<section class="region panel all" id="all-forms" aria-labelledby="all-h"><header><h2 id="all-h">All forms</h2>'+bar(s,'All forms')+
       '<p class="counts">'+ALL.length+' forms · '+counts(s)+'</p></header>'+
-      (vis.length?'<ul class="rows">'+vis.map(rowHTML).join('')+'</ul>':'<p class="sub-note">No forms match.</p>')+'</section>';
+      (vis.length?'<ul class="rows">'+vis.map(row=>rowHTML(row)).join('')+'</ul>':'<p class="sub-note">No forms match.</p>')+'</section>';
     return;
   }
   const html=REGIONS.map(r=>{
-    const all=[...new Set(r.subs.flatMap(s=>s.rows.map(row=>row.form)))],rs=stats(all);
+    // Split, the region counts every sub-region's rows; otherwise each form once
+    const all=split?r.subs.flatMap(s=>s.rows.map(row=>[row.form,subId(r,s)])):[...new Set(r.subs.flatMap(s=>s.rows.map(row=>row.form)))].map(k=>[k]),rs=stats(all);
     // With any filter in use, sub-regions (and regions) with no matches are left out
     const subs=r.subs.map(s=>{
-      const id=r.id+'-'+slug(s.name),ss=stats(s.rows.map(row=>row.form)),vis=s.rows.filter(show);
+      const id=subId(r,s),ss=stats(s.rows.map(row=>[row.form,id])),vis=s.rows.filter(row=>show(row,id));
       if(filtered&&!vis.length)return '';
       return '<details class="sub" id="'+id+'"'+(open[id]?' open':'')+'><summary><span class="sub-name">'+esc(s.name)+
         (s.levels?'<small>Lv '+esc(s.levels)+'</small>':'')+'</span>'+bar(ss,s.name)+'<span class="counts">'+counts(ss)+'</span></summary>'+
         (s.note?'<p class="sub-note">'+esc(s.note)+'</p>':'')+
-        (vis.length?'<ul class="rows">'+vis.map(rowHTML).join('')+'</ul>':'<p class="sub-note">No forms match.</p>')+'</details>';
+        (vis.length?'<ul class="rows">'+vis.map(row=>rowHTML(row,id)).join('')+'</ul>':'<p class="sub-note">No forms match.</p>')+'</details>';
     }).join('');
     if(!subs)return '';
     return '<section class="region panel" aria-labelledby="'+r.id+'-h"><header><h2 id="'+r.id+'-h">'+esc(r.name)+'</h2>'+bar(rs,r.name)+
@@ -192,7 +207,7 @@ function render(){
 
 $('regions').addEventListener('change',e=>{
   const box=e.target.closest('input[data-box]');if(!box)return;
-  setBox(box.closest('.row').dataset.key,box.dataset.box,box.checked);
+  setBox(box.closest('.row').dataset.key,box.dataset.box,box.checked,box.closest('.row').dataset.place);
   // Redraw, keeping keyboard focus on the same box
   const k=box.closest('.row').dataset.key,b=box.dataset.box,sub=box.closest('.sub,.all').id;
   render();
@@ -209,6 +224,8 @@ FILTERS.forEach(n=>{
   const v=store.get(KEY(n));if(v!==null)el.value=v;
   el.addEventListener('change',()=>{store.set(KEY(n),el.value);render();});
 });
+$('opt-split').checked=split;
+$('opt-split').addEventListener('change',e=>{split=e.target.checked;store.set(KEY('split'),split?'1':'0');render();});
 // List mode: by region, or every form in one list
 if(store.get(KEY('mode'))==='all')$('mode-all').checked=true;
 document.querySelectorAll('input[name="mode"]').forEach(el=>el.addEventListener('change',()=>{
@@ -217,7 +234,7 @@ document.querySelectorAll('input[name="mode"]').forEach(el=>el.addEventListener(
 
 if(missing.length){$('warn').hidden=false;$('warn').textContent='These spawns.js or categories.js entries don’t match any form, so they aren’t shown: '+missing.join(', ')+'. Check the spelling against forms.js.';}
 render();
-backups({what:'collection',keys:[KEY('collection'),KEY('open'),KEY('mode'),...FILTERS.map(KEY)],file:'aniimo-region-collection.json',renamed:RENAMED,
+backups({what:'collection',keys:[KEY('collection'),KEY('places'),KEY('split'),KEY('open'),KEY('mode'),...FILTERS.map(KEY)],file:'aniimo-region-collection.json',renamed:RENAMED,
   // Older backups from this page were {checklist: collection}
   legacy:f=>f&&f.checklist&&typeof f.checklist==='object'&&{[KEY('collection')]:JSON.stringify(f.checklist)}});
 </script></body></html>
