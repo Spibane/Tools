@@ -168,12 +168,13 @@ function renderPad(){
   $('grid').innerHTML=state.players.length?state.players.map(p=>{
     const who=nm(p),now=turn&&T.turn===p.id;
     return '<div class="p'+(now?' now':'')+'" data-id="'+p.id+'" style="'+hue(p)+'">'+
-      '<div class="p-head"><span class="p-name">'+esc(who)+'</span>'+
+      '<div class="p-head"><span class="p-name">'+esc(who)+'</span>'+(now?'<span class="p-turn">Turn</span>':'')+
       (turn?'<button type="button" class="p-clock" aria-label="'+esc(who+'’s clock. Make it their turn')+'"'+(now?' aria-current="true"':'')+'></button>':'')+'</div>'+
       '<button type="button" class="p-score" aria-label="'+esc(who+', '+p.score+'. Type an amount')+'">'+p.score+'</button>'+
       '<div class="p-buttons"><button type="button" data-d="-1" aria-label="'+esc('Take '+s+' from '+who)+'">−'+s+'</button>'+
       '<button type="button" data-d="1" aria-label="'+esc('Give '+who+' '+s)+'">+'+s+'</button></div></div>';
   }).join(''):'<p class="muted">Add players below.</p>';
+  $('grid').classList.toggle('turns',turn&&!!byId(T.turn));
   $('clock').hidden=T.mode!=='shared';
   $('go').hidden=$('t-reset').hidden=T.mode==='off';
   $('next').hidden=!turn;$('next').disabled=!state.players.length;
