@@ -7,6 +7,15 @@
 .opts .toggle{margin:0}
 .count{display:flex;align-items:center;gap:8px;font-size:.9rem;font-weight:600}
 .result{grid-template-columns:1fr auto}
+
+/* The wheel: slices in light colors behind black text and lines, with a gradient pointer at the top */
+.wheel{position:relative;width:min(100%,340px);aspect-ratio:1;margin:14px auto 16px;cursor:pointer}
+.w-spin{width:100%;height:100%}
+.w-spin svg{display:block;width:100%;height:100%;overflow:visible}
+.w-spin text{fill:#121212;font-weight:700;font-family:inherit}
+.w-spin line,.w-spin circle{stroke:#121212}
+.w-spin line{stroke-width:1.5}
+.w-pointer{position:absolute;left:50%;top:-10px;width:32px;transform:translateX(-50%);pointer-events:none}
 /* Lock: an open padlock, or a closed one on an inverted button */
 .lock{display:inline-flex;align-items:center;justify-content:center;padding:4px 8px}
 .lock svg{display:block}
@@ -24,4 +33,4 @@
 input[type="text"],input[type="number"],select,textarea{font:inherit;font-weight:400;color:var(--ink);background:var(--tile);border:2px solid var(--rim);padding:4px 8px}
 .count input{width:4.5em}
 textarea{width:100%;resize:vertical}
-@media print{fieldset,.r-buttons,button.roll,.opts,.used button{display:none}}
+@media print{fieldset,.r-buttons,button.roll,.opts,.used button,.wheel{display:none}}
