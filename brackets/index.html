@@ -18,7 +18,7 @@
 <h1>Brackets</h1>
 <p class="intro">Single and double elimination brackets, and round robins, from your own list of players.</p>
 <section class="b-panel panel" id="panel" aria-labelledby="b-h">
-<div class="roll-head"><h2 id="b-h"></h2><span class="head-buttons"><button type="button" id="full">Full screen</button><button type="button" class="roll" id="make">New bracket</button></span></div>
+<div class="roll-head"><h2 id="b-h"></h2><button type="button" id="full">Full screen</button></div>
 <div class="status" id="status" aria-live="polite"></div>
 <div id="view"></div>
 <div class="b-buttons"><button type="button" id="clear">Clear results</button></div>
@@ -31,6 +31,7 @@
 </div>
 <label class="field">Players <span class="hint" id="need"></span>
 <textarea id="names" rows="10" spellcheck="false"></textarea></label>
+<button type="button" class="roll" id="make">New bracket</button>
 </fieldset>
 </main>
 <script>
@@ -162,7 +163,7 @@ function render(){
   $('make').disabled=have.length<2||have.length>limit;
   $('b-h').textContent=b?FORMATS[b.format]:'Brackets';
   $('clear').hidden=!b||!Object.keys(state.results).length;
-  if(!b){$('view').innerHTML='';$('status').innerHTML='<p class="muted">Add players below, then make a bracket.</p>';return;}
+  if(!b){$('view').innerHTML='';$('status').innerHTML='<p class="muted">Add players below, then press New bracket.</p>';return;}
   const out=b.format==='robin'?renderRobin(b):renderElim(b);
   save();
   $('view').innerHTML=out.html;
