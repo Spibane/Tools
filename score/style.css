@@ -1,0 +1,52 @@
+/* Score Pad. Buttons and panels come from shared/base.css.
+   Loaded after shared/base.css. */
+
+/* The bar over the pad: timer controls, the step, Undo and Full screen */
+.pad{margin-bottom:26px}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:10px}
+.clock{font-size:1.6rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;margin-right:6px}
+.out{background:var(--brand);color:#121212;padding:0 6px}
+.step{display:flex;align-items:center;gap:6px;font-size:.9rem;font-weight:600}
+#full{margin-left:auto}
+
+/* One area per player. layout() sets --cols and --rows; sizes inside follow the area (container units). */
+.grid{display:grid;gap:6px;grid-template-columns:repeat(var(--cols,2),minmax(0,1fr));grid-template-rows:repeat(var(--rows,1),minmax(0,1fr));height:clamp(260px,62svh,560px)}
+.grid>.muted{margin:0}
+.p{container-type:size;position:relative;display:grid;grid-template-rows:auto minmax(0,1fr) auto;min-height:0;background:var(--tile);border:2px solid var(--rim)}
+.p.now{border-width:3px}
+.p.now::before{content:"";position:absolute;left:0;right:0;top:0;height:6px;background:var(--brand)}
+.p-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px 0;min-width:0}
+.p-name{font-weight:700;font-size:clamp(.9rem,7cqmin,1.6rem);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.p-clock{font-variant-numeric:tabular-nums;font-size:clamp(.85rem,6cqmin,1.4rem);padding:0 8px;flex:none}
+.p.now .p-clock{background:var(--ink);color:var(--tile);border-color:var(--ink)}
+.p.now .p-clock.out{background:var(--brand);color:#121212}
+.p-score{border:0;background:none;padding:0;min-height:0;font-size:clamp(1.6rem,34cqmin,11rem);font-weight:700;line-height:1;font-variant-numeric:tabular-nums;overflow:hidden}
+.p-score:hover{background:none;color:var(--ink)}
+.p-buttons{display:grid;grid-template-columns:1fr 1fr;height:clamp(40px,26cqh,130px)}
+.p-buttons button{font-size:clamp(1rem,9cqmin,2.2rem);border-width:2px 0 0}
+.p-buttons button+button{border-left-width:2px}
+
+/* Full screen: the pad covers the whole page */
+.pad.full{position:fixed;inset:0;z-index:50;margin:0;border:0;display:flex;flex-direction:column;padding:0 max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
+.pad.full::before{margin:0 calc(-1*max(8px,env(safe-area-inset-left))) 8px;margin-top:env(safe-area-inset-top)}
+.pad.full .grid{flex:1;height:auto;min-height:0}
+.pad:fullscreen{background:var(--surface)}
+body.pad-open{overflow:hidden}
+
+/* Players */
+.players{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:6px}
+.players:empty{display:none}
+.players li{display:flex;gap:4px}
+.pl-name{flex:1;font-weight:600}
+.players button{padding:2px 10px}
+.form-row{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 10px;margin-bottom:10px}
+.field{display:grid;gap:4px;font-weight:600;font-size:.9rem}
+.grow{flex:1 1 12em}
+input[type="text"],input[type="number"],select{font:inherit;font-weight:400;color:var(--ink);background:var(--tile);border:2px solid var(--rim);padding:4px 8px;min-width:0}
+.num{width:5.5em}
+
+/* History */
+.history h2{margin-bottom:8px}
+.h-list{list-style:none;margin:0;padding:0;display:grid;gap:4px;max-height:320px;overflow-y:auto}
+.h-list li{background:var(--surface);border:2px solid var(--rim);padding:3px 10px;font-variant-numeric:tabular-nums}
+@media print{.bar,.p-buttons,form,fieldset{display:none}}

@@ -1,0 +1,257 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Score Pad</title>
+<meta name="description" content="Scores for any game, with a turn clock or a shared timer.">
+<meta property="og:title" content="Score Pad">
+<meta property="og:description" content="Scores for any game, with a turn clock or a shared timer.">
+<meta property="og:url" content="https://spibane.com/score/">
+<meta property="og:site_name" content="Spibane's Tools for Everything">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://spibane.com/shared/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../shared/base.css">
+<script src="../shared/site.js"></script>
+<link rel="stylesheet" href="style.css"></head><body><main>
+<a class="back" href="../">Back to All Tools</a>
+<h1>Score Pad</h1>
+<p class="intro">Scores for any game, with a turn clock or a shared timer.</p>
+<section class="pad panel" id="pad" aria-label="Scores">
+<div class="bar">
+<span class="clock" id="clock" role="timer"></span>
+<button type="button" id="go">Start</button>
+<button type="button" id="next">Next turn</button>
+<button type="button" id="t-reset">Reset time</button>
+<label class="step">Step <select id="step"></select></label>
+<button type="button" id="undo">Undo</button>
+<button type="button" id="full">Full screen</button>
+</div>
+<div class="grid" id="grid"></div>
+</section>
+<fieldset>
+<legend>Players</legend>
+<ol class="players" id="players"></ol>
+<form class="form-row" id="add" autocomplete="off">
+<label class="field grow">Name <input type="text" id="add-name"></label>
+<button type="submit">Add</button>
+</form>
+<div class="form-row">
+<label class="field">Start at <input type="number" id="start" class="num"></label>
+<button type="button" id="reset">Reset scores</button>
+</div>
+</fieldset>
+<fieldset>
+<legend>Timer</legend>
+<div class="form-row">
+<label class="field">Timer <select id="mode"><option value="off">Off</option><option value="turn">Each player</option><option value="shared">Shared</option></select></label>
+<label class="field">Minutes <input type="number" id="minutes" class="num" min="1" max="999" aria-describedby="min-hint"></label>
+</div>
+<p class="hint" id="min-hint">Leave minutes empty to count up. Each player: a clock per player, passed on with Next turn or by tapping a clock.</p>
+</fieldset>
+<section class="history" aria-labelledby="history-h">
+<h2 id="history-h">History</h2>
+<ol class="h-list" id="history"></ol>
+</section>
+</main>
+<script>
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const STEPS=[1,2,5,10,25,50,100];
+// Saved data. players: {id, name, score, time (ms on their clock)}. start: the score players start at. step: what - and + change.
+// history: newest first, {id (player), delta, to (the score after), at (ms timestamp)}; quick taps on one player merge.
+// timer: {mode ('off', 'turn' or 'shared'), minutes (counts down from this, or null to count up), running, since (ms timestamp
+// the clock last started), used (ms on the shared clock), turn (whose clock runs in 'turn' mode), done (clocks that ran out)}.
+let state=Object.assign({players:[],start:0,step:1,history:[],timer:{}},store.load('score'));
+state.timer=Object.assign({mode:'off',minutes:null,running:false,since:0,used:0,turn:null,done:[]},state.timer);
+if(!state.players.length)state.players=[1,2].map(i=>({id:uid(),name:'Player '+i,score:0,time:0}));
+const save=()=>store.save('score',state);
+const T=state.timer;
+const byId=id=>state.players.find(p=>p.id===id);
+const nm=p=>p?p.name||'Unnamed':'Removed';
+const num=x=>Math.round(x*100)/100;
+
+// Scores
+function change(p,d,set){
+  const was=p.score;p.score=num(set?d:p.score+d);d=num(p.score-was);
+  const h=state.history[0],now=Date.now();
+  if(h&&!set&&!h.set&&h.id===p.id&&now-h.at<3000){h.delta=num(h.delta+d);h.to=p.score;h.at=now;if(!h.delta)state.history.shift();}
+  else if(d)state.history.unshift({id:p.id,delta:d,to:p.score,at:now,set:!!set});
+  state.history.length=Math.min(state.history.length,200);
+  save();render();
+}
+$('undo').addEventListener('click',()=>{
+  const h=state.history.shift();if(!h)return;
+  const p=byId(h.id);if(p)p.score=num(p.score-h.delta);
+  save();render();
+});
+
+// Timer. A running clock's time is what it had banked plus the time since it started.
+const run=()=>T.running?Date.now()-T.since:0;
+const limit=()=>T.minutes?T.minutes*60000:0;
+const timeOf=p=>p.time+(T.mode==='turn'&&T.turn===p.id?run():0);
+const sharedTime=()=>T.used+(T.mode==='shared'?run():0);
+function fmt(ms){
+  if(limit())ms=Math.max(0,Math.ceil((limit()-ms)/1000)*1000);
+  const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor(s/60)%60,x=String(s%60).padStart(2,'0');
+  return (h?h+':'+String(m).padStart(2,'0'):m)+':'+x;
+}
+// Moves the running time onto whoever's clock it was
+function bank(){
+  if(!T.running)return;
+  if(T.mode==='turn'){const p=byId(T.turn);if(p)p.time+=run();}
+  else if(T.mode==='shared')T.used+=run();
+  T.since=Date.now();
+}
+function setTurn(id){bank();T.turn=id;save();render();}
+$('go').addEventListener('click',()=>{
+  bank();
+  if(T.running)T.running=false;
+  else{T.running=true;T.since=Date.now();if(T.mode==='turn'&&!byId(T.turn))T.turn=(state.players[0]||{}).id||null;sound(true);}
+  save();render();
+});
+$('next').addEventListener('click',()=>{
+  const i=state.players.findIndex(p=>p.id===T.turn);
+  if(state.players.length)setTurn(state.players[(i+1)%state.players.length].id);
+});
+$('t-reset').addEventListener('click',()=>{
+  if(!confirm('Reset the timer?'))return;
+  Object.assign(T,{running:false,used:0,done:[]});state.players.forEach(p=>p.time=0);save();render();
+});
+$('mode').addEventListener('change',e=>{bank();Object.assign(T,{mode:e.target.value,running:false,done:[]});save();render();});
+$('minutes').addEventListener('change',e=>{
+  const m=Math.floor(+e.target.value);T.minutes=m>0?Math.min(m,999):null;T.done=[];
+  e.target.value=T.minutes??'';save();render();
+});
+// Beeps three times when a countdown runs out (and once, silently, on Start so the sound is allowed to play later)
+let audio;
+function sound(warm){
+  try{
+    audio=audio||new (window.AudioContext||window.webkitAudioContext)();
+    if(warm){audio.resume();return;}
+    [0,.3,.6].forEach(t=>{const o=audio.createOscillator(),g=audio.createGain();o.frequency.value=880;g.gain.value=.15;
+      o.connect(g).connect(audio.destination);o.start(audio.currentTime+t);o.stop(audio.currentTime+t+.18);});
+  }catch(_){}
+  try{navigator.vibrate&&navigator.vibrate([200,100,200]);}catch(_){}
+}
+// Redraws just the clocks, several times a second. A shared countdown stops at zero; a player's keeps going so their turn can finish.
+function tick(){
+  const out=(key,ms)=>{
+    const over=!!limit()&&ms>=limit();
+    if(over&&!T.done.includes(key)){T.done.push(key);if(key==='shared'){bank();T.running=false;render();}save();sound();}
+    return over;
+  };
+  if(T.mode==='shared'){const ms=sharedTime();$('clock').textContent=fmt(ms);$('clock').classList.toggle('out',out('shared',ms));}
+  if(T.mode==='turn')state.players.forEach(p=>{
+    const c=$('grid').querySelector('[data-id="'+p.id+'"] .p-clock');if(!c)return;
+    const ms=timeOf(p);c.textContent=fmt(ms);c.classList.toggle('out',out(p.id,ms));
+  });
+}
+setInterval(()=>{if(T.running)tick();},250);
+
+// The pad. Columns are picked so each player's area is as big as it can be, leaning a little towards wide areas.
+function layout(){
+  const g=$('grid'),n=state.players.length;if(!n)return;
+  const W=g.clientWidth,H=g.clientHeight;let best=1,top=0;
+  for(let c=1;c<=n;c++){const s=Math.min(W/c,H/Math.ceil(n/c)*1.3);if(s>top+1){top=s;best=c;}}
+  g.style.setProperty('--cols',best);g.style.setProperty('--rows',Math.ceil(n/best));
+}
+new ResizeObserver(layout).observe($('grid'));
+
+function renderPad(){
+  const s=state.step,turn=T.mode==='turn';
+  $('grid').innerHTML=state.players.length?state.players.map(p=>{
+    const who=nm(p),now=turn&&T.turn===p.id;
+    return '<div class="p'+(now?' now':'')+'" data-id="'+p.id+'">'+
+      '<div class="p-head"><span class="p-name">'+esc(who)+'</span>'+
+      (turn?'<button type="button" class="p-clock" aria-label="'+esc(who+'’s clock. Make it their turn')+'"'+(now?' aria-current="true"':'')+'></button>':'')+'</div>'+
+      '<button type="button" class="p-score" aria-label="'+esc(who+', '+p.score+'. Type an amount')+'">'+p.score+'</button>'+
+      '<div class="p-buttons"><button type="button" data-d="-1" aria-label="'+esc('Take '+s+' from '+who)+'">−'+s+'</button>'+
+      '<button type="button" data-d="1" aria-label="'+esc('Give '+who+' '+s)+'">+'+s+'</button></div></div>';
+  }).join(''):'<p class="muted">Add players below.</p>';
+  $('clock').hidden=T.mode!=='shared';
+  $('go').hidden=$('t-reset').hidden=T.mode==='off';
+  $('next').hidden=!turn;$('next').disabled=!state.players.length;
+  $('go').textContent=T.running?'Pause':T.used||state.players.some(p=>p.time)?'Resume':'Start';
+  $('undo').disabled=!state.history.length;
+  layout();tick();
+}
+function renderPlayers(){
+  const last=state.players.length-1;
+  $('players').innerHTML=state.players.map((p,i)=>{const who=nm(p);return '<li data-id="'+p.id+'">'+
+    '<input type="text" class="pl-name" value="'+esc(p.name)+'" aria-label="Name" autocomplete="off">'+
+    '<button type="button" data-act="up" aria-label="'+esc('Move '+who+' up')+'"'+(i?'':' disabled')+'>↑</button>'+
+    '<button type="button" data-act="down" aria-label="'+esc('Move '+who+' down')+'"'+(i<last?'':' disabled')+'>↓</button>'+
+    '<button type="button" data-act="del" aria-label="'+esc('Remove '+who)+'">×</button></li>';}).join('');
+}
+function renderHistory(){
+  $('history').innerHTML=state.history.length?state.history.map(h=>'<li><b>'+esc(nm(byId(h.id)))+'</b> '+
+    (h.set?'set to':(h.delta>0?'+':'−')+Math.abs(h.delta))+' <span class="muted">'+(h.set?'':'→ ')+h.to+'</span></li>').join(''):
+    '<li class="muted">Nothing yet.</li>';
+}
+function render(){renderPad();renderHistory();$('step').value=state.step;$('mode').value=T.mode;$('minutes').value=T.minutes??'';$('start').value=state.start;}
+
+$('grid').addEventListener('click',e=>{
+  const cell=e.target.closest('.p');if(!cell)return;
+  const p=byId(cell.dataset.id),b=e.target.closest('button');if(!b)return;
+  if(b.dataset.d)change(p,+b.dataset.d*state.step);
+  else if(b.classList.contains('p-clock'))setTurn(p.id);
+  else if(b.classList.contains('p-score')){
+    const v=prompt('Add to '+nm(p)+'’s score. Use - to take away, or = to set it, like =20.','');
+    if(v==null)return;
+    const m=v.trim().replace(/,/g,'').match(/^(=)?\s*([+-]?\d*\.?\d+)$/);
+    if(m)change(p,+m[2],!!m[1]);
+  }
+  const again=$('grid').querySelector('[data-id="'+p.id+'"] '+(b.dataset.d?'[data-d="'+b.dataset.d+'"]':'.'+b.className.split(' ')[0]));
+  if(again)again.focus();
+});
+$('step').innerHTML=STEPS.map(s=>'<option value="'+s+'">'+s+'</option>').join('');
+$('step').addEventListener('change',e=>{state.step=+e.target.value;save();renderPad();});
+
+// Players
+$('players').addEventListener('input',e=>{
+  const p=byId(e.target.closest('li').dataset.id);p.name=e.target.value;save();renderPad();renderHistory();
+});
+$('players').addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;
+  const id=b.closest('li').dataset.id,i=state.players.findIndex(p=>p.id===id),a=b.dataset.act;
+  if(a==='del'){if(!confirm('Remove '+nm(state.players[i])+'?'))return;bank();state.players.splice(i,1);}
+  else{const j=i+(a==='up'?-1:1);[state.players[i],state.players[j]]=[state.players[j],state.players[i]];}
+  save();render();renderPlayers();
+  const again=$('players').querySelector('[data-id="'+id+'"] [data-act="'+a+'"]');
+  if(again&&!again.disabled)again.focus();
+});
+$('add').addEventListener('submit',e=>{
+  e.preventDefault();
+  const name=$('add-name').value.trim();if(!name){$('add-name').focus();return;}
+  state.players.push({id:uid(),name,score:state.start,time:0});
+  $('add-name').value='';save();render();renderPlayers();
+});
+$('start').addEventListener('change',e=>{state.start=num(+e.target.value||0);e.target.value=state.start;save();});
+$('reset').addEventListener('click',()=>{
+  if(!confirm('Reset every score to '+state.start+'? The history will be cleared.'))return;
+  state.players.forEach(p=>p.score=state.start);state.history=[];save();render();
+});
+
+// Full screen: the pad covers the page, using the browser's full screen when it has one, and keeps the screen awake
+let full=false,lock=null;
+async function setFull(on){
+  if(on===full)return;full=on;
+  $('pad').classList.toggle('full',on);document.body.classList.toggle('pad-open',on);
+  $('full').textContent=on?'Exit':'Full screen';
+  try{
+    if(on){if($('pad').requestFullscreen)await $('pad').requestFullscreen();}
+    else if(document.fullscreenElement)await document.exitFullscreen();
+  }catch(_){}
+  try{if(on&&navigator.wakeLock)lock=await navigator.wakeLock.request('screen');else if(lock){lock.release();lock=null;}}catch(_){}
+  layout();
+}
+$('full').addEventListener('click',()=>setFull(!full));
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement)setFull(false);});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')setFull(false);});
+document.addEventListener('visibilitychange',async()=>{
+  try{if(full&&document.visibilityState==='visible'&&navigator.wakeLock)lock=await navigator.wakeLock.request('screen');}catch(_){}
+});
+
+render();renderPlayers();
+backups({what:'scores',keys:['score'],file:'score-pad.json'});
+</script></body></html>
