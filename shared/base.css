@@ -172,6 +172,7 @@ button.roll:hover { background: var(--tile); color: var(--ink); border-color: va
 
 /* Privacy note at the bottom of the hub page */
 .privacy { margin: 40px 0 0; font-size: 0.9rem; max-width: 65ch; }
+.privacy + .privacy { margin-top: 12px; }
 
 /* A list of links styled like tiles, used by hub pages */
 .link-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
