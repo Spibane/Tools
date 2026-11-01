@@ -1,9 +1,6 @@
 /* Brackets. Buttons, panels and the New bracket button come from shared/base.css.
    Loaded after shared/base.css. */
 
-/* Brackets need room across, so this page is wider than most */
-main{max-width:1100px}
-
 /* The panel: the winner, how many matches are played, and the bracket */
 .b-panel{margin-bottom:26px}
 .status p{margin:0 0 8px}
