@@ -50,25 +50,31 @@
 <p class="hint" id="min-hint">Leave minutes empty to count up. Each player: a clock per player, passed on with Next turn or by tapping a clock.</p>
 </fieldset>
 <section class="history" aria-labelledby="history-h">
-<h2 id="history-h">History</h2>
+<div class="history-head"><h2 id="history-h">History</h2><button type="button" id="history-clear">Clear history</button></div>
 <ol class="h-list" id="history"></ol>
 </section>
 </main>
 <script>
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const STEPS=[1,2,5,10,25,50,100];
-// Saved data. players: {id, name, score, time (ms on their clock)}. start: the score players start at. step: what - and + change.
+// Player colors, used behind black text, so each one is light enough on both themes
+const COLORS=['#ff8787','#74c0fc','#ffd43b','#b197fc','#ffa94d','#f783ac','#66d9e8','#d8b48a'];
+// Saved data. players: {id, name, score, time (ms on their clock), color (an index into COLORS)}. start: the score players start at. step: what - and + change.
 // history: newest first, {id (player), delta, to (the score after), at (ms timestamp)}; quick taps on one player merge.
 // timer: {mode ('off', 'turn' or 'shared'), minutes (counts down from this, or null to count up), running, since (ms timestamp
 // the clock last started), used (ms on the shared clock), turn (whose clock runs in 'turn' mode), done (clocks that ran out)}.
 let state=Object.assign({players:[],start:0,step:1,history:[],timer:{}},store.load('score'));
 state.timer=Object.assign({mode:'off',minutes:null,running:false,since:0,used:0,turn:null,done:[]},state.timer);
-if(!state.players.length)state.players=[1,2].map(i=>({id:uid(),name:'Player '+i,score:0,time:0}));
+if(!state.players.length)state.players=[1,2].map(i=>({id:uid(),name:'Player '+i,score:0,time:0,color:i-1}));
+state.players.forEach((p,i)=>{if(!(p.color in COLORS))p.color=i%COLORS.length;});
 const save=()=>store.save('score',state);
 const T=state.timer;
 const byId=id=>state.players.find(p=>p.id===id);
 const nm=p=>p?p.name||'Unnamed':'Removed';
 const num=x=>Math.round(x*100)/100;
+const hue=p=>p?'--pc:'+COLORS[p.color]:'';
+// The first color nobody has yet, or the least used one
+const freeColor=()=>{const n=COLORS.map((_,i)=>state.players.filter(p=>p.color===i).length);return n.indexOf(Math.min(...n));};
 
 // Scores
 function change(p,d,set){
@@ -161,7 +167,7 @@ function renderPad(){
   const s=state.step,turn=T.mode==='turn';
   $('grid').innerHTML=state.players.length?state.players.map(p=>{
     const who=nm(p),now=turn&&T.turn===p.id;
-    return '<div class="p'+(now?' now':'')+'" data-id="'+p.id+'">'+
+    return '<div class="p'+(now?' now':'')+'" data-id="'+p.id+'" style="'+hue(p)+'">'+
       '<div class="p-head"><span class="p-name">'+esc(who)+'</span>'+
       (turn?'<button type="button" class="p-clock" aria-label="'+esc(who+'’s clock. Make it their turn')+'"'+(now?' aria-current="true"':'')+'></button>':'')+'</div>'+
       '<button type="button" class="p-score" aria-label="'+esc(who+', '+p.score+'. Type an amount')+'">'+p.score+'</button>'+
@@ -177,17 +183,23 @@ function renderPad(){
 }
 function renderPlayers(){
   const last=state.players.length-1;
-  $('players').innerHTML=state.players.map((p,i)=>{const who=nm(p);return '<li data-id="'+p.id+'">'+
+  $('players').innerHTML=state.players.map((p,i)=>{const who=nm(p);return '<li data-id="'+p.id+'" style="'+hue(p)+'">'+
+    '<button type="button" class="swatch" data-act="color" aria-label="'+esc('Change '+who+'’s color')+'" title="Change color"></button>'+
     '<input type="text" class="pl-name" value="'+esc(p.name)+'" aria-label="Name" autocomplete="off">'+
     '<button type="button" data-act="up" aria-label="'+esc('Move '+who+' up')+'"'+(i?'':' disabled')+'>↑</button>'+
     '<button type="button" data-act="down" aria-label="'+esc('Move '+who+' down')+'"'+(i<last?'':' disabled')+'>↓</button>'+
     '<button type="button" data-act="del" aria-label="'+esc('Remove '+who)+'">×</button></li>';}).join('');
 }
 function renderHistory(){
-  $('history').innerHTML=state.history.length?state.history.map(h=>'<li><b>'+esc(nm(byId(h.id)))+'</b> '+
+  $('history').innerHTML=state.history.length?state.history.map(h=>'<li style="'+hue(byId(h.id))+'"><b>'+esc(nm(byId(h.id)))+'</b> '+
     (h.set?'set to':(h.delta>0?'+':'−')+Math.abs(h.delta))+' <span class="muted">'+(h.set?'':'→ ')+h.to+'</span></li>').join(''):
     '<li class="muted">Nothing yet.</li>';
+  $('history-clear').disabled=!state.history.length;
 }
+$('history-clear').addEventListener('click',()=>{
+  if(!confirm('Clear the history? Scores stay as they are, and Undo will have nothing to take back.'))return;
+  state.history=[];save();render();
+});
 function render(){renderPad();renderHistory();$('step').value=state.step;$('mode').value=T.mode;$('minutes').value=T.minutes??'';$('start').value=state.start;}
 
 $('grid').addEventListener('click',e=>{
@@ -214,7 +226,8 @@ $('players').addEventListener('input',e=>{
 $('players').addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');if(!b)return;
   const id=b.closest('li').dataset.id,i=state.players.findIndex(p=>p.id===id),a=b.dataset.act;
-  if(a==='del'){if(!confirm('Remove '+nm(state.players[i])+'?'))return;bank();state.players.splice(i,1);}
+  if(a==='color')state.players[i].color=(state.players[i].color+1)%COLORS.length;
+  else if(a==='del'){if(!confirm('Remove '+nm(state.players[i])+'?'))return;bank();state.players.splice(i,1);}
   else{const j=i+(a==='up'?-1:1);[state.players[i],state.players[j]]=[state.players[j],state.players[i]];}
   save();render();renderPlayers();
   const again=$('players').querySelector('[data-id="'+id+'"] [data-act="'+a+'"]');
@@ -223,7 +236,7 @@ $('players').addEventListener('click',e=>{
 $('add').addEventListener('submit',e=>{
   e.preventDefault();
   const name=$('add-name').value.trim();if(!name){$('add-name').focus();return;}
-  state.players.push({id:uid(),name,score:state.start,time:0});
+  state.players.push({id:uid(),name,score:state.start,time:0,color:freeColor()});
   $('add-name').value='';save();render();renderPlayers();
 });
 $('start').addEventListener('change',e=>{state.start=num(+e.target.value||0);e.target.value=state.start;save();});
