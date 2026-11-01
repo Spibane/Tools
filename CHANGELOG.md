@@ -3,7 +3,7 @@
 The site has no version numbers; changes are grouped by the day they were made.
 
 ### 2026-11-01
-- Added a wheel to the Randomizer that spins to the pick, as a toggle
+- Added wheels to the Randomizer, one per pick, that spin to the pick and show it across the middle, as a toggle
 
 ### 2026-10-31
 - Added a README and this changelog
