@@ -21,8 +21,10 @@
 /* Once a wheel stops, the other slices fade and the pick pops up across the middle */
 .w-spin path,.w-spin text,.w-spin circle[data-i]{transition:opacity .3s}
 .wheel.done .w-spin [data-i]:not(.win){opacity:.25}
-.w-result{position:absolute;left:50%;top:50%;max-width:86%;margin:0;padding:6px 12px;transform:translate(-50%,-50%);
-  background:var(--brand);color:#121212;border:3px solid #121212;font-weight:700;font-size:clamp(.85rem,7.5cqi,1.6rem);line-height:1.2;text-align:center;overflow-wrap:anywhere;pointer-events:none}
+.w-result{position:absolute;left:50%;top:50%;max-width:86%;width:max-content;margin:0;padding:6px 12px;transform:translate(-50%,-50%);
+  background:var(--brand);color:#121212;border:3px solid #121212;font-weight:700;font-size:1.5rem;line-height:1.2;text-align:center;overflow-wrap:break-word;pointer-events:none}
+/* The pick stays the same size however small the wheels get; on small wheels it may use nearly their full width */
+.wheels.many .w-result{max-width:98%;padding:4px 8px}
 .wheel:not(.done) .w-result{display:none}
 .wheel.done .w-result{animation:w-pop .35s cubic-bezier(.2,1.6,.4,1)}
 @keyframes w-pop{from{transform:translate(-50%,-50%) scale(.4);opacity:0}}
