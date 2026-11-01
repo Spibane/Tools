@@ -12,9 +12,10 @@ h3{font-size:.85rem;font-weight:700;color:var(--muted);margin:0 0 6px}
 .scroller>.side:first-child{margin-top:0}
 /* A rule between the winners and losers brackets, as wide as the bracket when it scrolls */
 .losers{min-width:max-content;margin-top:16px;border-top:3px solid var(--rim)}
-/* Full screen and New bracket: the same size, two equal columns. Full screen has no gradient. */
+/* Full screen and New bracket: the same size, two equal columns, and the same outline so neither looks bigger on the
+   dark theme (where New bracket's black outline would vanish). Full screen has no gradient. */
 .head-buttons{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:8px}
-.head-buttons button{white-space:nowrap;font-size:1.1rem;font-weight:700;padding:8px 22px;border-width:3px}
+.head-buttons button{white-space:nowrap;font-size:1.1rem;font-weight:700;padding:8px 22px;border-width:3px;border-color:var(--rim)}
 @media (max-width:440px){.head-buttons{width:100%}.head-buttons button{font-size:1rem;padding:8px 10px}}
 
 /* Elimination: one column per round, scrolling sideways when it's wider than the page.
