@@ -12,7 +12,10 @@ h3{font-size:.85rem;font-weight:700;color:var(--muted);margin:0 0 6px}
 .scroller>.side:first-child{margin-top:0}
 /* A rule between the winners and losers brackets, as wide as the bracket when it scrolls */
 .losers{min-width:max-content;margin-top:16px;border-top:3px solid var(--rim)}
-.head-buttons{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+/* Full screen and New bracket: the same size, two equal columns. Full screen has no gradient. */
+.head-buttons{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:8px}
+.head-buttons button{white-space:nowrap;font-size:1.1rem;font-weight:700;padding:8px 22px;border-width:3px}
+@media (max-width:440px){.head-buttons{width:100%}.head-buttons button{font-size:1rem;padding:8px 10px}}
 
 /* Elimination: one column per round, scrolling sideways when it's wider than the page.
    Matches spread out down each column, so later rounds sit between the matches that feed them. */
@@ -34,6 +37,7 @@ h3{font-size:.85rem;font-weight:700;color:var(--muted);margin:0 0 6px}
 .b-panel.full{position:fixed;inset:0;z-index:50;margin:0;border:0;display:flex;flex-direction:column;
   padding:0 max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
 .b-panel.full::before{margin-top:env(safe-area-inset-top)}
+.b-panel.full #make{display:none}
 .b-panel.full #view{flex:1;min-height:0;overflow:auto}
 .b-panel.full .scroller{overflow:visible}
 .b-panel:fullscreen{background:var(--surface)}
