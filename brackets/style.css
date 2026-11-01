@@ -1,0 +1,54 @@
+/* Brackets. Buttons, panels and the New bracket button come from shared/base.css.
+   Loaded after shared/base.css. */
+
+/* Brackets need room across, so this page is wider than most */
+main{max-width:1100px}
+
+/* The panel: the winner, how many matches are played, and the bracket */
+.b-panel{margin-bottom:26px}
+.status p{margin:0 0 8px}
+.champ{font-size:1.3rem}
+.champ b{background:var(--brand);color:#121212;padding:0 6px}
+.b-buttons{margin-top:12px}
+h3{font-size:.85rem;font-weight:700;color:var(--muted);margin:0 0 6px}
+.side{font-size:1rem;color:var(--ink);margin:14px 0 6px}
+
+/* Elimination: one column per round, scrolling sideways when it's wider than the page.
+   Matches spread out down each column, so later rounds sit between the matches that feed them. */
+.bracket{display:flex;gap:14px;overflow-x:auto;padding-bottom:6px}
+.round{display:flex;flex-direction:column;flex:0 0 172px}
+.matches{flex:1;display:flex;flex-direction:column;justify-content:space-around;gap:10px}
+.match{display:grid;background:var(--tile);border:2px solid var(--rim)}
+.match.auto{opacity:.55}
+.slot{display:flex;align-items:center;gap:8px;min-height:32px;padding:3px 8px;border:0;background:none;text-align:left;font-size:.9rem;font-weight:600;overflow-wrap:anywhere}
+.slot+.slot{border-top:2px solid var(--rim)}
+.slot.won{background:var(--brand);color:#121212}
+.slot.lost{color:var(--muted);text-decoration:line-through}
+.slot.tbd,.slot.bye{color:var(--muted);font-weight:400}
+.seed{font-size:.75rem;color:var(--muted);min-width:1.4em;text-align:right;flex:none}
+.slot.won .seed{color:#121212}
+
+/* Round robin: standings, then each round's matches as player, Draw, player */
+.standings{border-collapse:collapse;width:100%;margin-bottom:14px;font-variant-numeric:tabular-nums}
+.standings th,.standings td{border:2px solid var(--rim);padding:3px 8px;text-align:center}
+.standings th{background:var(--tile);font-size:.85rem}
+.standings td:nth-child(2){text-align:left;font-weight:600;overflow-wrap:anywhere}
+.standings .lead td{font-weight:700}
+.standings .lead td:first-child{background:var(--brand);color:#121212}
+.rr-rounds{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:12px}
+.rr{display:grid;grid-template-columns:1fr auto 1fr;background:var(--tile);border:2px solid var(--rim);margin-bottom:6px}
+.rr .slot+.slot{border-top:0;border-left:2px solid var(--rim)}
+.rr-b{justify-content:flex-end;text-align:right}
+.rr-d{font-weight:400;font-size:.8rem;justify-content:center}
+.sits{font-size:.85rem;margin:0 0 6px}
+
+/* Players */
+.opts{display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;margin-bottom:12px}
+.opts .toggle{margin:0}
+.format{display:flex;align-items:center;gap:8px;font-size:.9rem;font-weight:600}
+.field{display:grid;gap:4px;margin-bottom:10px;font-weight:600}
+.field .hint{font-weight:400;margin:0}
+.hint.short{color:var(--ink);font-weight:600}
+select,textarea{font:inherit;font-weight:400;color:var(--ink);background:var(--tile);border:2px solid var(--rim);padding:4px 8px}
+textarea{width:100%;resize:vertical}
+@media print{fieldset,.roll,.b-buttons{display:none}.bracket{overflow:visible;flex-wrap:wrap}}

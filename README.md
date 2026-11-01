@@ -41,6 +41,7 @@ A static site with no build step, framework or server. Each tool is a folder wit
 | General | [Dice Roller](https://spibane.com/dice/) | Dice like 2d6+3, and coin flips |
 | General | [Turn Tracker](https://spibane.com/turns/) | Turn order with skips, holds and notes |
 | General | [Score Pad](https://spibane.com/score/) | Scores with a turn clock or timer |
+| General | [Brackets](https://spibane.com/brackets/) | Elimination brackets and round robins |
 | Games | [Aniimo](https://spibane.com/games/aniimo/) | Collection boxes and checklists |
 | Games | [Dead by Daylight](https://spibane.com/games/dbd/) | Loadout randomizer |
 | Games | [Final Fantasy XIV](https://spibane.com/games/ffxiv/) | Relic checklists and roulette job picker |
@@ -61,6 +62,7 @@ A static site with no build step, framework or server. Each tool is a folder wit
 ├── dice/
 ├── turns/
 ├── score/
+├── brackets/
 └── games/
     ├── aniimo/         # collection/, checklist/, data/ (forms, spawns, categories)
     ├── dbd/            # loadout/, data/ (loadout.js + update.py)
