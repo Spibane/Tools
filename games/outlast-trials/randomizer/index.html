@@ -13,6 +13,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="../../../shared/base.css">
 <script src="../../../shared/site.js"></script>
+<script src="../data/trials.js"></script>
 <link rel="stylesheet" href="style.css"></head><body><main>
 <nav class="backs"><a class="back" href="../../../">Back to All Tools</a><a class="back" href="../">Back to The Outlast Trials</a></nav>
 <h1>Trial Randomizer</h1>
@@ -29,51 +30,13 @@
 <div id="kinds"></div>
 </main>
 <script>
-const KINDS=[{id:'trial',name:'Trial',title:'Trials'},{id:'mk',name:'MK-Challenge',title:'MK-Challenges'}];
-const ASSETS=[{id:'coyle',name:'Leland Coyle'},{id:'gooseberry',name:'Mother Gooseberry'},{id:'franco',name:'Franco Barbi'},
-  {id:'kress',name:'Otto and Arora Kress'},{id:'liliya',name:'Liliya Bogomolova'},{id:'any',name:'Any Prime Asset'},{id:'other',name:'Other'}];
-// Every trial and MK-Challenge as of Season 7.1 (October 2026), by Prime Asset. Event versions are these
-// with extra modifiers, so they aren't listed separately. Rebirth and Escape! start off.
-// The ids are used to save your choices, so rename with care.
-const LIST={
-  trial:{
-    coyle:['Kill the Snitch','Locksock the Warden','Vindicate the Guilty'],
-    gooseberry:['Cleanse the Orphans','Grind the Bad Apples','Pervert the Futterman'],
-    franco:['Liquidate the Union','Pleasure the Prosecutor','Poison the Medicine'],
-    kress:['Kill the Politician','Silence the Idol'],
-    liliya:['Despoil the Auction'],
-    other:['Rebirth','Escape!']
-  },
-  mk:{
-    coyle:['Bribe the Judges','Cancel the Autopsy','Destroy the Evidence','Eliminate the Past','Escape the Courthouse','Fuel the Release',
-      'Release the Prisoners','Sabotage the Lockdown','Seize the Narcotics','Sentence the Prosecuted','Teach the Police Officer','Tilt the Scales of Justice'],
-    gooseberry:['Beguile the Children','Compel the Children','Crush the Sex Toys','Deface the Futtermans','Drill the Futterman','Feed the Children',
-      'Flatten the Foreman','Foster the Orphans','Fumigate the Factory','Gather the Children of God','Incinerate the Sex Toys','Open the Gates',
-      'Punish the Miscreants','Redeem Your Freedom','Reunite the Family','Sanitize the Factory','Shutdown the Factory','Win the Truth'],
-    franco:['Cook the Informant','Disrupt the Neighborhood','Eliminate the Legacy','Empty the Vault','Get Out the Vote','Kidnap the Mistress',
-      'Poison the Cattle','Spread the Disease','Stash the Contraband','Traffick the Product'],
-    kress:['Cancel the Broadcast','Change the Program','Fabricate the Scandal','Fund the Campaign','Investigate the Minotaur'],
-    liliya:['Incinerate the Relic','Solve the Murder'],
-    any:['Escape the Lies']
-  }
-};
-const DEFAULT_OFF=['rebirth','escape-'];
-const slug=n=>n.toLowerCase().replace(/[^a-z]+/g,'-');
-const TRIALS=KINDS.flatMap(k=>ASSETS.flatMap(a=>(LIST[k.id][a.id]||[]).map(n=>({name:n,id:slug(n),kind:k.id,asset:a.id}))));
-const trial=id=>TRIALS.find(t=>t.id===id);
 const kindTag=t=>'<span class="role kind-'+t.kind+'">'+KINDS.find(k=>k.id===t.kind).name+'</span>';
 
-// Settings: off = trials left out of rolls; played = trials marked as played;
-// usePlayed = leave played trials out of rolls; result = the last roll;
-// seen = default-off trials already turned off once, so ticking one later sticks
-let state={off:[],played:[],usePlayed:true,result:null,seen:[]};
-state=Object.assign(state,store.load('outlast'));
-DEFAULT_OFF.filter(id=>!state.seen.includes(id)).forEach(id=>{state.off.push(id);state.seen.push(id);});
+let state=loadTrialSettings();
 const save=()=>store.save('outlast',state);
-save();
 
 const played=t=>state.usePlayed&&state.played.includes(t.id);
-const candidates=()=>TRIALS.filter(t=>!state.off.includes(t.id)&&!played(t));
+const candidates=()=>trialCandidates(state);
 
 // Rolls a new trial, avoiding the current one while there's anything else
 function roll(){

@@ -4,6 +4,7 @@ The site has no version numbers; changes are grouped by the day they were made.
 
 ### 2026-11-01
 - Added wheels to the Randomizer, one per pick, that spin to the pick and show it across the middle, as a toggle
+- Added an Outlast Trials loadout randomizer for a rig, a tool, skill and medicine amp, and a trial from the Trial Randomizer's settings, with each part optional
 - Added a note under the privacy note on the main page saying the site isn't affiliated with the games' owners
 
 ### 2026-10-31

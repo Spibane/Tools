@@ -1,0 +1,145 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Outlast Trials Loadout Randomizer</title>
+<meta name="description" content="Rolls a rig, a tool, skill and medicine amp, and a trial.">
+<meta property="og:title" content="Outlast Trials Loadout Randomizer">
+<meta property="og:description" content="Rolls a rig, a tool, skill and medicine amp, and a trial.">
+<meta property="og:url" content="https://spibane.com/games/outlast-trials/loadout/">
+<meta property="og:site_name" content="Spibane's Tools for Everything">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://spibane.com/shared/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../../../shared/base.css">
+<script src="../../../shared/site.js"></script>
+<script src="../data/trials.js"></script>
+<script src="../data/loadout.js"></script>
+<link rel="stylesheet" href="style.css"></head><body><main>
+<nav class="backs"><a class="back" href="../../../">Back to All Tools</a><a class="back" href="../">Back to The Outlast Trials</a></nav>
+<h1>Loadout Randomizer</h1>
+<p class="intro">Rolls a rig, a tool, skill and medicine amp, and a trial.</p>
+<section class="rolls panel" aria-labelledby="rolls-h">
+<div class="roll-head"><h2 id="rolls-h">Your loadout</h2><button type="button" class="roll" id="roll">Roll loadout</button></div>
+<div class="parts" id="parts"></div>
+<label class="toggle"><input type="checkbox" id="use-played"> Leave out played rigs and amps</label>
+<ol class="results" id="results" aria-live="polite"></ol>
+<div class="played" id="played" hidden>
+<p class="played-list" id="played-list"></p>
+<button type="button" id="played-reset">Reset played</button>
+</div>
+<p class="hint" id="trial-note">Trials use the settings in the <a href="../randomizer/">Trial Randomizer</a>.</p>
+</section>
+<fieldset><legend>What can be rolled</legend>
+<p class="hint" id="count"></p>
+<div id="pools"></div>
+<div class="button-row"><button type="button" class="all">All</button> <button type="button" class="none">None</button></div>
+</fieldset>
+</main>
+<script>
+const CATS={rig:'Rigs',tool:'Tool amps',skill:'Skill amps',medicine:'Medicine amps'};
+const GEAR=Object.keys(CATS).flatMap(cat=>LOADOUT[cat].map(n=>({name:n,cat,key:cat+':'+slug(n)})));
+const gear=key=>GEAR.find(g=>g.key===key);
+const SLOTS=[{id:'rig',name:'Rig',part:'Rig'},{id:'tool',name:'Tool amp',part:'Tool'},{id:'skill',name:'Skill amp',part:'Skill'},
+  {id:'medicine',name:'Medicine amp',part:'Medicine'},{id:'trial',name:'Trial',part:'Trial'}];
+const kindTag=t=>'<span class="role kind-'+t.kind+'">'+KINDS.find(k=>k.id===t.kind).name+'</span>';
+
+// Settings: off = gear left out of rolls; played = gear marked as played; usePlayed = leave played gear out of rolls;
+// skip = picks not rolled; locked = picks Roll loadout leaves alone;
+// result = the last roll, {slot: gear key or trial id}. Which trials can be rolled comes from the Trial Randomizer.
+let state={off:[],played:[],usePlayed:true,skip:[],locked:[],result:{}};
+state=Object.assign(state,store.load('outlast-loadout'));
+// Older saves kept the trial switch as useTrial
+if('useTrial' in state){if(!state.useTrial&&!state.skip.includes('trial'))state.skip.push('trial');delete state.useTrial;}
+const save=()=>store.save('outlast-loadout',state);
+let trials=loadTrialSettings();
+
+const slots=()=>SLOTS.filter(s=>!state.skip.includes(s.id));
+const isPlayed=g=>state.usePlayed&&state.played.includes(g.key);
+const candidates=s=>s.id==='trial'?trialCandidates(trials):GEAR.filter(g=>g.cat===s.id&&!state.off.includes(g.key)&&!isPlayed(g));
+const current=s=>s.id==='trial'?trial(state.result.trial):gear(state.result[s.id]);
+
+// Rolls the given picks, each avoiding what it had while there's anything else
+function roll(ids){
+  trials=loadTrialSettings();
+  slots().filter(s=>ids.includes(s.id)).forEach(s=>{
+    const all=candidates(s),fresh=all.filter(e=>e!==current(s));
+    if(!all.length){delete state.result[s.id];return;}
+    const e=pick(fresh.length?fresh:all);
+    state.result[s.id]=s.id==='trial'?e.id:e.key;
+  });
+  save();renderResults();
+}
+
+const padlock=shackle=>'<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="'+shackle+'"/><rect x="2.5" y="7" width="11" height="8" fill="currentColor" stroke="none"/></svg>';
+const LOCKED=padlock('M4.5 7V4.5a3.5 3.5 0 0 1 7 0V7'),UNLOCKED=padlock('M4.5 7V4.5a3.5 3.5 0 0 1 7 0');
+
+function why(s,e){
+  if(s.id!=='trial')return isPlayed(e)?'played':'turned off';
+  return trials.usePlayed&&trials.played.includes(e.id)?'played':'left out';
+}
+
+function renderResults(){
+  $('parts').innerHTML='<span>Roll:</span>'+SLOTS.map(s=>'<label class="pill"><input type="checkbox" value="'+s.id+'"'+(state.skip.includes(s.id)?'':' checked')+'>'+s.part+'</label>').join('');
+  $('trial-note').hidden=state.skip.includes('trial');
+  $('results').innerHTML=slots().map(s=>{
+    const e=current(s),fits=e&&candidates(s).includes(e),locked=state.locked.includes(s.id);
+    return '<li class="result'+(e?'':' empty')+(locked?' locked':'')+'"><span class="r-name">'+esc(s.name)+'</span>'+
+      '<span class="r-pick">'+(e?(s.id==='trial'?kindTag(e):'')+'<b>'+esc(e.name)+'</b>'+(fits?'':' <span class="stale">'+why(s,e)+', reroll</span>'):
+        '<span class="muted">'+(candidates(s).length?'Not rolled yet':'Nothing left')+'</span>')+'</span>'+
+      '<span class="r-buttons">'+(fits&&(s.id==='trial'?trials.usePlayed:state.usePlayed)?'<button type="button" class="mark" data-s="'+s.id+'" aria-label="'+esc('Mark '+e.name+' as played')+'">Played</button>':'')+
+      '<button type="button" class="reroll" data-s="'+s.id+'"'+(locked?' disabled':'')+' aria-label="'+esc('Reroll '+s.name)+'">Reroll</button>'+
+      '<button type="button" class="lock" data-s="'+s.id+'" aria-pressed="'+locked+'" aria-label="'+esc('Lock '+s.name)+'" title="'+(locked?'Unlock':'Lock')+'">'+(locked?LOCKED:UNLOCKED)+'</button></span></li>';
+  }).join('');
+  $('use-played').checked=state.usePlayed;
+  const list=state.played.map(gear).filter(Boolean);
+  $('played').hidden=!list.length;
+  $('played-list').innerHTML='<b>Played ('+list.length+'):</b> '+Object.entries(CATS).map(([c,title])=>{
+    const names=list.filter(g=>g.cat===c).map(g=>esc(g.name));
+    return names.length?'<span class="played-cat">'+title+': '+names.join(', ')+'</span>':'';
+  }).join('');
+  $('pools').querySelectorAll('.pill input').forEach(el=>el.parentNode.classList.toggle('is-played',state.played.includes(el.value)));
+}
+
+function renderCount(){
+  $('count').textContent=GEAR.filter(g=>!state.off.includes(g.key)).length+' of '+GEAR.length+' on.';
+}
+
+function renderPools(){
+  $('pools').innerHTML=Object.entries(CATS).map(([cat,title])=>'<div class="pill-group"><h3>'+title+'</h3><div class="pills">'+
+    GEAR.filter(g=>g.cat===cat).map(g=>'<label class="pill"><input type="checkbox" value="'+g.key+'"'+(state.off.includes(g.key)?'':' checked')+'>'+esc(g.name)+'</label>').join('')+
+    '</div></div>').join('');
+  renderCount();
+}
+
+$('roll').addEventListener('click',()=>roll(slots().map(s=>s.id).filter(id=>!state.locked.includes(id))));
+$('parts').addEventListener('change',e=>{
+  state.skip=state.skip.filter(id=>id!==e.target.value).concat(e.target.checked?[]:[e.target.value]);
+  save();renderResults();
+});
+$('results').addEventListener('click',e=>{
+  const b=e.target.closest('button');
+  if(!b)return;
+  const id=b.dataset.s;
+  if(b.matches('.reroll'))roll([id]);
+  if(b.matches('.mark')&&id==='trial'){trials=loadTrialSettings();trials.played.push(state.result.trial);store.save('outlast',trials);renderResults();}
+  if(b.matches('.mark')&&id!=='trial'){state.played.push(state.result[id]);save();renderResults();}
+  if(b.matches('.lock')){state.locked=state.locked.filter(x=>x!==id).concat(state.locked.includes(id)?[]:[id]);save();renderResults();}
+});
+$('use-played').addEventListener('change',e=>{state.usePlayed=e.target.checked;save();renderResults();});
+$('played-reset').addEventListener('click',()=>{state.played=[];save();renderResults();});
+$('pools').addEventListener('change',()=>{
+  state.off=[...$('pools').querySelectorAll('input:not(:checked)')].map(el=>el.value);
+  save();renderCount();renderResults();
+});
+document.querySelector('fieldset').addEventListener('click',e=>{
+  if(!e.target.matches('.all,.none'))return;
+  state.off=e.target.matches('.none')?GEAR.map(g=>g.key):[];
+  save();renderPools();renderResults();
+});
+// Picks up trial changes made in the Trial Randomizer in another tab
+addEventListener('storage',e=>{if(e.key==='outlast'){trials=loadTrialSettings();renderResults();}});
+
+renderPools();renderResults();
+backups({what:'loadout settings',keys:['outlast-loadout'],file:'outlast-trials-loadout-settings.json'});
+</script></body></html>

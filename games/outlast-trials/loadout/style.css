@@ -1,0 +1,29 @@
+/* Outlast Trials loadout randomizer. Buttons, pills, the roll panel and result rows come from shared/base.css.
+   Loaded after shared/base.css. */
+
+/* The roll */
+.rolls{margin-bottom:26px}
+.rolls .hint{margin:10px 0 0}
+.parts{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 12px;font-size:.9rem;font-weight:600}
+.result{grid-template-columns:7em 1fr auto}
+.result.locked{background:var(--surface)}
+.lock{display:inline-flex;align-items:center;justify-content:center;padding:4px 8px}
+.lock svg{display:block}
+.lock[aria-pressed="true"]{background:var(--ink);color:var(--tile);border-color:var(--ink)}
+/* Things marked played */
+.played{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;margin-top:12px}
+.played-list{margin:0;font-size:.9rem;flex:1 1 20em}
+.played-cat{display:block}
+.pill.is-played{text-decoration:line-through}
+fieldset .button-row{margin-top:16px}
+/* Kind tags, as in the Trial Randomizer */
+.kind-trial{background:#ff9a9a}
+.kind-mk{background:#8ab4ff}
+
+@media (max-width:560px){
+  .result{grid-template-columns:1fr}
+  .r-buttons{justify-content:flex-start;margin-top:4px}
+  .r-buttons button{flex:1 1 auto}
+  .r-buttons .lock{flex:0 0 auto}
+}
+@media print{fieldset,.r-buttons,button.roll,.parts,.toggle,.rolls .hint,.played button{display:none}}

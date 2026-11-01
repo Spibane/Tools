@@ -46,7 +46,7 @@ A static site with no build step, framework or server. Each tool is a folder wit
 | Games | [Dead by Daylight](https://spibane.com/games/dbd/) | Loadout randomizer |
 | Games | [Final Fantasy XIV](https://spibane.com/games/ffxiv/) | Relic checklists and roulette job picker |
 | Games | [Marvel Rivals](https://spibane.com/games/marvel-rivals/) | Hero randomizer |
-| Games | [The Outlast Trials](https://spibane.com/games/outlast-trials/) | Trial and MK-Challenge randomizer |
+| Games | [The Outlast Trials](https://spibane.com/games/outlast-trials/) | Trial and loadout randomizers |
 
 ## Package Structure
 
@@ -68,7 +68,7 @@ A static site with no build step, framework or server. Each tool is a folder wit
     ├── dbd/            # loadout/, data/ (loadout.js + update.py)
     ├── ffxiv/          # relics/, roulette/, data/relics/
     ├── marvel-rivals/
-    └── outlast-trials/
+    └── outlast-trials/ # randomizer/, loadout/, data/ (trials, rigs and amps)
 ```
 
 ## Running Locally
