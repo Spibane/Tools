@@ -10,6 +10,8 @@
 h3{font-size:.85rem;font-weight:700;color:var(--muted);margin:0 0 6px}
 .side{font-size:1rem;color:var(--ink);margin:14px 0 6px;position:sticky;left:0;width:max-content}
 .scroller>.side:first-child{margin-top:0}
+/* A rule between the winners and losers brackets, as wide as the bracket when it scrolls */
+.losers{min-width:max-content;margin-top:16px;border-top:3px solid var(--rim)}
 .head-buttons{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 
 /* Elimination: one column per round, scrolling sideways when it's wider than the page.

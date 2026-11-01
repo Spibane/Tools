@@ -119,7 +119,7 @@ function renderElim(b){
     // Winners and losers share one scroller, so they move together
     html='<div class="scroller"><h3 class="side">Winners</h3><div class="bracket">'+W.map((ids,i)=>column(i===k-1?'Winners final':'Round '+(i+1),ids,res,b.players)).join('')+
       column('Grand final',['g0'],res,b.players)+(reset?column('Reset',['g1'],res,b.players):'')+'</div>'+
-      (L.length?'<h3 class="side">Losers</h3><div class="bracket">'+L.map((ids,i)=>column(i===L.length-1?'Losers final':'Losers round '+(i+1),ids,res,b.players)).join('')+'</div>':'')+'</div>';
+      (L.length?'<div class="losers"><h3 class="side">Losers</h3><div class="bracket">'+L.map((ids,i)=>column(i===L.length-1?'Losers final':'Losers round '+(i+1),ids,res,b.players)).join('')+'</div></div>':'')+'</div>';
   }
   // Played and total count only real matches: the reset counts once it's needed
   const ids=Object.keys(M).filter(id=>id!=='g1'||(res('g0').w!==undefined&&res('g0').w===res('g0').b));
