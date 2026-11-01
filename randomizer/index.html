@@ -180,7 +180,6 @@ function render(){
 }
 
 $('roll').addEventListener('click',()=>{if(state.wheel)spin();else{roll();renderResults();}});
-$('wheels').addEventListener('click',()=>{if(!$('roll').disabled)spin();});
 $('wheel-on').addEventListener('change',e=>{state.wheel=e.target.checked;save();render();});
 $('results').addEventListener('click',e=>{
   const b=e.target.closest('.lock');if(!b)return;

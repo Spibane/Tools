@@ -11,7 +11,7 @@
 /* Wheels: slices in light colors behind black text and lines, with a gradient pointer at the top.
    Several picks get a wheel each, side by side. */
 .wheels{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:22px 14px;justify-items:center;margin:16px 0}
-.wheel{position:relative;container-type:inline-size;width:min(100%,340px);aspect-ratio:1;cursor:pointer}
+.wheel{position:relative;container-type:inline-size;width:min(100%,340px);aspect-ratio:1}
 .w-spin{width:100%;height:100%}
 .w-spin svg{display:block;width:100%;height:100%;overflow:visible}
 .w-spin text{fill:#121212;font-weight:700;font-family:inherit}
