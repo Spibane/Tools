@@ -22,7 +22,10 @@
 <div class="opts">
 <label class="count">Pick <input type="number" id="count" min="1" max="50" inputmode="numeric"></label>
 <label class="toggle"><input type="checkbox" id="cycle"> Use everything once before repeating</label>
+<label class="toggle"><input type="checkbox" id="wheel-on"> Spin a wheel</label>
 </div>
+<div class="wheels" id="wheels" hidden></div>
+<svg width="0" height="0" aria-hidden="true" style="position:absolute"><defs><linearGradient id="w-grad"><stop offset="0" stop-color="#b9fc58"/><stop offset="1" stop-color="#48f7a3"/></linearGradient></defs></svg>
 <ol class="results" id="results" aria-live="polite"></ol>
 <div class="used" id="used" hidden>
 <p class="used-list" id="used-list"></p>
@@ -45,25 +48,29 @@
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 // Saved data. lists: {id, name, text (the items, one per line), count (how many to pick), cycle (use everything once
 // before repeating), used (items picked this round), result (the last pick), locked (indexes of picks Roll leaves alone)}.
-// current is the id of the list on show.
+// current is the id of the list on show, and wheel is whether Roll spins a wheel.
 const blank=name=>({id:uid(),name,text:'',count:1,cycle:false,used:[],result:[],locked:[]});
-let state=Object.assign({lists:[],current:null},store.load('randomizer'));
+let state=Object.assign({lists:[],current:null,wheel:false},store.load('randomizer'));
 if(!state.lists.length)state.lists.push(blank('My list'));
 const save=()=>store.save('randomizer',state);
 const L=()=>state.lists.find(l=>l.id===state.current)||state.lists[0];
 const items=l=>l.text.split('\n').map(s=>s.trim()).filter(Boolean);
 const unique=l=>[...new Set(items(l))];
 
-// Rolls every pick that isn't locked. One roll never picks the same item twice, and with cycle on it
-// skips items already used this round, starting a new round when there aren't enough left.
-function roll(){
-  const l=L(),all=items(l),n=Math.min(l.count,unique(l).length);
+// What the next roll works with: the picks locked in place (null where a new pick goes) and the pool of items it can
+// pick from. With cycle on it skips items already used this round, starting a new round when there aren't enough left.
+function plan(l){
+  const all=items(l),n=Math.min(l.count,unique(l).length);
   const keep=l.result.map((r,i)=>l.locked.includes(i)&&all.includes(r)?r:null).slice(0,n);
   while(keep.length<n)keep.push(null);
   const free=used=>all.filter(x=>!keep.includes(x)&&!(l.cycle&&used.includes(x)));
-  const need=keep.filter(x=>x===null).length;
-  if(l.cycle&&new Set(free(l.used)).size<need)l.used=[];
-  let pool=free(l.used);
+  const fresh=l.cycle&&new Set(free(l.used)).size<keep.filter(x=>x===null).length;
+  return {n,keep,fresh,pool:free(fresh?[]:l.used)};
+}
+// Rolls every pick that isn't locked. One roll never picks the same item twice.
+function roll(){
+  const l=L(),{n,keep,fresh,pool:start}=plan(l);let pool=start;
+  if(fresh)l.used=[];
   l.result=keep.map(x=>{
     if(x!==null)return x;
     const p=pick(pool);pool=pool.filter(y=>y!==p);
@@ -71,7 +78,79 @@ function roll(){
     return p;
   });
   l.locked=l.locked.filter(i=>i<n);
-  save();renderResults();
+  save();
+}
+
+// Wheels: one per new pick, with a slice per item sized by how many times it's listed, so it matches the odds of a roll.
+// Each wheel shows what its pick can land on (a roll never picks the same item twice, so earlier picks leave later wheels).
+// When one stops, the other slices fade and the pick shows across the middle.
+const COLORS=['#ff8787','#74c0fc','#ffd43b','#b197fc','#ffa94d','#f783ac','#66d9e8','#d8b48a'];
+const WHEEL='<div class="wheel"><div class="w-spin"></div><svg class="w-pointer" viewBox="0 0 30 30" aria-hidden="true"><polygon points="3,3 27,3 15,27" fill="url(#w-grad)" stroke="#121212" stroke-width="2.5" stroke-linejoin="round"/></svg><p class="w-result"></p></div>';
+let spinning=false;
+const at=(deg,r)=>{const a=deg*Math.PI/180;return (r*Math.sin(a)).toFixed(2)+' '+(-r*Math.cos(a)).toFixed(2);};
+// A wheel's slices, and its drawing
+function wheelSVG(pool){
+  const count={};pool.forEach(x=>count[x]=(count[x]||0)+1);
+  const names=Object.keys(count);let a=0;
+  const slices=names.map((x,i)=>({item:x,from:a,to:a+=count[x]/pool.length*360,color:COLORS[i%COLORS.length]}));
+  // Keep the last slice from matching the first one it sits beside
+  const last=slices[slices.length-1];
+  if(slices.length>2&&last.color===slices[0].color)last.color=COLORS.find(c=>c!==slices[0].color&&c!==slices[slices.length-2].color);
+  const svg='<svg viewBox="-104 -104 208 208" role="img" aria-label="'+(names.length?'A wheel of '+names.length+' item'+(names.length===1?'':'s'):'An empty wheel')+'">'+
+    (slices.length<2?'<circle r="100" data-i="0" fill="'+(slices[0]?slices[0].color:'var(--tile)')+'"/>':slices.map((s,i)=>'<path data-i="'+i+'" d="M0 0L'+at(s.from,100)+'A100 100 0 '+(s.to-s.from>180?1:0)+' 1 '+at(s.to,100)+'Z" fill="'+s.color+'"/>').join(''))+
+    slices.map((s,i)=>{
+      // Text fits the slice's width, and the space between the hub and the rim (about 70 units, at ~0.6 per character)
+      const label=s.item.length>16?s.item.slice(0,15)+'…':s.item,mid=(s.from+s.to)/2;
+      const size=Math.min(11,(s.to-s.from)*Math.PI/180*62*.75,70/(label.length*.6));
+      if(size<4)return '';
+      return '<text data-i="'+i+'" transform="rotate('+(mid-90).toFixed(2)+') translate(90 0)" text-anchor="end" dominant-baseline="central" font-size="'+size.toFixed(1)+'">'+esc(label)+'</text>';
+    }).join('')+
+    (slices.length>1?slices.map(s=>{const [x,y]=at(s.from,100).split(' ');return '<line x2="'+x+'" y2="'+y+'"/>';}).join(''):'')+
+    '<circle r="100" fill="none" stroke-width="3"/><circle r="13" fill="url(#w-grad)" stroke-width="2.5"/></svg>';
+  return {slices,svg};
+}
+// Draws one wheel per pool, reusing wheels already there so they turn on from where they stopped
+function drawWheels(pools){
+  const box=$('wheels');
+  while(box.children.length<pools.length)box.insertAdjacentHTML('beforeend',WHEEL);
+  while(box.children.length>pools.length)box.lastElementChild.remove();
+  box.classList.toggle('many',pools.length>1);
+  pools.forEach((p,i)=>{
+    const w=box.children[i],{slices,svg}=wheelSVG(p);
+    w.slices=slices;w.classList.remove('done');
+    w.querySelector('.w-spin').innerHTML=svg;w.querySelector('.w-result').textContent='';
+  });
+}
+// Between rolls: a wheel for each pick the next roll makes, all showing what they can land on
+function idle(){
+  if(!state.wheel||spinning)return;
+  const {keep,pool}=plan(L());
+  drawWheels(Array(Math.max(1,keep.filter(x=>x===null).length)).fill(pool));
+}
+const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+function spin(){
+  const l=L(),start=plan(l).pool;roll();
+  const picks=l.result.filter((r,i)=>!l.locked.includes(i));
+  if(!picks.length){renderResults();idle();return;}
+  let pool=start;
+  drawWheels(picks.map(p=>{const was=pool;pool=pool.filter(y=>y!==p);return was;}));
+  spinning=true;$('roll').disabled=true;
+  let end=0;
+  [...$('wheels').children].forEach((w,i)=>{
+    const k=w.slices.findIndex(x=>x.item===picks[i]),s=w.slices[k],sp=w.querySelector('.w-spin');
+    // Land somewhere inside the slice, away from its edges, after a few full turns. Each wheel stops a little after the last.
+    const t=s.from+(s.to-s.from)*(.15+Math.random()*.7),ms=reduced.matches?0:3500+i*700;
+    let turn=+w.dataset.turn||0;turn+=5*360+((((-t-turn)%360)+360)%360);w.dataset.turn=turn;
+    sp.getBoundingClientRect();
+    sp.style.transition=ms?'transform '+ms+'ms cubic-bezier(.15,.7,.1,1)':'none';
+    sp.style.transform='rotate('+turn+'deg)';
+    end=Math.max(end,ms);
+    setTimeout(()=>{
+      w.querySelectorAll('[data-i="'+k+'"]').forEach(x=>x.classList.add('win'));
+      w.querySelector('.w-result').textContent=picks[i];w.classList.add('done');
+    },ms);
+  });
+  setTimeout(()=>{spinning=false;renderResults();},end);
 }
 
 const padlock=shackle=>'<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="'+shackle+'"/><rect x="2.5" y="7" width="11" height="8" fill="currentColor" stroke="none"/></svg>';
@@ -87,7 +166,7 @@ function renderResults(){
   const u=unique(l),used=u.filter(x=>l.used.includes(x));
   $('used').hidden=!l.cycle||!used.length;
   $('used-list').innerHTML='<b>Used ('+used.length+' of '+u.length+'):</b> '+used.map(esc).join(', ');
-  $('roll').disabled=!all.length;
+  $('roll').disabled=!all.length||spinning;
 }
 
 function render(){
@@ -96,22 +175,24 @@ function render(){
   $('list-delete').disabled=state.lists.length<2;
   $('name').value=l.name;$('items').value=l.text;
   $('count').value=l.count;$('cycle').checked=l.cycle;
-  renderResults();
+  $('wheel-on').checked=state.wheel;$('wheels').hidden=!state.wheel;
+  idle();renderResults();
 }
 
-$('roll').addEventListener('click',roll);
+$('roll').addEventListener('click',()=>{if(state.wheel)spin();else{roll();renderResults();}});
+$('wheel-on').addEventListener('change',e=>{state.wheel=e.target.checked;save();render();});
 $('results').addEventListener('click',e=>{
   const b=e.target.closest('.lock');if(!b)return;
   const l=L(),i=+b.dataset.i;
   l.locked=l.locked.includes(i)?l.locked.filter(x=>x!==i):l.locked.concat(i);
-  save();renderResults();
+  save();renderResults();idle();
 });
 $('count').addEventListener('change',e=>{
   const l=L();l.count=Math.max(1,Math.min(50,Math.round(+e.target.value)||1));e.target.value=l.count;
-  save();
+  save();idle();
 });
-$('cycle').addEventListener('change',e=>{L().cycle=e.target.checked;L().used=[];save();renderResults();});
-$('used-reset').addEventListener('click',()=>{L().used=[];save();renderResults();});
+$('cycle').addEventListener('change',e=>{L().cycle=e.target.checked;L().used=[];save();render();});
+$('used-reset').addEventListener('click',()=>{L().used=[];save();render();});
 $('list').addEventListener('change',e=>{state.current=e.target.value;save();render();});
 $('list-add').addEventListener('click',()=>{
   const l=blank('List '+(state.lists.length+1));
@@ -126,7 +207,7 @@ $('name').addEventListener('input',e=>{
   L().name=e.target.value;save();
   $('list').selectedOptions[0].textContent=e.target.value||'Untitled';
 });
-$('items').addEventListener('input',e=>{L().text=e.target.value;save();renderResults();});
+$('items').addEventListener('input',e=>{L().text=e.target.value;save();renderResults();idle();});
 
 render();
 // Importing adds a file's lists after yours. A list you already have (the same one, from your own backup) only gets

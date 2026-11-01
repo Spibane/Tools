@@ -1,0 +1,222 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Brackets</title>
+<meta name="description" content="Single and double elimination brackets, and round robins, from your own list of players.">
+<meta property="og:title" content="Brackets">
+<meta property="og:description" content="Single and double elimination brackets, and round robins, from your own list of players.">
+<meta property="og:url" content="https://spibane.com/brackets/">
+<meta property="og:site_name" content="Spibane's Tools for Everything">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://spibane.com/shared/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../shared/base.css">
+<script src="../shared/site.js"></script>
+<link rel="stylesheet" href="style.css"></head><body><main>
+<a class="back" href="../">Back to All Tools</a>
+<h1>Brackets</h1>
+<p class="intro">Single and double elimination brackets, and round robins, from your own list of players.</p>
+<section class="b-panel panel" id="panel" aria-labelledby="b-h">
+<div class="roll-head"><h2 id="b-h"></h2><button type="button" id="full">Full screen</button></div>
+<div class="status" id="status" aria-live="polite"></div>
+<div id="view"></div>
+<div class="b-buttons"><button type="button" id="clear">Clear results</button></div>
+</section>
+<fieldset>
+<legend>Players</legend>
+<div class="opts">
+<label class="format">Format <select id="format"><option value="single">Single elimination</option><option value="double">Double elimination</option><option value="robin">Round robin</option></select></label>
+<label class="toggle"><input type="checkbox" id="shuffle"> Shuffle the order</label>
+</div>
+<label class="field">Players <span class="hint" id="need"></span>
+<textarea id="names" rows="10" spellcheck="false"></textarea></label>
+<button type="button" class="roll" id="make">New bracket</button>
+</fieldset>
+</main>
+<script>
+const BYE=-1;
+const FORMATS={single:'Single elimination',double:'Double elimination',robin:'Round robin'},LIMIT={single:128,double:128,robin:32};
+// Saved data: text (players, one per line), format and shuffle as set below, built (the bracket on show: {format,
+// players}, frozen when it was made) and results. Elimination results are {match id: [winner, loser]} as player indexes;
+// round robin ones are {"i-j": winner index, or "d" for a draw}.
+let state=Object.assign({text:'',format:'single',shuffle:false,built:null,results:{}},store.load('brackets'));
+const save=()=>store.save('brackets',state);
+const names=()=>state.text.split('\n').map(s=>s.trim()).filter(Boolean);
+const plural=(n,w)=>n+' '+w+(n===1?'':'s');
+
+// Elimination brackets. Seeds are placed the usual way (1 v 8, 4 v 5, 2 v 7, 3 v 6), so byes go to the top seeds.
+function seedOrder(S){let o=[0];while(o.length<S){const L=o.length*2;o=o.flatMap(x=>[x,L-1-x]);}return o;}
+// Every match is {a, b}, each fed by a seed, or the winner or loser of another match. W and L are the winners' and
+// losers' rounds (lists of match ids). Double elimination ends with a grand final (g0) and a reset (g1), played only
+// if the losers' bracket player wins g0.
+function elim(n,double){
+  let S=2;while(S<n)S*=2;
+  const k=Math.log2(S),M={},W=[],L=[],order=seedOrder(S);
+  for(let r=0;r<k;r++){
+    const ids=[];
+    for(let i=0;i<S>>(r+1);i++){
+      const id='w'+r+'-'+i;ids.push(id);
+      M[id]=r?{a:{win:'w'+(r-1)+'-'+2*i},b:{win:'w'+(r-1)+'-'+(2*i+1)}}:{a:{seed:order[2*i]},b:{seed:order[2*i+1]}};
+    }
+    W.push(ids);
+  }
+  if(!double)return {M,W,L};
+  let lbChamp={lose:'w0-0'};
+  if(k>1){
+    const round=(make,c)=>{const r=L.length,ids=[];for(let i=0;i<c;i++){const id='l'+r+'-'+i;M[id]=make(i);ids.push(id);}L.push(ids);return ids;};
+    let prev=round(i=>({a:{lose:'w0-'+2*i},b:{lose:'w0-'+(2*i+1)}}),S/4);
+    for(let j=1;j<k;j++){
+      // Losers from the winners' round drop in, in reverse order so early opponents don't meet again straight away
+      const c=S>>(j+1),p=prev,w=W[j];
+      prev=round(i=>({a:{win:p[i]},b:{lose:w[c-1-i]}}),c);
+      if(j<k-1){const q=prev;prev=round(i=>({a:{win:q[2*i]},b:{win:q[2*i+1]}}),c/2);}
+    }
+    lbChamp={win:prev[0]};
+  }
+  M.g0={a:{win:W[k-1][0]},b:lbChamp};
+  M.g1={a:{win:'g0'},b:{lose:'g0'}};
+  return {M,W,L};
+}
+// Works out who's in each match and who won. undefined means not known yet. A bye sends the other player through.
+// Results that no longer fit their match (an earlier result changed) are dropped.
+function solve(M,n){
+  const memo={},used=new Set();
+  const val=s=>s.seed!=null?(s.seed<n?s.seed:BYE):s.win?res(s.win).w:res(s.lose).l;
+  function res(id){
+    if(memo[id])return memo[id];
+    const m=M[id],a=val(m.a),b=val(m.b);let w,l;
+    if(a!==undefined&&b!==undefined){
+      if(a===BYE||b===BYE){w=a===BYE?b:a;l=BYE;}
+      else{const r=state.results[id];if(r&&(r[0]===a&&r[1]===b||r[0]===b&&r[1]===a)){[w,l]=r;used.add(id);}}
+    }
+    return memo[id]={a,b,w,l};
+  }
+  Object.keys(M).forEach(res);
+  for(const id of Object.keys(state.results))if(!used.has(id))delete state.results[id];
+  return res;
+}
+
+const roundTitle=(i,count)=>count-i===1?'Final':count-i===2?'Semifinals':count-i===3?'Quarterfinals':'Round '+(i+1);
+function matchHTML(id,m,players){
+  const real=m.a>=0&&m.b>=0;
+  const slot=(p,o)=>p===undefined?'<span class="slot tbd">To be decided</span>':p===BYE?'<span class="slot bye">Bye</span>':
+    !real?'<span class="slot through"><span class="seed">'+(p+1)+'</span>'+esc(players[p])+'</span>':
+    '<button type="button" class="slot'+(m.w===p?' won':m.w===o?' lost':'')+'" data-id="'+id+'" data-p="'+p+'" data-o="'+o+'" aria-pressed="'+(m.w===p)+'">'+
+    '<span class="seed">'+(p+1)+'</span>'+esc(players[p])+'</button>';
+  return '<div class="match'+(real?'':' auto')+'">'+slot(m.a,m.b)+slot(m.b,m.a)+'</div>';
+}
+const column=(title,ids,res,players)=>'<div class="round"><h3>'+title+'</h3><div class="matches">'+ids.map(id=>matchHTML(id,res(id),players)).join('')+'</div></div>';
+
+function renderElim(b){
+  const n=b.players.length,double=b.format==='double',{M,W,L}=elim(n,double),res=solve(M,n),k=W.length;
+  let champ,html='';
+  if(!double){
+    champ=res(W[k-1][0]).w;
+    html='<div class="scroller"><div class="bracket">'+W.map((ids,i)=>column(roundTitle(i,k),ids,res,b.players)).join('')+'</div></div>';
+  }else{
+    const g0=res('g0'),reset=g0.w!==undefined&&g0.w===g0.b;
+    champ=reset?res('g1').w:g0.w;
+    // Winners and losers share one scroller, so they move together
+    html='<div class="scroller"><h3 class="side">Winners</h3><div class="bracket">'+W.map((ids,i)=>column(i===k-1?'Winners final':'Round '+(i+1),ids,res,b.players)).join('')+
+      column('Grand final',['g0'],res,b.players)+(reset?column('Reset',['g1'],res,b.players):'')+'</div>'+
+      (L.length?'<div class="losers"><h3 class="side">Losers</h3><div class="bracket">'+L.map((ids,i)=>column(i===L.length-1?'Losers final':'Losers round '+(i+1),ids,res,b.players)).join('')+'</div></div>':'')+'</div>';
+  }
+  // Played and total count only real matches: the reset counts once it's needed
+  const ids=Object.keys(M).filter(id=>id!=='g1'||(res('g0').w!==undefined&&res('g0').w===res('g0').b));
+  const real=ids.map(res).filter(m=>m.a>=0&&m.b>=0),left=ids.filter(id=>{const m=res(id);return m.w===undefined&&m.a!==BYE&&m.b!==BYE;}).length;
+  return {html,champ:champ>=0?b.players[champ]:null,played:real.filter(m=>m.w!==undefined).length,total:real.filter(m=>m.w!==undefined).length+left};
+}
+
+// Round robin: everyone plays everyone, in rounds made by the circle method. With an odd count, one player sits out each round.
+function robin(n){
+  const a=[...Array(n).keys()];if(n%2)a.push(BYE);
+  const m=a.length,rounds=[];
+  for(let r=0;r<m-1;r++){
+    const pairs=[];for(let i=0;i<m/2;i++)pairs.push([a[i],a[m-1-i]]);
+    rounds.push(pairs);a.splice(1,0,a.pop());
+  }
+  return rounds;
+}
+function renderRobin(b){
+  const P=b.players,n=P.length,rounds=robin(n),key=(x,y)=>Math.min(x,y)+'-'+Math.max(x,y);
+  const rec=P.map(()=>({w:0,d:0,l:0}));let played=0,total=0;
+  const html=rounds.map((pairs,r)=>'<div class="rr-round"><h3>Round '+(r+1)+'</h3>'+pairs.map(([x,y])=>{
+    if(x===BYE||y===BYE)return '<p class="muted sits">'+esc(P[x===BYE?y:x])+' sits out</p>';
+    const k=key(x,y),v=state.results[k];total++;
+    if(v!==undefined){played++;if(v==='d'){rec[x].d++;rec[y].d++;}else{rec[v].w++;rec[v===x?y:x].l++;}}
+    const btn=(p,label,cls)=>'<button type="button" class="slot '+cls+(v===p?' won':v!==undefined&&v!=='d'&&p!=='d'?' lost':'')+'" data-k="'+k+'" data-p="'+p+'" aria-pressed="'+(v===p)+'">'+label+'</button>';
+    return '<div class="rr">'+btn(x,esc(P[x]),'rr-a')+btn('d','Draw','rr-d')+btn(y,esc(P[y]),'rr-b')+'</div>';
+  }).join('')+'</div>').join('');
+  // Standings: a win is worth 1 and a draw ½. Ties keep the listed order.
+  const pts=i=>rec[i].w+rec[i].d/2,order=[...P.keys()].sort((a,b)=>pts(b)-pts(a)||rec[b].w-rec[a].w||a-b),best=pts(order[0]);
+  const table='<table class="standings"><thead><tr><th scope="col">#</th><th scope="col">Player</th><th scope="col">W</th><th scope="col">D</th><th scope="col">L</th><th scope="col">Points</th></tr></thead><tbody>'+
+    order.map((i,r)=>'<tr'+(played&&pts(i)===best?' class="lead"':'')+'><td>'+(r&&pts(i)===pts(order[r-1])?'':r+1)+'</td><td>'+esc(P[i])+'</td><td>'+rec[i].w+'</td><td>'+rec[i].d+'</td><td>'+rec[i].l+'</td><td>'+pts(i)+'</td></tr>').join('')+'</tbody></table>';
+  const top=order.filter(i=>pts(i)===best);
+  return {html:table+'<div class="rr-rounds">'+html+'</div>',champ:played===total?top.map(i=>P[i]).join(' and '):null,tied:top.length>1,played,total};
+}
+
+function render(){
+  const b=state.built,have=names(),limit=LIMIT[state.format];
+  $('need').textContent='One per line, top seed first. '+(have.length<2?'Add at least 2.':have.length>limit?FORMATS[state.format]+' takes up to '+limit+'.':plural(have.length,'player')+'.');
+  $('need').classList.toggle('short',have.length<2||have.length>limit);
+  $('make').disabled=have.length<2||have.length>limit;
+  $('b-h').textContent=b?FORMATS[b.format]:'Brackets';
+  $('clear').hidden=!b||!Object.keys(state.results).length;
+  if(!b){$('view').innerHTML='';$('status').innerHTML='<p class="muted">Add players below, then press New bracket.</p>';return;}
+  const out=b.format==='robin'?renderRobin(b):renderElim(b);
+  save();
+  $('view').innerHTML=out.html;
+  const changed=b.format!==state.format||(state.shuffle?[...have].sort().join('\n')!==[...b.players].sort().join('\n'):have.join('\n')!==b.players.join('\n'));
+  $('status').innerHTML=(out.champ?'<p class="champ">'+(out.tied?'Tied: ':'Winner: ')+'<b>'+esc(out.champ)+'</b></p>':'')+
+    '<p class="muted">'+out.played+' of '+out.total+(out.total===1?' match':' matches')+' played.'+(changed?' Your players or format changed: press New bracket to use them.':'')+'</p>';
+}
+
+$('make').addEventListener('click',()=>{
+  if(Object.keys(state.results).length&&!confirm('Make a new bracket? The results on this one will go.'))return;
+  const p=names();
+  if(state.shuffle)for(let i=p.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[p[i],p[j]]=[p[j],p[i]];}
+  state.built={format:state.format,players:p};state.results={};save();render();
+});
+$('clear').addEventListener('click',()=>{if(!confirm('Clear every result?'))return;state.results={};save();render();});
+// Clicking a player sends them through; clicking them again takes it back
+$('view').addEventListener('click',e=>{
+  const s=e.target.closest('button.slot');if(!s)return;
+  if(s.dataset.k){
+    const k=s.dataset.k,p=s.dataset.p==='d'?'d':+s.dataset.p;
+    if(state.results[k]===p)delete state.results[k];else state.results[k]=p;
+  }else{
+    const id=s.dataset.id,p=+s.dataset.p,r=state.results[id];
+    if(r&&r[0]===p)delete state.results[id];else state.results[id]=[p,+s.dataset.o];
+  }
+  save();render();
+  const again=$('view').querySelector(s.dataset.k?'[data-k="'+s.dataset.k+'"][data-p="'+s.dataset.p+'"]':'[data-id="'+s.dataset.id+'"][data-p="'+s.dataset.p+'"]');
+  if(again)again.focus();
+});
+$('names').addEventListener('input',e=>{state.text=e.target.value;save();render();});
+$('format').addEventListener('change',e=>{state.format=e.target.value;save();render();});
+$('shuffle').addEventListener('change',e=>{state.shuffle=e.target.checked;save();render();});
+
+// Full screen: the bracket covers the page, using the browser's full screen when it has one, and keeps the screen awake
+let full=false,lock=null;
+async function setFull(on){
+  if(on===full)return;full=on;
+  $('panel').classList.toggle('full',on);document.body.classList.toggle('panel-open',on);
+  $('full').textContent=on?'Exit':'Full screen';
+  try{
+    if(on){if($('panel').requestFullscreen)await $('panel').requestFullscreen();}
+    else if(document.fullscreenElement)await document.exitFullscreen();
+  }catch(_){}
+  try{if(on&&navigator.wakeLock)lock=await navigator.wakeLock.request('screen');else if(lock){lock.release();lock=null;}}catch(_){}
+}
+$('full').addEventListener('click',()=>setFull(!full));
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement)setFull(false);});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')setFull(false);});
+document.addEventListener('visibilitychange',async()=>{
+  try{if(full&&document.visibilityState==='visible'&&navigator.wakeLock)lock=await navigator.wakeLock.request('screen');}catch(_){}
+});
+
+$('names').value=state.text;$('format').value=state.format;$('shuffle').checked=state.shuffle;
+render();
+backups({what:'brackets',keys:['brackets'],file:'brackets.json'});
+</script></body></html>

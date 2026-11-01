@@ -50,6 +50,8 @@ select{font:inherit;font-size:.95rem;color:var(--ink);background:var(--tile);bor
 .place{color:var(--muted)}
 .region.all .rows{margin-top:4px}
 .opt.need-opt{align-items:center}
+/* A checkbox and its label: keep the label beside the box instead of wrapping under it */
+.opt.split-opt{flex-wrap:nowrap}
 /* Collection filters: a title, then one small dropdown per box */
 .opt.marked{align-items:center;gap:6px 16px}
 .opt-title{flex-basis:100%;font-weight:600}
@@ -68,6 +70,8 @@ select{font:inherit;font-size:.95rem;color:var(--ink);background:var(--tile);bor
 /* Greyed out: this form can't have it */
 .box.off{opacity:.35;cursor:not-allowed}
 .box.off input{cursor:not-allowed}
+/* With each sub-region marked separately, the all-forms list only shows what is marked anywhere */
+.box.ro,.box.ro input{cursor:default}
 @media (max-width:560px){
   .row{grid-template-columns:8px 1fr}
   .boxes{grid-column:2;justify-content:space-between}
