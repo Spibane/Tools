@@ -11,11 +11,14 @@ main{max-width:1100px}
 .champ b{background:var(--brand);color:#121212;padding:0 6px}
 .b-buttons{margin-top:12px}
 h3{font-size:.85rem;font-weight:700;color:var(--muted);margin:0 0 6px}
-.side{font-size:1rem;color:var(--ink);margin:14px 0 6px}
+.side{font-size:1rem;color:var(--ink);margin:14px 0 6px;position:sticky;left:0;width:max-content}
+.scroller>.side:first-child{margin-top:0}
+.head-buttons{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 
 /* Elimination: one column per round, scrolling sideways when it's wider than the page.
    Matches spread out down each column, so later rounds sit between the matches that feed them. */
-.bracket{display:flex;gap:14px;overflow-x:auto;padding-bottom:6px}
+.scroller{overflow-x:auto;padding-bottom:6px}
+.bracket{display:flex;gap:14px;width:max-content}
 .round{display:flex;flex-direction:column;flex:0 0 172px}
 .matches{flex:1;display:flex;flex-direction:column;justify-content:space-around;gap:10px}
 .match{display:grid;background:var(--tile);border:2px solid var(--rim)}
@@ -27,6 +30,15 @@ h3{font-size:.85rem;font-weight:700;color:var(--muted);margin:0 0 6px}
 .slot.tbd,.slot.bye{color:var(--muted);font-weight:400}
 .seed{font-size:.75rem;color:var(--muted);min-width:1.4em;text-align:right;flex:none}
 .slot.won .seed{color:#121212}
+
+/* Full screen: the panel covers the page and the bracket scrolls both ways inside it */
+.b-panel.full{position:fixed;inset:0;z-index:50;margin:0;border:0;display:flex;flex-direction:column;
+  padding:0 max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+.b-panel.full::before{margin-top:env(safe-area-inset-top)}
+.b-panel.full #view{flex:1;min-height:0;overflow:auto}
+.b-panel.full .scroller{overflow:visible}
+.b-panel:fullscreen{background:var(--surface)}
+body.panel-open{overflow:hidden}
 
 /* Round robin: standings, then each round's matches as player, Draw, player */
 .standings{border-collapse:collapse;width:100%;margin-bottom:14px;font-variant-numeric:tabular-nums}
@@ -51,4 +63,4 @@ h3{font-size:.85rem;font-weight:700;color:var(--muted);margin:0 0 6px}
 .hint.short{color:var(--ink);font-weight:600}
 select,textarea{font:inherit;font-weight:400;color:var(--ink);background:var(--tile);border:2px solid var(--rim);padding:4px 8px}
 textarea{width:100%;resize:vertical}
-@media print{fieldset,.roll,.b-buttons{display:none}.bracket{overflow:visible;flex-wrap:wrap}}
+@media print{fieldset,.head-buttons,.b-buttons{display:none}.scroller{overflow:visible}.bracket{flex-wrap:wrap;width:auto}}

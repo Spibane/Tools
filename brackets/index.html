@@ -17,8 +17,8 @@
 <a class="back" href="../">Back to All Tools</a>
 <h1>Brackets</h1>
 <p class="intro">Single and double elimination brackets, and round robins, from your own list of players.</p>
-<section class="b-panel panel" aria-labelledby="b-h">
-<div class="roll-head"><h2 id="b-h"></h2><button type="button" class="roll" id="make">New bracket</button></div>
+<section class="b-panel panel" id="panel" aria-labelledby="b-h">
+<div class="roll-head"><h2 id="b-h"></h2><span class="head-buttons"><button type="button" id="full">Full screen</button><button type="button" class="roll" id="make">New bracket</button></span></div>
 <div class="status" id="status" aria-live="polite"></div>
 <div id="view"></div>
 <div class="b-buttons"><button type="button" id="clear">Clear results</button></div>
@@ -112,13 +112,14 @@ function renderElim(b){
   let champ,html='';
   if(!double){
     champ=res(W[k-1][0]).w;
-    html='<div class="bracket">'+W.map((ids,i)=>column(roundTitle(i,k),ids,res,b.players)).join('')+'</div>';
+    html='<div class="scroller"><div class="bracket">'+W.map((ids,i)=>column(roundTitle(i,k),ids,res,b.players)).join('')+'</div></div>';
   }else{
     const g0=res('g0'),reset=g0.w!==undefined&&g0.w===g0.b;
     champ=reset?res('g1').w:g0.w;
-    html='<h3 class="side">Winners</h3><div class="bracket">'+W.map((ids,i)=>column(i===k-1?'Winners final':'Round '+(i+1),ids,res,b.players)).join('')+
+    // Winners and losers share one scroller, so they move together
+    html='<div class="scroller"><h3 class="side">Winners</h3><div class="bracket">'+W.map((ids,i)=>column(i===k-1?'Winners final':'Round '+(i+1),ids,res,b.players)).join('')+
       column('Grand final',['g0'],res,b.players)+(reset?column('Reset',['g1'],res,b.players):'')+'</div>'+
-      (L.length?'<h3 class="side">Losers</h3><div class="bracket">'+L.map((ids,i)=>column(i===L.length-1?'Losers final':'Losers round '+(i+1),ids,res,b.players)).join('')+'</div>':'');
+      (L.length?'<h3 class="side">Losers</h3><div class="bracket">'+L.map((ids,i)=>column(i===L.length-1?'Losers final':'Losers round '+(i+1),ids,res,b.players)).join('')+'</div>':'')+'</div>';
   }
   // Played and total count only real matches: the reset counts once it's needed
   const ids=Object.keys(M).filter(id=>id!=='g1'||(res('g0').w!==undefined&&res('g0').w===res('g0').b));
@@ -194,6 +195,25 @@ $('view').addEventListener('click',e=>{
 $('names').addEventListener('input',e=>{state.text=e.target.value;save();render();});
 $('format').addEventListener('change',e=>{state.format=e.target.value;save();render();});
 $('shuffle').addEventListener('change',e=>{state.shuffle=e.target.checked;save();render();});
+
+// Full screen: the bracket covers the page, using the browser's full screen when it has one, and keeps the screen awake
+let full=false,lock=null;
+async function setFull(on){
+  if(on===full)return;full=on;
+  $('panel').classList.toggle('full',on);document.body.classList.toggle('panel-open',on);
+  $('full').textContent=on?'Exit':'Full screen';
+  try{
+    if(on){if($('panel').requestFullscreen)await $('panel').requestFullscreen();}
+    else if(document.fullscreenElement)await document.exitFullscreen();
+  }catch(_){}
+  try{if(on&&navigator.wakeLock)lock=await navigator.wakeLock.request('screen');else if(lock){lock.release();lock=null;}}catch(_){}
+}
+$('full').addEventListener('click',()=>setFull(!full));
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement)setFull(false);});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')setFull(false);});
+document.addEventListener('visibilitychange',async()=>{
+  try{if(full&&document.visibilityState==='visible'&&navigator.wakeLock)lock=await navigator.wakeLock.request('screen');}catch(_){}
+});
 
 $('names').value=state.text;$('format').value=state.format;$('shuffle').checked=state.shuffle;
 render();
