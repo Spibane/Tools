@@ -28,9 +28,10 @@ const LIST={
   }
 };
 const DEFAULT_OFF=['rebirth','escape-'];
-const slug=n=>n.toLowerCase().replace(/[^a-z]+/g,'-');
 const TRIALS=KINDS.flatMap(k=>ASSETS.flatMap(a=>(LIST[k.id][a.id]||[]).map(n=>({name:n,id:slug(n),kind:k.id,asset:a.id}))));
 const trial=id=>TRIALS.find(t=>t.id===id);
+// A trial's kind as a tag, colored by the page's .kind-trial and .kind-mk
+const kindTag=t=>'<span class="role kind-'+t.kind+'">'+KINDS.find(k=>k.id===t.kind).name+'</span>';
 
 // The Trial Randomizer's settings, saved as 'outlast': off = trials left out of rolls; played = trials marked as played;
 // usePlayed = leave played trials out of rolls; result = the last roll;

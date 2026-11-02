@@ -1,4 +1,4 @@
-/* Turn Tracker. Buttons, panels and the Next button come from shared/base.css.
+/* Turn Tracker. Buttons, panels, fields and the Next button come from shared/base.css.
    Loaded after shared/base.css. */
 
 /* Whose turn it is */
@@ -31,12 +31,9 @@
 [data-act="hold"][aria-pressed="true"]{background:var(--ink);color:var(--tile);border-color:var(--ink)}
 
 /* Adding players and notes */
-.form-row{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 10px;margin-bottom:6px}
+.form-row{margin-bottom:6px}
 .form-row .toggle{margin:0 0 7px}
-.field{display:grid;gap:4px;font-weight:600;font-size:.9rem}
-.grow{flex:1 1 12em}
 .list-buttons{display:flex;flex-wrap:wrap;gap:6px}
-input[type="text"],input[type="number"],select{font:inherit;font-weight:400;color:var(--ink);background:var(--tile);border:2px solid var(--rim);padding:4px 8px;min-width:0}
 .num{width:4.5em}
 .entry .num{width:100%}
 

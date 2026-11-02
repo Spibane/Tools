@@ -21,7 +21,7 @@
 <div class="roll-head"><h2 id="rolls-h">Your roulettes</h2><button type="button" class="roll" id="roll">Roll jobs</button></div>
 <p class="progress" id="progress"></p>
 <label class="toggle"><input type="checkbox" id="unique"> Different job for each roulette</label>
-<ol class="results" id="results" aria-live="polite"></ol>
+<ol class="results stack" id="results" aria-live="polite"></ol>
 </section>
 <fieldset><legend>Default jobs</legend>
 <p class="hint">Dashed jobs aren't out yet.</p>
@@ -96,10 +96,6 @@ function roll(ids){
   save();renderResults();
 }
 
-// Padlock icons for the lock button, drawn in the text colour
-const padlock=shackle=>'<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="'+shackle+'"/><rect x="2.5" y="7" width="11" height="8" fill="currentColor" stroke="none"/></svg>';
-const LOCKED=padlock('M4.5 7V4.5a3.5 3.5 0 0 1 7 0V7'),UNLOCKED=padlock('M4.5 7V4.5a3.5 3.5 0 0 1 7 0');
-
 let shownReset=lastReset();
 function renderResults(){
   const rs=active();
@@ -115,7 +111,7 @@ function renderResults(){
       '<span class="r-buttons">'+(none||done?'':'<button type="button" class="reroll" data-r="'+r.id+'"'+(locked?' disabled':'')+' aria-label="'+esc('Reroll '+r.name)+'">Reroll</button>')+
       '<button type="button" class="mark" data-r="'+r.id+'" aria-pressed="'+done+'" aria-label="'+esc(r.name+' done')+'">'+(done?'✓ Done':'Done')+'</button>'+
       // Done roulettes only keep their Done button; Roll jobs already skips them
-      (done?'':'<button type="button" class="lock" data-r="'+r.id+'" aria-pressed="'+locked+'" aria-label="'+esc('Lock '+r.name)+'" title="'+(locked?'Unlock':'Lock')+'">'+(locked?LOCKED:UNLOCKED)+'</button>')+'</span></li>';
+      (done?'':lockButton('data-r="'+r.id+'"',r.name,locked))+'</span></li>';
   }).join(''):'<li class="result empty"><span class="muted">No roulettes on</span></li>';
 }
 
@@ -150,7 +146,7 @@ let openR=new Set();
 function renderRoulettes(){
   $('roulettes').innerHTML=ROULETTES.map(r=>{
     const off=state.offRoulettes.includes(r.id),c=customOf(r),n=candidates(r).length;
-    const count=n+' job'+(n===1?'':'s');
+    const count=plural(n,'job');
     // Custom roulettes spell out their picks where there's room, and fall back to a count on narrow screens
     const status=off?'Left out':c?'<span class="wide">Custom | '+esc(customSummary(c))+'</span><span class="narrow">Custom · '+count+'</span>':'Default jobs';
     return '<div class="roulette'+(off?' off':'')+'" data-r="'+r.id+'">'+
@@ -187,7 +183,7 @@ $('results').addEventListener('click',e=>{
   else if(b.matches('.mark,.lock')){
     const which=b.matches('.mark')?'mark':'lock';
     if(which==='mark'){if(isDone(id))delete state.done[id];else state.done[id]=Date.now();}
-    else state.locked=state.locked.filter(x=>x!==id).concat(state.locked.includes(id)?[]:[id]);
+    else state.locked=toggleIn(state.locked,id);
     save();renderResults();
     document.querySelector('.'+which+'[data-r="'+id+'"]').focus();
   }
@@ -202,13 +198,13 @@ $('jobs').addEventListener('change',()=>{
 $('jobs-all').addEventListener('click',()=>{state.offJobs=JOBS.filter(j=>j.upcoming).map(j=>j.id);save();render();});
 $('roulettes').addEventListener('change',e=>{
   const row=e.target.closest('.roulette'),id=row.dataset.r;
-  if(e.target.matches('.use'))state.offRoulettes=state.offRoulettes.filter(x=>x!==id).concat(e.target.checked?[]:[id]);
+  if(e.target.matches('.use'))state.offRoulettes=toggleIn(state.offRoulettes,id,!e.target.checked);
   // The first time a roulette goes custom it starts from the default jobs
   else if(e.target.matches('.custom'))state.custom[id]=Object.assign(state.custom[id]||{offRoles:[],offJobs:[...state.offJobs]},{on:e.target.checked});
   else if(e.target.matches('.role-pick'))state.custom[id].offRoles=[...row.querySelectorAll('.role-pick:not(:checked)')].map(el=>el.value);
   else{
-    const c=state.custom[id],v=e.target.value;
-    c.offJobs=c.offJobs.filter(x=>x!==v).concat(e.target.checked?[]:[v]);
+    const c=state.custom[id];
+    c.offJobs=toggleIn(c.offJobs,e.target.value,!e.target.checked);
   }
   save();render();
 });

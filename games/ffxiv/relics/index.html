@@ -87,9 +87,9 @@ function groupsFor(lines){
 }
 const haveOf=(k,name)=>(state.have[k]||{})[name]||0;
 
-let uid=0;
+let lineId=0;
 function lineHTML(k,l){
-  const have=haveOf(k,l.name),plain=num(l.need)+' '+l.name,id='got-'+(++uid);
+  const have=haveOf(k,l.name),plain=num(l.need)+' '+l.name,id='got-'+(++lineId);
   const meta=[];
   if(l.perRelic)meta.push('Once for the whole line');
   if(l.for.length)meta.push('For '+l.for.join(', '));

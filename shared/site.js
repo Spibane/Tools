@@ -7,6 +7,55 @@
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const pick = a => a[Math.floor(Math.random() * a.length)];
+// Shuffles an array in place and returns it
+const shuffle = a => {
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+};
+// A short random id for saved things
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+// A name as an id: "X-Ray Vision" becomes "x-ray-vision". Saved ids come from this, so don't change it.
+const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+const plural = (n, word) => n + " " + word + (n === 1 ? "" : "s");
+// The lines of a text box, trimmed, leaving out blank ones; and text with more lines added at its end
+const splitLines = text => text.split("\n").map(s => s.trim()).filter(Boolean);
+const appendLines = (text, lines) => text.replace(/\n*$/, text.trim() ? "\n" : "") + lines.join("\n");
+// A list with x added or taken out: on says which, and leaving it out flips it
+const toggleIn = (list, x, on = !list.includes(x)) => list.filter(y => y !== x).concat(on ? [x] : []);
+// Light colors that sit behind black text on both themes, for wheel slices and player colors
+const PALETTE = ["#ff8787", "#74c0fc", "#ffd43b", "#b197fc", "#ffa94d", "#f783ac", "#66d9e8", "#d8b48a"];
+
+// A lock button for a randomizer's result row: an open padlock, or a closed one when locked.
+// attrs is the data attribute that says which row it's on, like 'data-s="rig"'.
+const padlock = shackle => '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">' +
+  '<path d="' + shackle + '"/><rect x="2.5" y="7" width="11" height="8" fill="currentColor" stroke="none"/></svg>';
+const LOCK_ICONS = { true: padlock("M4.5 7V4.5a3.5 3.5 0 0 1 7 0V7"), false: padlock("M4.5 7V4.5a3.5 3.5 0 0 1 7 0") };
+const lockButton = (attrs, name, locked) => `<button type="button" class="lock" ${attrs} aria-pressed="${locked}" aria-label="${esc("Lock " + name)}" ` +
+  `title="${locked ? "Unlock" : "Lock"}">${LOCK_ICONS[locked]}</button>`;
+
+// Full screen: button makes panel cover the page (adding .full to it), using the browser's full screen when it has one,
+// and keeps the screen awake. onChange runs after each switch.
+function fullScreen(panel, button, onChange) {
+  let full = false, lock = null;
+  const wake = async () => { try { if (navigator.wakeLock) lock = await navigator.wakeLock.request("screen"); } catch (_) {} };
+  async function set(on) {
+    if (on === full) return; full = on;
+    panel.classList.toggle("full", on); document.body.classList.toggle("full-open", on);
+    button.textContent = on ? "Exit" : "Full screen";
+    try {
+      if (on) { if (panel.requestFullscreen) await panel.requestFullscreen(); }
+      else if (document.fullscreenElement) await document.exitFullscreen();
+    } catch (_) {}
+    if (on) await wake(); else if (lock) { lock.release(); lock = null; }
+    if (onChange) onChange();
+  }
+  button.addEventListener("click", () => set(!full));
+  document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement) set(false); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") set(false); });
+  // The browser lets go of the wake lock when the page is hidden, so take it again on coming back
+  document.addEventListener("visibilitychange", () => { if (full && document.visibilityState === "visible") wake(); });
+}
+
 // localStorage, but never throws (it can when the browser blocks storage).
 // get/set keep plain strings; load/save keep JSON, and load gives back fallback when nothing is saved.
 const store = {

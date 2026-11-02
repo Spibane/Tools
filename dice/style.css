@@ -1,4 +1,4 @@
-/* Dice roller. Buttons, panels and the roll button come from shared/base.css.
+/* Dice roller. Buttons, panels, text boxes, the roll button and the history header come from shared/base.css.
    Loaded after shared/base.css. */
 
 /* What to roll */
@@ -31,7 +31,6 @@ s.die{color:var(--muted)}
 .die.bottom{text-decoration:underline;text-decoration-thickness:2px}
 
 /* History */
-.history-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
 .rolls-list{list-style:none;margin:0;padding:0;display:grid;gap:4px}
 .rolls-list li{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px;background:var(--surface);border:2px solid var(--rim);padding:4px 10px}
 .rolls-list .h-total{margin-left:auto;font-size:1.1rem}

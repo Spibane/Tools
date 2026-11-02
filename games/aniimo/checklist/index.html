@@ -41,7 +41,6 @@ const REGION_NAMES={breezy:"Breezy Plains",whisperwake:"Whisperwake Isles"};
 const BOXES=[["own","Own"],["perfect","Perfect"],["alpha","Alpha"],["umbra","Umbral"]];
 const SYMBOL={"Rain":"☂","Thunderstorm":"⚡","Rain or thunderstorm":"☂","Snow":"❄","Night":"☾","Prismana Flow":"✦"};
 const keyOf=f=>f.form==="Base"?f.name:f.form+" "+f.name;
-const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,'-');
 const BY_KEY=new Map(FORMS.map(f=>[keyOf(f),f]));
 const ORDER=new Map(FORMS.map((f,i)=>[keyOf(f),i]));
 const missing=[];

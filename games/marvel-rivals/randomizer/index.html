@@ -42,7 +42,6 @@ const SLOTS=[{id:'vanguard',name:'Vanguard',role:'vanguard'},{id:'duelist',name:
 // three, so he gets an entry in each (deadpool-vanguard and so on) and can join your strike team per role.
 // hero is the same for every entry of one hero, so they're never picked twice and are marked played together.
 // The ids are used to save your strike team, so rename with care.
-const slug=n=>n.toLowerCase().replace(/[^a-z]+/g,'-');
 const HEROES=[
   ...['Angela','Captain America','Devil Dinosaur','Doctor Strange','Emma Frost','Groot','Hulk','Magneto','Peni Parker','Rogue','The Hood','The Thing','Thor','Venom'].map(n=>({name:n,role:'vanguard'})),
   ...['Black Cat','Black Panther','Black Widow','Blade','Cyclops','Daredevil','Elsa Bloodstone','Gorr','Hawkeye','Hela','Human Torch','Iron Fist','Iron Man','Magik','Mister Fantastic','Moon Knight','Namor','Phoenix','Psylocke','Scarlet Witch','Spider-Man','Squirrel Girl','Star-Lord','Storm','The Punisher','Winter Soldier','Wolverine'].map(n=>({name:n,role:'duelist'})),

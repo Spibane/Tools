@@ -23,7 +23,7 @@
 <div class="roll-head"><h2 id="rolls-h">Your loadout</h2><button type="button" class="roll" id="roll">Roll loadout</button></div>
 <div class="parts" id="parts"></div>
 <label class="toggle"><input type="checkbox" id="use-played"> Leave out played rigs and amps</label>
-<ol class="results" id="results" aria-live="polite"></ol>
+<ol class="results stack" id="results" aria-live="polite"></ol>
 <div class="played" id="played" hidden>
 <p class="played-list" id="played-list"></p>
 <button type="button" id="played-reset">Reset played</button>
@@ -42,7 +42,6 @@ const GEAR=Object.keys(CATS).flatMap(cat=>LOADOUT[cat].map(n=>({name:n,cat,key:c
 const gear=key=>GEAR.find(g=>g.key===key);
 const SLOTS=[{id:'rig',name:'Rig',part:'Rig'},{id:'tool',name:'Tool amp',part:'Tool'},{id:'skill',name:'Skill amp',part:'Skill'},
   {id:'medicine',name:'Medicine amp',part:'Medicine'},{id:'trial',name:'Trial',part:'Trial'}];
-const kindTag=t=>'<span class="role kind-'+t.kind+'">'+KINDS.find(k=>k.id===t.kind).name+'</span>';
 
 // Settings: off = gear left out of rolls; played = gear marked as played; usePlayed = leave played gear out of rolls;
 // skip = picks not rolled; locked = picks Roll loadout leaves alone;
@@ -71,9 +70,6 @@ function roll(ids){
   save();renderResults();
 }
 
-const padlock=shackle=>'<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="'+shackle+'"/><rect x="2.5" y="7" width="11" height="8" fill="currentColor" stroke="none"/></svg>';
-const LOCKED=padlock('M4.5 7V4.5a3.5 3.5 0 0 1 7 0V7'),UNLOCKED=padlock('M4.5 7V4.5a3.5 3.5 0 0 1 7 0');
-
 function why(s,e){
   if(s.id!=='trial')return isPlayed(e)?'played':'turned off';
   return trials.usePlayed&&trials.played.includes(e.id)?'played':'left out';
@@ -89,7 +85,7 @@ function renderResults(){
         '<span class="muted">'+(candidates(s).length?'Not rolled yet':'Nothing left')+'</span>')+'</span>'+
       '<span class="r-buttons">'+(fits&&(s.id==='trial'?trials.usePlayed:state.usePlayed)?'<button type="button" class="mark" data-s="'+s.id+'" aria-label="'+esc('Mark '+e.name+' as played')+'">Played</button>':'')+
       '<button type="button" class="reroll" data-s="'+s.id+'"'+(locked?' disabled':'')+' aria-label="'+esc('Reroll '+s.name)+'">Reroll</button>'+
-      '<button type="button" class="lock" data-s="'+s.id+'" aria-pressed="'+locked+'" aria-label="'+esc('Lock '+s.name)+'" title="'+(locked?'Unlock':'Lock')+'">'+(locked?LOCKED:UNLOCKED)+'</button></span></li>';
+      lockButton('data-s="'+s.id+'"',s.name,locked)+'</span></li>';
   }).join('');
   $('use-played').checked=state.usePlayed;
   const list=state.played.map(gear).filter(Boolean);
@@ -114,7 +110,7 @@ function renderPools(){
 
 $('roll').addEventListener('click',()=>roll(slots().map(s=>s.id).filter(id=>!state.locked.includes(id))));
 $('parts').addEventListener('change',e=>{
-  state.skip=state.skip.filter(id=>id!==e.target.value).concat(e.target.checked?[]:[e.target.value]);
+  state.skip=toggleIn(state.skip,e.target.value,!e.target.checked);
   save();renderResults();
 });
 $('results').addEventListener('click',e=>{
@@ -124,7 +120,7 @@ $('results').addEventListener('click',e=>{
   if(b.matches('.reroll'))roll([id]);
   if(b.matches('.mark')&&id==='trial'){trials=loadTrialSettings();trials.played.push(state.result.trial);store.save('outlast',trials);renderResults();}
   if(b.matches('.mark')&&id!=='trial'){state.played.push(state.result[id]);save();renderResults();}
-  if(b.matches('.lock')){state.locked=state.locked.filter(x=>x!==id).concat(state.locked.includes(id)?[]:[id]);save();renderResults();}
+  if(b.matches('.lock')){state.locked=toggleIn(state.locked,id);save();renderResults();}
 });
 $('use-played').addEventListener('change',e=>{state.usePlayed=e.target.checked;save();renderResults();});
 $('played-reset').addEventListener('click',()=>{state.played=[];save();renderResults();});

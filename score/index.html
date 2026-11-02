@@ -55,26 +55,23 @@
 </section>
 </main>
 <script>
-const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const STEPS=[1,2,5,10,25,50,100];
-// Player colors, used behind black text, so each one is light enough on both themes
-const COLORS=['#ff8787','#74c0fc','#ffd43b','#b197fc','#ffa94d','#f783ac','#66d9e8','#d8b48a'];
-// Saved data. players: {id, name, score, time (ms on their clock), color (an index into COLORS)}. start: the score players start at. step: what - and + change.
+// Saved data. players: {id, name, score, time (ms on their clock), color (an index into PALETTE, the player colors)}. start: the score players start at. step: what - and + change.
 // history: newest first, {id (player), delta, to (the score after), at (ms timestamp)}; quick taps on one player merge.
 // timer: {mode ('off', 'turn' or 'shared'), minutes (counts down from this, or null to count up), running, since (ms timestamp
 // the clock last started), used (ms on the shared clock), turn (whose clock runs in 'turn' mode), done (clocks that ran out)}.
 let state=Object.assign({players:[],start:0,step:1,history:[],timer:{}},store.load('score'));
 state.timer=Object.assign({mode:'off',minutes:null,running:false,since:0,used:0,turn:null,done:[]},state.timer);
 if(!state.players.length)state.players=[1,2].map(i=>({id:uid(),name:'Player '+i,score:0,time:0,color:i-1}));
-state.players.forEach((p,i)=>{if(!(p.color in COLORS))p.color=i%COLORS.length;});
+state.players.forEach((p,i)=>{if(!(p.color in PALETTE))p.color=i%PALETTE.length;});
 const save=()=>store.save('score',state);
 const T=state.timer;
 const byId=id=>state.players.find(p=>p.id===id);
 const nm=p=>p?p.name||'Unnamed':'Removed';
 const num=x=>Math.round(x*100)/100;
-const hue=p=>p?'--pc:'+COLORS[p.color]:'';
+const hue=p=>p?'--pc:'+PALETTE[p.color]:'';
 // The first color nobody has yet, or the least used one
-const freeColor=()=>{const n=COLORS.map((_,i)=>state.players.filter(p=>p.color===i).length);return n.indexOf(Math.min(...n));};
+const freeColor=()=>{const n=PALETTE.map((_,i)=>state.players.filter(p=>p.color===i).length);return n.indexOf(Math.min(...n));};
 
 // Scores
 function change(p,d,set){
@@ -227,7 +224,7 @@ $('players').addEventListener('input',e=>{
 $('players').addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');if(!b)return;
   const id=b.closest('li').dataset.id,i=state.players.findIndex(p=>p.id===id),a=b.dataset.act;
-  if(a==='color')state.players[i].color=(state.players[i].color+1)%COLORS.length;
+  if(a==='color')state.players[i].color=(state.players[i].color+1)%PALETTE.length;
   else if(a==='del'){if(!confirm('Remove '+nm(state.players[i])+'?'))return;bank();state.players.splice(i,1);}
   else{const j=i+(a==='up'?-1:1);[state.players[i],state.players[j]]=[state.players[j],state.players[i]];}
   save();render();renderPlayers();
@@ -246,25 +243,8 @@ $('reset').addEventListener('click',()=>{
   state.players.forEach(p=>p.score=state.start);state.history=[];save();render();
 });
 
-// Full screen: the pad covers the page, using the browser's full screen when it has one, and keeps the screen awake
-let full=false,lock=null;
-async function setFull(on){
-  if(on===full)return;full=on;
-  $('pad').classList.toggle('full',on);document.body.classList.toggle('pad-open',on);
-  $('full').textContent=on?'Exit':'Full screen';
-  try{
-    if(on){if($('pad').requestFullscreen)await $('pad').requestFullscreen();}
-    else if(document.fullscreenElement)await document.exitFullscreen();
-  }catch(_){}
-  try{if(on&&navigator.wakeLock)lock=await navigator.wakeLock.request('screen');else if(lock){lock.release();lock=null;}}catch(_){}
-  layout();
-}
-$('full').addEventListener('click',()=>setFull(!full));
-document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement)setFull(false);});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')setFull(false);});
-document.addEventListener('visibilitychange',async()=>{
-  try{if(full&&document.visibilityState==='visible'&&navigator.wakeLock)lock=await navigator.wakeLock.request('screen');}catch(_){}
-});
+// Full screen: the pad covers the page, and its areas are laid out again to fit
+fullScreen($('pad'),$('full'),layout);
 
 render();renderPlayers();
 backups({what:'scores',keys:['score'],file:'score-pad.json'});

@@ -111,6 +111,32 @@ button:disabled:hover { background: var(--tile); color: var(--ink); border-color
 /* A visually hidden input that still takes keyboard focus, which shows on the label after it */
 .vh { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
 .vh:focus-visible + .button { outline: 3px solid var(--focus); outline-offset: 2px; }
+/* A button that stays filled while it's pressed, like Done */
+.mark[aria-pressed="true"] { background: var(--brand); color: #121212; border-color: #121212; }
+.mark[aria-pressed="true"]:hover { background: var(--tile); color: var(--ink); border-color: var(--rim); }
+
+/* Text boxes and dropdowns. :where keeps these easy for a page to override. */
+:where(input[type="text"], input[type="number"], input[type="search"], select, textarea) {
+  font: inherit;
+  font-weight: 400;
+  color: var(--ink);
+  background: var(--tile);
+  border: 2px solid var(--rim);
+  padding: 4px 8px;
+  min-width: 0;
+}
+:where(textarea) { width: 100%; resize: vertical; }
+/* A label over its box, with an optional hint beside the label. .hint.short flags a hint that says something's missing. */
+.field { display: grid; gap: 4px; font-weight: 600; margin-bottom: 10px; }
+.field .hint { font-weight: 400; margin: 0; }
+.hint.short { color: var(--ink); font-weight: 600; }
+/* A row of fields and buttons lined up along their bottoms; .grow takes the spare room */
+.form-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 10px; margin-bottom: 10px; }
+.form-row .field { margin-bottom: 0; font-size: 0.9rem; }
+.grow { flex: 1 1 12em; }
+/* A row of small settings, like toggles and a dropdown */
+.opts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin-bottom: 12px; }
+.opts .toggle { margin: 0; }
 
 /* Tool pages: the intro under the title, and option groups with a gradient bar down the side */
 .intro { color: var(--muted); max-width: 60ch; }
@@ -145,20 +171,48 @@ details[open] > summary::before { content: "▾" / ""; }
 .button-row { margin-top: 10px; }
 
 /* Randomizers: a panel with the roll button in its header, one result row per pick, and a toggle line */
+.rolls { margin-bottom: 26px; }
 .roll-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-bottom: 8px; }
 button.roll { font-size: 1.1rem; font-weight: 700; padding: 8px 22px; border: 3px solid #121212; background: var(--brand); color: #121212; }
 button.roll:hover { background: var(--tile); color: var(--ink); border-color: var(--rim); }
 .toggle { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
 .toggle input { width: 18px; height: 18px; margin: 0; flex: none; accent-color: var(--check); }
 .results { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.result { display: grid; align-items: center; gap: 4px 12px; background: var(--tile); border: 2px solid var(--rim); padding: 8px 10px; }
+.result { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px; background: var(--tile); border: 2px solid var(--rim); padding: 8px 10px; }
 .r-name { font-weight: 700; }
 .r-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 1.05rem; }
 .result.empty .r-pick { font-size: 0.9rem; }
 .r-buttons { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
 .stale { font-size: 0.85rem; color: var(--muted); }
+/* Which parts a roll includes, as a line of pills */
+.parts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 12px; font-size: 0.9rem; font-weight: 600; }
+/* Lock (lockButton in site.js): an open padlock, or a closed one on an inverted button, on a row that goes quiet */
+.lock { display: inline-flex; align-items: center; justify-content: center; padding: 4px 8px; }
+.lock svg { display: block; }
+.lock[aria-pressed="true"] { background: var(--ink); color: var(--tile); border-color: var(--ink); }
+.result.locked { background: var(--surface); }
+/* What's been played (or used), listed under the results with a reset button, and struck through in the pickers */
+.played { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-top: 12px; }
+.played-list { margin: 0; font-size: 0.9rem; flex: 1 1 20em; overflow-wrap: anywhere; }
+.played-cat { display: block; }
+.pill.is-played { text-decoration: line-through; }
+/* .results.stack: on phones, each row's buttons go under the pick and share the width */
+@media (max-width: 560px) {
+  .results.stack .result { grid-template-columns: 1fr; }
+  .results.stack .r-buttons { justify-content: flex-start; margin-top: 4px; }
+  .results.stack .r-buttons button { flex: 1 1 auto; }
+  .results.stack .r-buttons .lock { flex: 0 0 auto; }
+}
 /* Role tags: pages give each role a background colour. The black outline keeps the text readable. */
 .role { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 0 6px; border: 2px solid #121212; color: #121212; }
+
+/* A section's heading with a button at the other end, like History and Clear */
+.history-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+
+/* A panel in full screen (fullScreen in site.js) covers the page; pages lay out what's inside */
+.panel.full { position: fixed; inset: 0; z-index: 50; margin: 0; border: 0; display: flex; flex-direction: column; }
+.panel:fullscreen { background: var(--surface); }
+body.full-open { overflow: hidden; }
 
 /* Hub page categories: a heading over each group of project tiles */
 .category { margin-top: 28px; }
@@ -230,4 +284,5 @@ button.roll:hover { background: var(--tile); color: var(--ink); border-color: va
 .site-footer img { width: 32px; height: 32px; }
 .site-footer .muted { margin: 0 0 0 auto; }
 .theme-toggle { padding: 3px 12px; }
-@media print { .site-footer, .back, .backs, .saves { display: none; } }
+/* Printing leaves out settings and buttons, keeping just the results */
+@media print { .site-footer, .back, .backs, .saves, fieldset, button.roll, .r-buttons, .rolls .toggle, .rolls .opts, .rolls .parts, .played button { display: none; } }

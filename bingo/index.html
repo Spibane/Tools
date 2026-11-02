@@ -40,10 +40,9 @@
 // card (the squares, row by row, with null for the free one) and marked (indexes of marked squares)
 let state=Object.assign({title:'Bingo',entries:'',size:5,free:true,card:[],marked:[]},store.load('bingo'));
 const save=()=>store.save('bingo',state);
-const entries=()=>[...new Set(state.entries.split('\n').map(s=>s.trim()).filter(Boolean))];
+const entries=()=>[...new Set(splitLines(state.entries))];
 const hasFree=()=>state.free&&state.size%2===1;
 const needed=()=>state.size*state.size-(hasFree()?1:0);
-const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
 
 function newCard(){
   const pool=shuffle(entries());
@@ -71,7 +70,7 @@ function renderCard(){
   $('clear').hidden=!state.card.length;
   if(!state.card.length){
     $('card').innerHTML='';
-    $('status').textContent=have<need?'Add '+(need-have)+' more square'+(need-have===1?'':'s')+' below to make a card.':'Not made yet.';
+    $('status').textContent=have<need?'Add '+plural(need-have,'more square')+' below to make a card.':'Not made yet.';
     return;
   }
   const won=lines(n).filter(l=>l.every(i=>state.marked.includes(i))),inWin=new Set(won.flat());
@@ -95,7 +94,7 @@ $('clear').addEventListener('click',()=>{state.marked=state.card.flatMap((s,i)=>
 $('card').addEventListener('click',e=>{
   const b=e.target.closest('button.sq');if(!b)return;
   const i=+b.dataset.i;
-  state.marked=state.marked.includes(i)?state.marked.filter(x=>x!==i):state.marked.concat(i);
+  state.marked=toggleIn(state.marked,i);
   save();renderCard();
   $('card').querySelector('[data-i="'+i+'"]').focus();
 });
@@ -129,11 +128,11 @@ addEventListener('hashchange',openShared);
 function importSquares(data){
   const add=JSON.parse(data.bingo);
   if(!add||typeof add.entries!=='string')throw 0;
-  const have=new Set(entries()),fresh=[...new Set(add.entries.split('\n').map(s=>s.trim()).filter(s=>s&&!have.has(s)))];
+  const have=new Set(entries()),fresh=[...new Set(splitLines(add.entries).filter(s=>!have.has(s)))];
   if(!fresh.length)return 'You already have every square in that file.';
-  state.entries=state.entries.replace(/\n*$/,state.entries.trim()?'\n':'')+fresh.join('\n');
+  state.entries=appendLines(state.entries,fresh);
   save();render();
-  return 'Added '+fresh.length+' square'+(fresh.length===1?'':'s')+' to yours.';
+  return 'Added '+plural(fresh.length,'square')+' to yours.';
 }
 backups({what:'bingo squares',keys:['bingo'],file:'bingo-card.json',merge:importSquares});
 </script></body></html>
