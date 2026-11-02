@@ -84,4 +84,4 @@ select{font:inherit;font-size:.95rem;color:var(--ink);background:var(--tile);bor
   .box{flex-direction:column;gap:2px;padding:4px 2px}
 }
 
-@media print{fieldset{display:none}.sub{break-inside:avoid-page}}
+@media print{.sub{break-inside:avoid-page}}

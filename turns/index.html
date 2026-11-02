@@ -56,7 +56,6 @@
 </fieldset>
 </main>
 <script>
-const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 // Saved data. entries: the turn order, {id, name, num (optional, higher goes first), hold (sitting out until brought back),
 // conds: [{id, text, turns (left, or null to keep until removed), skip (skips their turns), fresh (added on their own turn,
 // so that turn doesn't count down)}]}. current is the id of whose turn it is (null before Start), and round counts up.
@@ -93,7 +92,7 @@ function advance(){
 
 const chips=e=>e.conds.map(c=>'<span class="cond'+(c.skip?' skip':'')+'"><span>'+esc(c.text)+'</span>'+
   (c.skip&&c.text!=='Skip'?'<span class="c-tag">skips</span>':'')+
-  (c.turns!=null?'<span class="c-left">'+c.turns+(c.turns===1?' turn':' turns')+'</span>':'')+
+  (c.turns!=null?'<span class="c-left">'+plural(c.turns,'turn')+'</span>':'')+
   '<button type="button" class="c-del" data-id="'+e.id+'" data-cond="'+c.id+'" aria-label="'+esc('Remove '+c.text+' from '+nm(e))+'">×</button></span>').join('');
 
 function renderTurn(){
@@ -200,17 +199,16 @@ const sortByNum=()=>{state.entries=state.entries.map((e,i)=>[e,i]).sort((a,b)=>(
 $('sort').addEventListener('click',()=>act(sortByNum));
 // Shuffle mixes up the order. Once anyone has a number it rolls 1 to 20 instead: for everyone without one, or for
 // everyone when they all have one, then sorts. Ties land in shuffled order.
-function shuffle(number){
+function shuffleOrder(number){
   act(()=>{
-    const a=state.entries,all=a.every(e=>e.num!=null);
-    for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+    const a=shuffle(state.entries),all=a.every(e=>e.num!=null);
     if(!number&&!a.some(e=>e.num!=null))return;
     a.forEach(e=>{if(all||e.num==null)e.num=1+Math.floor(Math.random()*20);});
     sortByNum();
   });
 }
-$('shuffle').addEventListener('click',()=>shuffle(false));
-$('number').addEventListener('click',()=>shuffle(true));
+$('shuffle').addEventListener('click',()=>shuffleOrder(false));
+$('number').addEventListener('click',()=>shuffleOrder(true));
 $('restart').addEventListener('click',()=>{
   if(!confirm('Start over at round 1? Holds, notes and conditions will be cleared.'))return;
   act(()=>{state.round=1;state.current=null;state.entries.forEach(e=>{e.hold=false;e.conds=[];});});

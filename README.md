@@ -27,6 +27,7 @@ A static site with no build step, framework or server. Each tool is a folder wit
 ```
 
 - **No accounts or tracking.** Everything a tool saves stays in the browser's `localStorage`.
+- **Shared helpers.** `shared/site.js` has the small pieces tools reuse (`shuffle`, `uid`, `slug`, `plural`, `splitLines`, `toggleIn`, `lockButton`, `fullScreen`, `PALETTE`), and `shared/base.css` styles form fields, result rows, locks and played lists. Check there before writing one into a page.
 - **Backups.** `backups()` in `shared/site.js` gives each tool Save, Load and Clear buttons for its own keys, plus Import when the tool passes `merge`. The hub's backup holds every tool's data in one file, and a tool can load its part out of that file.
 - **Game data** lives in plain JS files under each game's `data/` folder.
 
@@ -46,7 +47,7 @@ A static site with no build step, framework or server. Each tool is a folder wit
 | Games | [Dead by Daylight](https://spibane.com/games/dbd/) | Loadout randomizer |
 | Games | [Final Fantasy XIV](https://spibane.com/games/ffxiv/) | Relic checklists and roulette job picker |
 | Games | [Marvel Rivals](https://spibane.com/games/marvel-rivals/) | Hero randomizer |
-| Games | [The Outlast Trials](https://spibane.com/games/outlast-trials/) | Trial and MK-Challenge randomizer |
+| Games | [The Outlast Trials](https://spibane.com/games/outlast-trials/) | Trial and loadout randomizers |
 
 ## Package Structure
 
@@ -68,7 +69,7 @@ A static site with no build step, framework or server. Each tool is a folder wit
     ├── dbd/            # loadout/, data/ (loadout.js + update.py)
     ├── ffxiv/          # relics/, roulette/, data/relics/
     ├── marvel-rivals/
-    └── outlast-trials/
+    └── outlast-trials/ # randomizer/, loadout/, data/ (trials, rigs and amps)
 ```
 
 ## Running Locally

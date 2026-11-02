@@ -22,12 +22,10 @@
 .i-meta{display:block;font-size:.85rem;font-weight:400;color:var(--muted)}
 .i-notes{display:block;font-size:.9rem;font-weight:400;white-space:pre-wrap;margin-top:4px}
 .i-buttons{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:6px}
-/* Done until the next reset: a gradient bar down the side, the name faded, and a filled Done button */
+/* Done until the next reset: a gradient bar down the side and the name faded. The filled Done button comes from shared/base.css. */
 .item.done{background:var(--surface);padding-left:18px}
 .item.done::before{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;background:var(--brand-v)}
 .item.done .i-name{opacity:.6;text-decoration:line-through;text-decoration-thickness:2px}
-.mark[aria-pressed="true"]{background:var(--brand);color:#121212;border-color:#121212}
-.mark[aria-pressed="true"]:hover{background:var(--tile);color:var(--ink);border-color:var(--rim)}
 .counter{display:inline-flex;align-items:center;gap:6px}
 .counter button{min-width:2.2em;padding:4px 8px}
 .c-num{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}

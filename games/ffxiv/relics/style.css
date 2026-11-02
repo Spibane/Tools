@@ -58,4 +58,4 @@
   .have{grid-column:2;flex-direction:row;justify-content:space-between;align-items:center}
 }
 
-@media print{fieldset,.finish{display:none}.step{break-inside:avoid-page}}
+@media print{.finish{display:none}.step{break-inside:avoid-page}}

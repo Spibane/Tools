@@ -42,8 +42,7 @@ const FORMATS={single:'Single elimination',double:'Double elimination',robin:'Ro
 // round robin ones are {"i-j": winner index, or "d" for a draw}.
 let state=Object.assign({text:'',format:'single',shuffle:false,built:null,results:{}},store.load('brackets'));
 const save=()=>store.save('brackets',state);
-const names=()=>state.text.split('\n').map(s=>s.trim()).filter(Boolean);
-const plural=(n,w)=>n+' '+w+(n===1?'':'s');
+const names=()=>splitLines(state.text);
 
 // Elimination brackets. Seeds are placed the usual way (1 v 8, 4 v 5, 2 v 7, 3 v 6), so byes go to the top seeds.
 function seedOrder(S){let o=[0];while(o.length<S){const L=o.length*2;o=o.flatMap(x=>[x,L-1-x]);}return o;}
@@ -175,7 +174,7 @@ function render(){
 $('make').addEventListener('click',()=>{
   if(Object.keys(state.results).length&&!confirm('Make a new bracket? The results on this one will go.'))return;
   const p=names();
-  if(state.shuffle)for(let i=p.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[p[i],p[j]]=[p[j],p[i]];}
+  if(state.shuffle)shuffle(p);
   state.built={format:state.format,players:p};state.results={};save();render();
 });
 $('clear').addEventListener('click',()=>{if(!confirm('Clear every result?'))return;state.results={};save();render();});
@@ -197,24 +196,7 @@ $('names').addEventListener('input',e=>{state.text=e.target.value;save();render(
 $('format').addEventListener('change',e=>{state.format=e.target.value;save();render();});
 $('shuffle').addEventListener('change',e=>{state.shuffle=e.target.checked;save();render();});
 
-// Full screen: the bracket covers the page, using the browser's full screen when it has one, and keeps the screen awake
-let full=false,lock=null;
-async function setFull(on){
-  if(on===full)return;full=on;
-  $('panel').classList.toggle('full',on);document.body.classList.toggle('panel-open',on);
-  $('full').textContent=on?'Exit':'Full screen';
-  try{
-    if(on){if($('panel').requestFullscreen)await $('panel').requestFullscreen();}
-    else if(document.fullscreenElement)await document.exitFullscreen();
-  }catch(_){}
-  try{if(on&&navigator.wakeLock)lock=await navigator.wakeLock.request('screen');else if(lock){lock.release();lock=null;}}catch(_){}
-}
-$('full').addEventListener('click',()=>setFull(!full));
-document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement)setFull(false);});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')setFull(false);});
-document.addEventListener('visibilitychange',async()=>{
-  try{if(full&&document.visibilityState==='visible'&&navigator.wakeLock)lock=await navigator.wakeLock.request('screen');}catch(_){}
-});
+fullScreen($('panel'),$('full'));
 
 $('names').value=state.text;$('format').value=state.format;$('shuffle').checked=state.shuffle;
 render();

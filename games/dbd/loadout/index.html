@@ -25,7 +25,7 @@
 <section class="rolls panel" aria-labelledby="rolls-h">
 <div class="roll-head"><h2 id="rolls-h">Your loadout</h2><button type="button" class="roll" id="roll">Roll loadout</button></div>
 <div class="parts" id="parts"></div>
-<ol class="results" id="results" aria-live="polite"></ol>
+<ol class="results stack" id="results" aria-live="polite"></ol>
 <div class="played" id="played" hidden>
 <p class="played-list" id="played-list"></p>
 <button type="button" id="played-reset">Reset played</button>
@@ -114,8 +114,6 @@ function roll(ids){
 }
 
 const tag=e=>e.rarity?'<span class="role rarity-'+e.rarity+'">'+RARITIES[e.rarity]+'</span>':'';
-const padlock=shackle=>'<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="'+shackle+'"/><rect x="2.5" y="7" width="11" height="8" fill="currentColor" stroke="none"/></svg>';
-const LOCKED=padlock('M4.5 7V4.5a3.5 3.5 0 0 1 7 0V7'),UNLOCKED=padlock('M4.5 7V4.5a3.5 3.5 0 0 1 7 0');
 
 function why(s,e){
   if(isPlayed(e))return 'played';
@@ -142,7 +140,7 @@ function renderResults(){
         '<span class="muted">'+(rolled?emptyText(s):'Not rolled yet')+'</span>')+'</span>'+
       '<span class="r-buttons">'+(fits?'<button type="button" class="mark" data-s="'+s.id+'" aria-label="'+esc('Mark '+e.name+' as played')+'">Played</button>':'')+
       '<button type="button" class="reroll" data-s="'+s.id+'"'+(locked?' disabled':'')+' aria-label="'+esc('Reroll '+s.name)+'">Reroll</button>'+
-      '<button type="button" class="lock" data-s="'+s.id+'" aria-pressed="'+locked+'" aria-label="'+esc('Lock '+s.name)+'" title="'+(locked?'Unlock':'Lock')+'">'+(locked?LOCKED:UNLOCKED)+'</button></span></li>';
+      lockButton('data-s="'+s.id+'"',s.name,locked)+'</span></li>';
   }).join('');
   const list=S().played.map(k=>entry(state.side,k)).filter(Boolean);
   $('played').hidden=!list.length;
@@ -174,7 +172,7 @@ function renderCounts(){
 }
 function setEnabled(key,on){
   const e=entry(state.side,key),flip=on===!!e.event;
-  S().flip=S().flip.filter(k=>k!==key).concat(flip?[key]:[]);
+  S().flip=toggleIn(S().flip,key,flip);
 }
 
 function render(){
@@ -189,7 +187,7 @@ $('roll').addEventListener('click',()=>{
   roll(slots().map(s=>s.id).filter(id=>!keep.includes(id)));
 });
 $('parts').addEventListener('change',e=>{
-  S().skip=S().skip.filter(p=>p!==e.target.value).concat(e.target.checked?[]:[e.target.value]);
+  S().skip=toggleIn(S().skip,e.target.value,!e.target.checked);
   save();renderResults();
 });
 $('results').addEventListener('click',e=>{
@@ -198,7 +196,7 @@ $('results').addEventListener('click',e=>{
   const id=b.dataset.s;
   if(b.matches('.reroll'))roll([id]);
   if(b.matches('.mark')){S().played.push(S().result[id]);save();renderResults();}
-  if(b.matches('.lock')){S().locked=S().locked.filter(x=>x!==id).concat(S().locked.includes(id)?[]:[id]);save();renderResults();}
+  if(b.matches('.lock')){S().locked=toggleIn(S().locked,id);save();renderResults();}
 });
 $('played-reset').addEventListener('click',()=>{S().played=[];save();renderResults();});
 $('pools').addEventListener('change',e=>{

@@ -25,7 +25,6 @@
 const LOCAL_TZ=(()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';}catch(_){return 'UTC';}})();
 const ZONES=(()=>{let z=[];try{z=Intl.supportedValuesOf('timeZone');}catch(_){}return [...new Set(['UTC',LOCAL_TZ,...z])];})();
 const WEEKDAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 
 // Saved data. groups: {id, name, open, kind, items}. kind is 'tasks' or 'events'.
 // Task groups also have rule, when the group resets:
@@ -337,7 +336,7 @@ $('form').addEventListener('click',e=>{
   const i=list.indexOf(obj);
   if(f==='delete'){
     const n=kind==='group'&&obj.items.length,noun=obj.kind==='events'?'event':'task';
-    if(!confirm(n?'Delete “'+obj.name+'” and its '+n+' '+noun+(n===1?'':'s')+'?':'Delete “'+obj.name+'”?'))return;
+    if(!confirm(n?'Delete “'+obj.name+'” and its '+plural(n,noun)+'?':'Delete “'+obj.name+'”?'))return;
     list.splice(i,1);save();$('dialog').close();
     return render(kind==='group'?'add-group':'add-'+state.groups.find(g=>g.items===list).id);
   }
@@ -369,7 +368,7 @@ function importTasks(data){
   }
   if(!groups&&!items)return 'You already have everything in that file.';
   save();render();
-  return 'Imported '+(groups?groups+' group'+(groups===1?'':'s')+' and ':'')+items+' item'+(items===1?'':'s')+'.';
+  return 'Imported '+(groups?plural(groups,'group')+' and ':'')+plural(items,'item')+'.';
 }
 backups({what:'tasks',keys:['tasks'],file:'tasks-and-events.json',merge:importTasks});
 </script></body></html>

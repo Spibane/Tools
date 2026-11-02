@@ -1,4 +1,4 @@
-/* Brackets. Buttons, panels and the New bracket button come from shared/base.css.
+/* Brackets. Buttons, panels, full screen and the New bracket button come from shared/base.css.
    Loaded after shared/base.css. */
 
 /* The panel: the winner, how many matches are played, and the bracket */
@@ -30,13 +30,10 @@ h3{font-size:.85rem;font-weight:700;color:var(--muted);margin:0 0 6px}
 .slot.won .seed{color:#121212}
 
 /* Full screen: the panel covers the page and the bracket scrolls both ways inside it */
-.b-panel.full{position:fixed;inset:0;z-index:50;margin:0;border:0;display:flex;flex-direction:column;
-  padding:0 max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+.b-panel.full{padding:0 max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
 .b-panel.full::before{margin-top:env(safe-area-inset-top)}
 .b-panel.full #view{flex:1;min-height:0;overflow:auto}
 .b-panel.full .scroller{overflow:visible}
-.b-panel:fullscreen{background:var(--surface)}
-body.panel-open{overflow:hidden}
 
 /* Round robin: standings, then each round's matches as player, Draw, player */
 .standings{border-collapse:collapse;width:100%;margin-bottom:14px;font-variant-numeric:tabular-nums}
@@ -52,13 +49,6 @@ body.panel-open{overflow:hidden}
 .rr-d{font-weight:400;font-size:.8rem;justify-content:center}
 .sits{font-size:.85rem;margin:0 0 6px}
 
-/* Players */
-.opts{display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;margin-bottom:12px}
-.opts .toggle{margin:0}
+/* Players. Fields and text boxes come from shared/base.css. */
 .format{display:flex;align-items:center;gap:8px;font-size:.9rem;font-weight:600}
-.field{display:grid;gap:4px;margin-bottom:10px;font-weight:600}
-.field .hint{font-weight:400;margin:0}
-.hint.short{color:var(--ink);font-weight:600}
-select,textarea{font:inherit;font-weight:400;color:var(--ink);background:var(--tile);border:2px solid var(--rim);padding:4px 8px}
-textarea{width:100%;resize:vertical}
-@media print{fieldset,#full,.b-buttons{display:none}.scroller{overflow:visible}.bracket{flex-wrap:wrap;width:auto}}
+@media print{#full,.b-buttons{display:none}.scroller{overflow:visible}.bracket{flex-wrap:wrap;width:auto}}

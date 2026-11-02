@@ -27,8 +27,8 @@
 <div class="wheels" id="wheels" hidden></div>
 <svg width="0" height="0" aria-hidden="true" style="position:absolute"><defs><linearGradient id="w-grad"><stop offset="0" stop-color="#b9fc58"/><stop offset="1" stop-color="#48f7a3"/></linearGradient></defs></svg>
 <ol class="results" id="results" aria-live="polite"></ol>
-<div class="used" id="used" hidden>
-<p class="used-list" id="used-list"></p>
+<div class="played" id="used" hidden>
+<p class="played-list" id="used-list"></p>
 <button type="button" id="used-reset">Start over</button>
 </div>
 </section>
@@ -45,7 +45,6 @@
 </fieldset>
 </main>
 <script>
-const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 // Saved data. lists: {id, name, text (the items, one per line), count (how many to pick), cycle (use everything once
 // before repeating), used (items picked this round), result (the last pick), locked (indexes of picks Roll leaves alone)}.
 // current is the id of the list on show, and wheel is whether Roll spins a wheel.
@@ -54,7 +53,7 @@ let state=Object.assign({lists:[],current:null,wheel:false},store.load('randomiz
 if(!state.lists.length)state.lists.push(blank('My list'));
 const save=()=>store.save('randomizer',state);
 const L=()=>state.lists.find(l=>l.id===state.current)||state.lists[0];
-const items=l=>l.text.split('\n').map(s=>s.trim()).filter(Boolean);
+const items=l=>splitLines(l.text);
 const unique=l=>[...new Set(items(l))];
 
 // What the next roll works with: the picks locked in place (null where a new pick goes) and the pool of items it can
@@ -84,7 +83,6 @@ function roll(){
 // Wheels: one per new pick, with a slice per item sized by how many times it's listed, so it matches the odds of a roll.
 // Each wheel shows what its pick can land on (a roll never picks the same item twice, so earlier picks leave later wheels).
 // When one stops, the other slices fade and the pick shows across the middle.
-const COLORS=['#ff8787','#74c0fc','#ffd43b','#b197fc','#ffa94d','#f783ac','#66d9e8','#d8b48a'];
 const WHEEL='<div class="wheel"><div class="w-spin"></div><svg class="w-pointer" viewBox="0 0 30 30" aria-hidden="true"><polygon points="3,3 27,3 15,27" fill="url(#w-grad)" stroke="#121212" stroke-width="2.5" stroke-linejoin="round"/></svg><p class="w-result"></p></div>';
 let spinning=false;
 const at=(deg,r)=>{const a=deg*Math.PI/180;return (r*Math.sin(a)).toFixed(2)+' '+(-r*Math.cos(a)).toFixed(2);};
@@ -92,11 +90,11 @@ const at=(deg,r)=>{const a=deg*Math.PI/180;return (r*Math.sin(a)).toFixed(2)+' '
 function wheelSVG(pool){
   const count={};pool.forEach(x=>count[x]=(count[x]||0)+1);
   const names=Object.keys(count);let a=0;
-  const slices=names.map((x,i)=>({item:x,from:a,to:a+=count[x]/pool.length*360,color:COLORS[i%COLORS.length]}));
+  const slices=names.map((x,i)=>({item:x,from:a,to:a+=count[x]/pool.length*360,color:PALETTE[i%PALETTE.length]}));
   // Keep the last slice from matching the first one it sits beside
   const last=slices[slices.length-1];
-  if(slices.length>2&&last.color===slices[0].color)last.color=COLORS.find(c=>c!==slices[0].color&&c!==slices[slices.length-2].color);
-  const svg='<svg viewBox="-104 -104 208 208" role="img" aria-label="'+(names.length?'A wheel of '+names.length+' item'+(names.length===1?'':'s'):'An empty wheel')+'">'+
+  if(slices.length>2&&last.color===slices[0].color)last.color=PALETTE.find(c=>c!==slices[0].color&&c!==slices[slices.length-2].color);
+  const svg='<svg viewBox="-104 -104 208 208" role="img" aria-label="'+(names.length?'A wheel of '+plural(names.length,'item'):'An empty wheel')+'">'+
     (slices.length<2?'<circle r="100" data-i="0" fill="'+(slices[0]?slices[0].color:'var(--tile)')+'"/>':slices.map((s,i)=>'<path data-i="'+i+'" d="M0 0L'+at(s.from,100)+'A100 100 0 '+(s.to-s.from>180?1:0)+' 1 '+at(s.to,100)+'Z" fill="'+s.color+'"/>').join(''))+
     slices.map((s,i)=>{
       // Text fits the slice's width, and the space between the hub and the rim (about 70 units, at ~0.6 per character)
@@ -153,15 +151,12 @@ function spin(){
   setTimeout(()=>{spinning=false;renderResults();},end);
 }
 
-const padlock=shackle=>'<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><path d="'+shackle+'"/><rect x="2.5" y="7" width="11" height="8" fill="currentColor" stroke="none"/></svg>';
-const LOCKED=padlock('M4.5 7V4.5a3.5 3.5 0 0 1 7 0V7'),UNLOCKED=padlock('M4.5 7V4.5a3.5 3.5 0 0 1 7 0');
-
 function renderResults(){
   const l=L(),all=items(l);
   $('results').innerHTML=l.result.length?l.result.map((r,i)=>{
     const locked=l.locked.includes(i),gone=!all.includes(r);
     return '<li class="result'+(locked?' locked':'')+'"><span class="r-pick"><b>'+esc(r)+'</b>'+(gone?' <span class="stale">not in the list, reroll</span>':'')+'</span>'+
-      '<span class="r-buttons"><button type="button" class="lock" data-i="'+i+'" aria-pressed="'+locked+'" aria-label="'+esc('Lock '+r)+'" title="'+(locked?'Unlock':'Lock')+'">'+(locked?LOCKED:UNLOCKED)+'</button></span></li>';
+      '<span class="r-buttons">'+lockButton('data-i="'+i+'"',r,locked)+'</span></li>';
   }).join(''):'<li class="result empty"><span class="r-pick"><span class="muted">'+(all.length?'Not rolled yet':'Add some items below')+'</span></span></li>';
   const u=unique(l),used=u.filter(x=>l.used.includes(x));
   $('used').hidden=!l.cycle||!used.length;
@@ -184,7 +179,7 @@ $('wheel-on').addEventListener('change',e=>{state.wheel=e.target.checked;save();
 $('results').addEventListener('click',e=>{
   const b=e.target.closest('.lock');if(!b)return;
   const l=L(),i=+b.dataset.i;
-  l.locked=l.locked.includes(i)?l.locked.filter(x=>x!==i):l.locked.concat(i);
+  l.locked=toggleIn(l.locked,i);
   save();renderResults();idle();
 });
 $('count').addEventListener('change',e=>{
@@ -222,14 +217,14 @@ function importLists(data){
     if(mine){
       const have=new Set(items(mine)),fresh=items(l).filter(x=>!have.has(x));
       if(!fresh.length)continue;
-      mine.text=mine.text.replace(/\n*$/,mine.text.trim()?'\n':'')+fresh.join('\n');
+      mine.text=appendLines(mine.text,fresh);
       lines+=fresh.length;
     }
     else{state.lists.push(Object.assign(blank(String(l.name||'Untitled')),{id:typeof l.id==='string'&&l.id?l.id:uid(),text:l.text,count:+l.count||1,cycle:!!l.cycle}));lists++;}
   }
   if(!lists&&!lines)return 'You already have everything in that file.';
   save();render();
-  return 'Imported '+[lists?lists+' list'+(lists===1?'':'s'):'',lines?lines+' line'+(lines===1?'':'s')+' into lists you have':''].filter(Boolean).join(' and ')+'.';
+  return 'Imported '+[lists?plural(lists,'list'):'',lines?plural(lines,'line')+' into lists you have':''].filter(Boolean).join(' and ')+'.';
 }
 backups({what:'lists',keys:['randomizer'],file:'randomizer-lists.json',merge:importLists});
 </script></body></html>

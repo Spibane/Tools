@@ -119,7 +119,7 @@ function render(){
   else pages=chunk(list);
   PAGES=pages;
   const nOwned=list.filter(isOwned).length;
-  $('count').textContent=list.length+' forms over '+pages.length+' page'+(pages.length===1?'':'s')+'. '+nOwned+' owned.';
+  $('count').textContent=list.length+' forms over '+plural(pages.length,'page')+'. '+nOwned+' owned.';
   $('nav').innerHTML=pages.map((_,i)=>'<a href="#page-'+(i+1)+'">'+(i+1)+'</a>').join(' ');
   let slot=0;
   $('pages').innerHTML=pages.map((p,pi)=>{
