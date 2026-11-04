@@ -284,5 +284,23 @@ body.full-open { overflow: hidden; }
 .site-footer img { width: 32px; height: 32px; }
 .site-footer .muted { margin: 0 0 0 auto; }
 .theme-toggle { padding: 3px 12px; }
+/* To the top (site.js): a square outlined button in the bottom corner, shown once the page is scrolled down */
+.to-top {
+  position: fixed;
+  right: calc(28px + env(safe-area-inset-right, 0px)); /* inside main's 18px side padding, so it never sticks out past the panels */
+  bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  font-size: 1.4rem;
+  line-height: 1;
+  background: var(--surface);
+  border-width: 3px;
+  transition: opacity 0.15s, visibility 0.15s;
+}
+.to-top:not(.shown) { opacity: 0; visibility: hidden; }
+body.full-open .to-top { display: none; }
+@media (prefers-reduced-motion: reduce) { .to-top { transition: none; } }
 /* Printing leaves out settings and buttons, keeping just the results */
-@media print { .site-footer, .back, .backs, .saves, fieldset, button.roll, .r-buttons, .rolls .toggle, .rolls .opts, .rolls .parts, .played button { display: none; } }
+@media print { .site-footer, .to-top, .back, .backs, .saves, fieldset, button.roll, .r-buttons, .rolls .toggle, .rolls .opts, .rolls .parts, .played button { display: none; } }
