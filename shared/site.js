@@ -243,5 +243,18 @@ function backups({ what, keys, file, renamed = {}, legacy, merge, title, intro, 
     system.addEventListener("change", label);
     label();
     document.body.append(footer);
+
+    // To the top: shows once the page is scrolled down a little
+    const top = document.createElement("button");
+    top.type = "button";
+    top.className = "to-top";
+    top.textContent = "↑";
+    top.setAttribute("aria-label", "To the top");
+    top.title = "To the top";
+    top.addEventListener("click", () => scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }));
+    const shown = () => top.classList.toggle("shown", scrollY > 200);
+    addEventListener("scroll", shown, { passive: true });
+    shown();
+    document.body.append(top);
   });
 })();
