@@ -19,6 +19,13 @@
 <nav class="backs"><a class="back" href="../../../">Back to All Tools</a><a class="back" href="../">Back to The Outlast Trials</a></nav>
 <h1>Loadout Randomizer</h1>
 <p class="intro">Rolls a rig, a tool, skill and medicine amp, and a trial.</p>
+<details class="settings"><summary><h2>Settings</h2></summary>
+<fieldset><legend>What can be rolled</legend>
+<p class="hint" id="count"></p>
+<div id="pools"></div>
+<div class="button-row"><button type="button" class="all">All</button> <button type="button" class="none">None</button></div>
+</fieldset>
+</details>
 <section class="rolls panel" aria-labelledby="rolls-h">
 <div class="roll-head"><h2 id="rolls-h">Your loadout</h2><button type="button" class="roll" id="roll">Roll loadout</button></div>
 <div class="parts" id="parts"></div>
@@ -30,11 +37,6 @@
 </div>
 <p class="hint" id="trial-note">Trials use the settings in the <a href="../randomizer/">Trial Randomizer</a>.</p>
 </section>
-<fieldset><legend>What can be rolled</legend>
-<p class="hint" id="count"></p>
-<div id="pools"></div>
-<div class="button-row"><button type="button" class="all">All</button> <button type="button" class="none">None</button></div>
-</fieldset>
 </main>
 <script>
 const CATS={rig:'Rigs',tool:'Tool amps',skill:'Skill amps',medicine:'Medicine amps'};

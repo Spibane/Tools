@@ -256,5 +256,12 @@ function backups({ what, keys, file, renamed = {}, legacy, merge, title, intro, 
     addEventListener("scroll", shown, { passive: true });
     shown();
     document.body.append(top);
+
+    // Settings sections start closed, then stay how you left them on each page
+    document.querySelectorAll("details.settings").forEach((d, i) => {
+      const key = `settings-open:${location.pathname}:${i}`;
+      d.open = store.get(key) === "1";
+      d.addEventListener("toggle", () => store.set(key, d.open ? "1" : "0"));
+    });
   });
 })();

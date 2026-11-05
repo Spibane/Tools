@@ -17,13 +17,7 @@
 <nav class="backs"><a class="back" href="../../../">Back to All Tools</a><a class="back" href="../">Back to Final Fantasy XIV</a></nav>
 <h1>Roulette Job Picker</h1>
 <p class="intro">Rolls a random job for each daily duty roulette.</p>
-<section class="rolls panel" aria-labelledby="rolls-h">
-<div class="roll-head"><h2 id="rolls-h">Your roulettes</h2><button type="button" class="roll" id="roll">Roll jobs</button></div>
-<p class="progress" id="progress"></p>
-<label class="toggle"><input type="checkbox" id="unique"> Different job for each roulette</label>
-<label class="toggle"><input type="checkbox" id="auto"> Roll again at the daily reset</label>
-<ol class="results stack" id="results" aria-live="polite"></ol>
-</section>
+<details class="settings" id="settings"><summary><h2>Settings</h2></summary>
 <fieldset><legend>Default jobs</legend>
 <p class="hint">Dashed jobs aren't out yet.</p>
 <div id="jobs"></div>
@@ -33,6 +27,14 @@
 <div class="roulettes" id="roulettes"></div>
 <div class="button-row"><button type="button" id="roulettes-all">Reset all</button></div>
 </fieldset>
+</details>
+<section class="rolls panel" aria-labelledby="rolls-h">
+<div class="roll-head"><h2 id="rolls-h">Your roulettes</h2><button type="button" class="roll" id="roll">Roll jobs</button></div>
+<p class="progress" id="progress"></p>
+<label class="toggle"><input type="checkbox" id="unique"> Different job for each roulette</label>
+<label class="toggle"><input type="checkbox" id="auto"> Roll again at the daily reset</label>
+<ol class="results stack" id="results" aria-live="polite"></ol>
+</section>
 </main>
 <script>
 const ROLES=[{id:'tank',name:'Tank'},{id:'healer',name:'Healer'},{id:'melee',name:'Melee'},{id:'ranged',name:'Ranged'},{id:'caster',name:'Caster'}];

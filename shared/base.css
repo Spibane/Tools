@@ -157,6 +157,15 @@ summary::-webkit-details-marker { display: none; }
 summary::before { content: "▸" / ""; font-size: 0.9em; width: 1em; flex: none; }
 details[open] > summary::before { content: "▾" / ""; }
 
+/* A tool's settings folded under one heading; site.js remembers if it's open */
+.settings { margin: 0 0 22px; }
+.settings > summary { display: flex; align-items: center; gap: 10px; padding: 4px 0 12px; }
+/* The arrow sits in a gradient box so it reads as something to press; it's drawn, not a text character, so it stays centred */
+.settings > summary::before { content: "" / ""; width: 1.4rem; height: 1.4rem; border: 2px solid var(--rim); background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M3 2 8 5 3 8z' fill='%23121212'/%3E%3C/svg%3E") center / 70% no-repeat, var(--brand); }
+.settings[open] > summary::before { content: "" / ""; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M2 3 8 3 5 8z' fill='%23121212'/%3E%3C/svg%3E") center / 70% no-repeat, var(--brand); }
+.settings > summary h2 { display: inline; }
+.settings > summary:hover h2 { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+
 /* A progress bar: set the inner span's width */
 .meter { display: inline-block; width: 80px; height: 10px; border: 2px solid var(--rim); background: var(--tile); }
 .meter span { display: block; height: 100%; background: var(--brand); }
@@ -303,4 +312,4 @@ body.full-open { overflow: hidden; }
 body.full-open .to-top { display: none; }
 @media (prefers-reduced-motion: reduce) { .to-top { transition: none; } }
 /* Printing leaves out settings and buttons, keeping just the results */
-@media print { .site-footer, .to-top, .back, .backs, .saves, fieldset, button.roll, .r-buttons, .rolls .toggle, .rolls .opts, .rolls .parts, .played button { display: none; } }
+@media print { .site-footer, .to-top, .back, .backs, .saves, .settings, fieldset, button.roll, .r-buttons, .rolls .toggle, .rolls .opts, .rolls .parts, .played button { display: none; } }

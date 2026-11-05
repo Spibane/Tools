@@ -2,6 +2,9 @@
 
 The site has no version numbers; changes are grouped by the day they were made.
 
+### 2026-11-05
+- Folded the settings on the game tools into a Settings section you can open and close, with its arrow in a small gradient box, which starts closed and remembers how you left it
+
 ### 2026-11-04
 - Aniimo Collection page headers no longer show "slots x–x of x", so the page buttons stay on one line, and the copy button keeps its width while it says "Copied"
 - Added a toggle to the FFXIV Roulette Job Picker that rolls every unlocked roulette again once the daily reset passes

@@ -17,6 +17,13 @@
 <nav class="backs"><a class="back" href="../../../">Back to All Tools</a><a class="back" href="../">Back to Marvel Rivals</a></nav>
 <h1>Hero Randomizer</h1>
 <p class="intro">Rolls a random Vanguard, Duelist and Strategist, plus one hero of any role.</p>
+<details class="settings"><summary><h2>Settings</h2></summary>
+<fieldset><legend>Strike team</legend>
+<p class="hint"><span id="team-count"></span> Deadpool is listed under each role.</p>
+<div id="heroes"></div>
+<div class="button-row"><button type="button" id="team-all">All</button> <button type="button" id="team-none">None</button></div>
+</fieldset>
+</details>
 <section class="rolls panel" aria-labelledby="rolls-h">
 <div class="roll-head"><h2 id="rolls-h">Your heroes</h2><button type="button" class="roll" id="roll">Roll heroes</button></div>
 <label class="toggle"><input type="checkbox" id="use-team"> Roll only from my strike team</label>
@@ -28,11 +35,6 @@
 <button type="button" id="played-reset">Reset played</button>
 </div>
 </section>
-<fieldset><legend>Strike team</legend>
-<p class="hint"><span id="team-count"></span> Deadpool is listed under each role.</p>
-<div id="heroes"></div>
-<div class="button-row"><button type="button" id="team-all">All</button> <button type="button" id="team-none">None</button></div>
-</fieldset>
 </main>
 <script>
 const ROLES=[{id:'vanguard',name:'Vanguard'},{id:'duelist',name:'Duelist'},{id:'strategist',name:'Strategist'}];
