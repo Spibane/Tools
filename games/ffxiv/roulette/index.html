@@ -21,6 +21,7 @@
 <div class="roll-head"><h2 id="rolls-h">Your roulettes</h2><button type="button" class="roll" id="roll">Roll jobs</button></div>
 <p class="progress" id="progress"></p>
 <label class="toggle"><input type="checkbox" id="unique"> Different job for each roulette</label>
+<label class="toggle"><input type="checkbox" id="auto"> Roll again at the daily reset</label>
 <ol class="results stack" id="results" aria-live="polite"></ol>
 </section>
 <fieldset><legend>Default jobs</legend>
@@ -55,8 +56,9 @@ const job=id=>JOBS.find(j=>j.id===id);
 // Settings: offJobs = default jobs you won't be given; offRoulettes = roulettes left out;
 // custom = roulettes with their own picks, {on, offRoles, offJobs}, kept while custom is off so ticking it again brings them back;
 // unique = spread jobs out; result = the last roll; seen = upcoming jobs already turned off, so ticking one later sticks;
-// done = when each roulette was marked done, which counts until the next daily reset; locked = roulettes Roll jobs leaves alone
-let state={offJobs:[],offRoulettes:[],custom:{},unique:true,result:{},seen:[],done:{},locked:[]};
+// done = when each roulette was marked done, which counts until the next daily reset; locked = roulettes Roll jobs leaves alone;
+// auto = roll again at each daily reset; rolledAt = when Roll jobs last ran, by hand or at a reset
+let state={offJobs:[],offRoulettes:[],custom:{},unique:true,result:{},seen:[],done:{},locked:[],auto:false,rolledAt:0};
 state=Object.assign(state,store.load('roulette'));
 // Older saves kept roles turned off per roulette (offRoles); those roulettes become custom with the default jobs.
 // DPS used to be one role, so a roulette with it turned off keeps all three DPS roles off.
@@ -166,16 +168,21 @@ function renderRoulettes(){
 function render(){
   const focus=document.activeElement&&document.activeElement.id;
   $('unique').checked=state.unique;
+  $('auto').checked=state.auto;
   renderJobs();renderRoulettes();renderResults();
   if(focus&&$(focus))$(focus).focus();
 }
 
 // Roulettes you've already done today, or locked, keep the job they have
-$('roll').addEventListener('click',()=>{
+function rollAll(){
   const ids=active().filter(r=>!isDone(r.id)&&!state.locked.includes(r.id)).map(r=>r.id);
   ids.forEach(id=>delete state.result[id]);
+  state.rolledAt=Date.now();
   roll(ids);
-});
+}
+$('roll').addEventListener('click',rollAll);
+// With auto on, the first look after a reset rolls, whether the page was open or not
+const autoRoll=()=>{if(state.auto&&state.rolledAt<lastReset())rollAll();};
 $('results').addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
   const id=b.dataset.r;
@@ -189,8 +196,10 @@ $('results').addEventListener('click',e=>{
   }
 });
 // Keeps the countdown current, and clears the done marks once the daily reset passes
-setInterval(()=>{if(lastReset()!==shownReset)renderResults();else $('progress').textContent=progressText();},30000);
+setInterval(()=>{if(lastReset()!==shownReset){renderResults();autoRoll();}else $('progress').textContent=progressText();},30000);
 $('unique').addEventListener('change',e=>{state.unique=e.target.checked;save();});
+// Turning it on starts from the next reset, so today's jobs stay as they are
+$('auto').addEventListener('change',e=>{state.auto=e.target.checked;if(state.auto)state.rolledAt=Date.now();save();});
 $('jobs').addEventListener('change',()=>{
   state.offJobs=[...$('jobs').querySelectorAll('input:not(:checked)')].map(el=>el.value);
   save();render();
@@ -219,5 +228,6 @@ $('roulettes-all').addEventListener('click',()=>{
 });
 
 render();
+autoRoll();
 backups({what:'roulette settings',keys:['roulette'],file:'ffxiv-roulette-settings.json'});
 </script></body></html>

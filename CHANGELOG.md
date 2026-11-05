@@ -4,6 +4,7 @@ The site has no version numbers; changes are grouped by the day they were made.
 
 ### 2026-11-04
 - Aniimo Collection page headers no longer show "slots x–x of x", so the page buttons stay on one line, and the copy button keeps its width while it says "Copied"
+- Added a toggle to the FFXIV Roulette Job Picker that rolls every unlocked roulette again once the daily reset passes
 
 ### 2026-11-03
 - Added a "To the top" button to every page, in the bottom corner once you've scrolled down a little
