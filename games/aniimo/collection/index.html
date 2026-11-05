@@ -123,7 +123,7 @@ function render(){
   $('nav').innerHTML=pages.map((_,i)=>'<a href="#page-'+(i+1)+'">'+(i+1)+'</a>').join(' ');
   let slot=0;
   $('pages').innerHTML=pages.map((p,pi)=>{
-    const first=slot+1;slot+=p.length;const last=slot;let k=0;
+    const first=slot+1;slot+=p.length;let k=0;
     const cats=[...new Set(p.map(f=>CATS[f._c]))].join(', ');
     const rows=ROWS.map(r=>{let c='';for(let j=0;j<r;j++,k++){
       const f=p[k];
@@ -135,7 +135,7 @@ function render(){
       c+='<li class="'+cls+'" title="'+esc(lbl)+'"'+(shared?'':' role="checkbox" tabindex="0" aria-checked="'+own+'" data-key="'+esc(tileKey(f))+'"')+'><div><span class="n">'+esc(f.n)+'</span><span class="nm'+(f.names?' multi':'')+'">'+(f.names?f.names.map(esc).join('<br>'):esc(f.name))+'</span>'+(formLabel(f)?'<span class="f">'+esc(formLabel(f))+'</span>':'')+(own?'<span class="ok" aria-hidden="true">✓</span>':'')+'</div></li>';
     }return '<ul class="row">'+c+'</ul>';}).join('');
     const text=p.map((f,i)=>(i+first)+'. '+f.n+' '+f.name+(f.form==='Base'?'':' ('+f.form+' Form)')+(f.gender?' '+f.gender:'')+(f.oneTime?' [one-time]':'')).join('\n');
-    return '<section class="page panel" id="page-'+(pi+1)+'" aria-labelledby="h'+(pi+1)+'"><header><h2 id="h'+(pi+1)+'">Page '+(pi+1)+'</h2><p>'+esc(cats)+', slots '+first+'–'+last+' of '+list.length+'</p><span class="page-btns">'+(shared?'':'<button type="button" class="mark" data-page="'+pi+'" data-on="1">Select all</button><button type="button" class="mark" data-page="'+pi+'">Clear all</button>')+'<button type="button" class="copy" data-text="'+esc(text)+'">Copy as text</button></span></header><div class="comb">'+rows+'</div></section>';
+    return '<section class="page panel" id="page-'+(pi+1)+'" aria-labelledby="h'+(pi+1)+'"><header><h2 id="h'+(pi+1)+'">Page '+(pi+1)+'</h2><p>'+esc(cats)+'</p><span class="page-btns">'+(shared?'':'<button type="button" class="mark" data-page="'+pi+'" data-on="1">Select all</button><button type="button" class="mark" data-page="'+pi+'">Clear all</button>')+'<button type="button" class="copy" data-text="'+esc(text)+'">Copy as text</button></span></header><div class="comb">'+rows+'</div></section>';
   }).join('');
 }
 // Options are saved under aniimo-collection.<option>. Older versions saved them as opt-<option>, which move over on load.
@@ -165,7 +165,7 @@ $('pages').addEventListener('click',async e=>{
     PAGES[m.dataset.page].forEach(f=>{if(m.dataset.on)owned[tileKey(f)]=true;else delete owned[tileKey(f)];});
     store.save(OWN_KEY,owned);render();return;
   }
-  const b=e.target.closest('.copy');if(!b)return;const t=b.dataset.text,old=b.textContent;
+  const b=e.target.closest('.copy');if(!b)return;const t=b.dataset.text,old=b.textContent;b.style.minWidth=b.offsetWidth+'px';
   try{await navigator.clipboard.writeText(t);b.textContent='Copied';}
   catch(_){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');b.textContent='Copied';}catch(__){b.textContent='Copy failed';}a.remove();}
   setTimeout(()=>b.textContent=old,1600);
