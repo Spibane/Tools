@@ -5,6 +5,11 @@
 #groups{display:grid;gap:14px}
 .group{background:var(--surface);border:3px solid var(--rim)}
 .group::before{content:"";display:block;height:6px;background:var(--brand)}
+/* A group with its own color (--c1, --c2 and --c-ink from colorVars in site.js) uses it wherever the site gradient would be */
+.group.colored::before,.group.colored .g-count.all,.group.colored .mark[aria-pressed="true"]{background:linear-gradient(90deg,var(--c1),var(--c2))}
+.group.colored .g-count.all,.group.colored .mark[aria-pressed="true"]{color:var(--c-ink)}
+.group.colored .mark[aria-pressed="true"]:hover{background:var(--tile);color:var(--ink)}
+.group.colored .item.done::before{background:linear-gradient(var(--c1),var(--c2))}
 .group>summary{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px;padding:8px 12px}
 .group>summary:hover .g-name{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
 .g-name{font-weight:700;font-size:1.25rem;flex:1 1 8em}
@@ -40,14 +45,11 @@
 .ended .item{background:var(--surface)}
 .ended .i-name{color:var(--muted)}
 
-/* The add and edit form */
-#dialog{width:min(520px,calc(100% - 32px));max-height:calc(100% - 32px);background:var(--surface);color:var(--ink);border:3px solid var(--rim);padding:0 16px 16px}
-#dialog::before{content:"";display:block;height:6px;margin:0 -16px 14px;background:var(--brand)}
-#dialog::backdrop{background:rgb(0 0 0 / .55)}
+/* The add and edit form, in a dialog styled by shared/base.css */
 #form h2{margin-bottom:12px}
 .f-row{display:grid;gap:4px;margin-bottom:10px;font-weight:600}
 .f-pair{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
-#form input,#form select,#form textarea{width:100%;font:inherit;font-weight:400;color:var(--ink);background:var(--tile);border:2px solid var(--rim);padding:5px 8px}
+#form :is(input:not(.color-field input),select,textarea){width:100%;font:inherit;font-weight:400;color:var(--ink);background:var(--tile);border:2px solid var(--rim);padding:5px 8px}
 #form textarea{resize:vertical}
 /* Reset fields show only for the kinds of reset that use them */
 .if-week,.if-month,.if-repeat{display:none}
@@ -55,8 +57,6 @@
 #form:not([data-every="none"]) .if-repeat{display:grid}
 #preview{font-weight:600}
 .f-buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
-.f-buttons .primary{background:var(--brand);color:#121212;border-color:#121212}
-.f-buttons .primary:hover{background:var(--tile);color:var(--ink);border-color:var(--rim)}
 .f-buttons .delete{margin-left:auto}
 
 @media (max-width:560px){

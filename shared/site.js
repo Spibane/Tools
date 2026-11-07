@@ -24,6 +24,82 @@ const appendLines = (text, lines) => text.replace(/\n*$/, text.trim() ? "\n" : "
 const toggleIn = (list, x, on = !list.includes(x)) => list.filter(y => y !== x).concat(on ? [x] : []);
 // Light colors that sit behind black text on both themes, for wheel slices and player colors
 const PALETTE = ["#ff8787", "#74c0fc", "#ffd43b", "#b197fc", "#ffa94d", "#f783ac", "#66d9e8", "#d8b48a"];
+const PALETTE_NAMES = ["Red", "Blue", "Yellow", "Purple", "Orange", "Pink", "Cyan", "Tan"];
+
+// Colors people pick are kept as "#rrggbb". hexColor tidies a typed one ("4FA", "#4fa3ff"), or gives null when it isn't one.
+const hexColor = s => {
+  let h = String(s ?? "").trim().replace(/^#/, "").toLowerCase();
+  if (/^[0-9a-f]{3}$/.test(h)) h = h.replace(/./g, "$&$&");
+  return /^[0-9a-f]{6}$/.test(h) ? "#" + h : null;
+};
+const rgbOf = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+const luminance = hex => {
+  const [r, g, b] = rgbOf(hex).map(v => (v /= 255) <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+// Black or white text, whichever reads better on every color given
+const inkOn = (...hexes) => {
+  const ls = hexes.map(luminance);
+  const black = Math.min(...ls.map(l => (l + 0.05) / 0.0563)), white = Math.min(...ls.map(l => 1.05 / (l + 0.05)));
+  return black >= white ? "#121212" : "#ffffff";
+};
+// The color with its hue turned by deg, keeping how bright and strong it is
+function turnHue(hex, deg) {
+  const [r, g, b] = rgbOf(hex).map(v => v / 255), max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, d = max - min;
+  if (!d) return hex;
+  const s = d / (1 - Math.abs(2 * l - 1));
+  let h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  h = ((h * 60 + deg) % 360 + 360) % 360;
+  const c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = l - c / 2;
+  const [r2, g2, b2] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+  return "#" + [r2, g2, b2].map(v => Math.round((v + m) * 255).toString(16).padStart(2, "0")).join("");
+}
+// A gradient like the site's lime to mint, from any color, as CSS variables for a style attribute:
+// --c1 and --c2 are its ends (the hue turned a little further round) and --c-ink the text color that reads on it
+const colorVars = hex => { const b = turnHue(hex, 40); return `--c1:${hex};--c2:${b};--c-ink:${inkOn(hex, b)}`; };
+
+// A color choice for a form: the palette as swatches, then Custom with the browser's picker and a hex box.
+// none names a first option for no color of its own (the site's gradient); leave it out to always need a color.
+function colorField(name, value, { label = "Color", none = "" } = {}) {
+  const v = hexColor(value), custom = v && !PALETTE.includes(v), start = v || PALETTE[0];
+  const sw = (val, title, bg, on, cls = "") =>
+    `<label class="sw${cls}" title="${title}"><input type="radio" name="${name}" value="${val}"${on ? " checked" : ""} aria-label="${title}"><span style="background:${bg}"></span></label>`;
+  return `<fieldset class="color-field"><legend>${esc(label)}</legend><div class="swatches">` +
+    (none ? sw("", esc(none), "var(--brand)", !v) : "") +
+    PALETTE.map((c, i) => sw(c, PALETTE_NAMES[i], c, v === c)).join("") +
+    sw("custom", "Custom", "conic-gradient(#ff8787,#ffd43b,#8ce99a,#66d9e8,#74c0fc,#b197fc,#f783ac,#ff8787)", custom || (!v && !none), " sw-custom") +
+    `</div><div class="custom-row"><input type="color" value="${start}" aria-label="Pick a custom color">` +
+    `<input type="text" class="hex" value="${start}" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Hex color" pattern="#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})" title="A hex color, like #4fa3ff"></div></fieldset>`;
+}
+// What a color field is set to: "#rrggbb", or "" for its no-color option
+const colorFieldValue = field => {
+  const on = field.querySelector("input[type=radio]:checked");
+  return !on ? "" : on.value === "custom" ? hexColor(field.querySelector(".hex").value) || field.querySelector("input[type=color]").value : on.value;
+};
+// Keeps a color field's picker, hex box and Custom swatch in step: picking or typing a color chooses Custom,
+// and choosing a swatch puts its color in the custom boxes so you can adjust from there
+document.addEventListener("input", e => {
+  const f = e.target.closest && e.target.closest(".color-field");
+  if (!f) return;
+  const pick = f.querySelector("input[type=color]"), hex = f.querySelector(".hex"), custom = f.querySelector(".sw-custom input");
+  if (e.target === pick) { hex.value = pick.value; custom.checked = true; }
+  else if (e.target === hex) { const h = hexColor(hex.value); if (h) { pick.value = h; custom.checked = true; } }
+  else if (e.target.type === "radio" && hexColor(e.target.value)) pick.value = hex.value = e.target.value;
+});
+// Asks for a color in a small dialog. Resolves with "#rrggbb", or null when cancelled.
+function pickColor(value, label) {
+  return new Promise(done => {
+    const d = document.createElement("dialog");
+    d.className = "color-dialog";
+    d.innerHTML = `<form method="dialog">${colorField("color", value, { label })}` +
+      `<div class="button-row"><button value="ok" class="primary">Done</button><button value="" formnovalidate>Cancel</button></div></form>`;
+    d.addEventListener("close", () => { done(d.returnValue === "ok" ? colorFieldValue(d.querySelector(".color-field")) : null); d.remove(); });
+    document.body.append(d);
+    d.showModal();
+    // Start on the color it has now, not the first swatch
+    d.querySelector("input[type=radio]:checked")?.focus();
+  });
+}
 
 // A lock button for a randomizer's result row: an open padlock, or a closed one when locked.
 // attrs is the data attribute that says which row it's on, like 'data-s="rig"'.
@@ -256,5 +332,12 @@ function backups({ what, keys, file, renamed = {}, legacy, merge, title, intro, 
     addEventListener("scroll", shown, { passive: true });
     shown();
     document.body.append(top);
+
+    // Settings sections start closed, then stay how you left them on each page
+    document.querySelectorAll("details.settings").forEach((d, i) => {
+      const key = `settings-open:${location.pathname}:${i}`;
+      d.open = store.get(key) === "1";
+      d.addEventListener("toggle", () => store.set(key, d.open ? "1" : "0"));
+    });
   });
 })();
