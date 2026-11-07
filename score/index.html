@@ -56,22 +56,23 @@
 </main>
 <script>
 const STEPS=[1,2,5,10,25,50,100];
-// Saved data. players: {id, name, score, time (ms on their clock), color (an index into PALETTE, the player colors)}. start: the score players start at. step: what - and + change.
+// Saved data. players: {id, name, score, time (ms on their clock), color ('#rrggbb')}. start: the score players start at. step: what - and + change.
 // history: newest first, {id (player), delta, to (the score after), at (ms timestamp)}; quick taps on one player merge.
 // timer: {mode ('off', 'turn' or 'shared'), minutes (counts down from this, or null to count up), running, since (ms timestamp
 // the clock last started), used (ms on the shared clock), turn (whose clock runs in 'turn' mode), done (clocks that ran out)}.
 let state=Object.assign({players:[],start:0,step:1,history:[],timer:{}},store.load('score'));
 state.timer=Object.assign({mode:'off',minutes:null,running:false,since:0,used:0,turn:null,done:[]},state.timer);
-if(!state.players.length)state.players=[1,2].map(i=>({id:uid(),name:'Player '+i,score:0,time:0,color:i-1}));
-state.players.forEach((p,i)=>{if(!(p.color in PALETTE))p.color=i%PALETTE.length;});
+if(!state.players.length)state.players=[1,2].map(i=>({id:uid(),name:'Player '+i,score:0,time:0,color:PALETTE[i-1]}));
+// Colors used to be a place in PALETTE
+state.players.forEach((p,i)=>{p.color=typeof p.color==='number'&&PALETTE[p.color]||hexColor(p.color)||PALETTE[i%PALETTE.length];});
 const save=()=>store.save('score',state);
 const T=state.timer;
 const byId=id=>state.players.find(p=>p.id===id);
 const nm=p=>p?p.name||'Unnamed':'Removed';
 const num=x=>Math.round(x*100)/100;
-const hue=p=>p?'--pc:'+PALETTE[p.color]:'';
+const hue=p=>p?'--pc:'+p.color+';--pc-ink:'+inkOn(p.color):'';
 // The first color nobody has yet, or the least used one
-const freeColor=()=>{const n=PALETTE.map((_,i)=>state.players.filter(p=>p.color===i).length);return n.indexOf(Math.min(...n));};
+const freeColor=()=>{const n=PALETTE.map(c=>state.players.filter(p=>p.color===c).length);return PALETTE[n.indexOf(Math.min(...n))];};
 
 // Scores
 function change(p,d,set){
@@ -224,8 +225,14 @@ $('players').addEventListener('input',e=>{
 $('players').addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');if(!b)return;
   const id=b.closest('li').dataset.id,i=state.players.findIndex(p=>p.id===id),a=b.dataset.act;
-  if(a==='color')state.players[i].color=(state.players[i].color+1)%PALETTE.length;
-  else if(a==='del'){if(!confirm('Remove '+nm(state.players[i])+'?'))return;bank();state.players.splice(i,1);}
+  if(a==='color'){
+    const p=state.players[i];
+    return pickColor(p.color,nm(p)+'’s color').then(c=>{
+      if(c){p.color=c;save();render();renderPlayers();}
+      $('players').querySelector('[data-id="'+id+'"] [data-act="color"]').focus();
+    });
+  }
+  if(a==='del'){if(!confirm('Remove '+nm(state.players[i])+'?'))return;bank();state.players.splice(i,1);}
   else{const j=i+(a==='up'?-1:1);[state.players[i],state.players[j]]=[state.players[j],state.players[i]];}
   save();render();renderPlayers();
   const again=$('players').querySelector('[data-id="'+id+'"] [data-act="'+a+'"]');

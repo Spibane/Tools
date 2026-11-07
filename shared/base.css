@@ -114,6 +114,31 @@ button:disabled:hover { background: var(--tile); color: var(--ink); border-color
 /* A button that stays filled while it's pressed, like Done */
 .mark[aria-pressed="true"] { background: var(--brand); color: #121212; border-color: #121212; }
 .mark[aria-pressed="true"]:hover { background: var(--tile); color: var(--ink); border-color: var(--rim); }
+/* The main button of a form, like Save */
+button.primary { background: var(--brand); color: #121212; border-color: #121212; }
+button.primary:hover { background: var(--tile); color: var(--ink); border-color: var(--rim); }
+
+/* Dialogs: a panel over a dimmed page */
+dialog { width: min(520px, calc(100% - 32px)); max-height: calc(100% - 32px); background: var(--surface); color: var(--ink); border: 3px solid var(--rim); padding: 0 16px 16px; }
+dialog::before { content: ""; display: block; height: 6px; margin: 0 -16px 14px; background: var(--brand); }
+dialog::backdrop { background: rgb(0 0 0 / 0.55); }
+.color-dialog { width: min(460px, calc(100% - 32px)); }
+.color-dialog .button-row { display: flex; gap: 8px; margin-top: 14px; }
+
+/* A color choice (colorField in site.js): palette swatches as radio buttons, then Custom with a picker and a hex box */
+.color-field { padding: 0; margin: 0 0 10px; }
+.color-field::before { content: none; }
+.color-field legend { font-weight: 600; margin-bottom: 6px; }
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.sw { position: relative; display: block; cursor: pointer; }
+.sw input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.sw span { display: grid; place-items: center; width: 34px; height: 34px; border: 2px solid var(--rim); }
+.sw input:checked + span { outline: 3px solid var(--ink); outline-offset: 2px; }
+.sw input:checked + span::after { content: "✓" / ""; font-weight: 700; color: #121212; }
+.sw input:focus-visible + span { outline: 3px dashed var(--focus); outline-offset: 4px; }
+.custom-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.custom-row input[type="color"] { width: 44px; height: 34px; padding: 2px; border: 2px solid var(--rim); background: var(--tile); cursor: pointer; }
+.custom-row .hex { width: 7.5em; font-family: ui-monospace, monospace; }
 
 /* Text boxes and dropdowns. :where keeps these easy for a page to override. */
 :where(input[type="text"], input[type="number"], input[type="search"], select, textarea) {

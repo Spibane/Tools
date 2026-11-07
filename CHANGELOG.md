@@ -2,6 +2,10 @@
 
 The site has no version numbers; changes are grouped by the day they were made.
 
+### 2026-11-06
+- Task and event groups can have a color of their own, shown as a gradient like the site's
+- Picking a color, for groups and Score players, now offers the palette plus a custom color picker and hex box
+
 ### 2026-11-05
 - Folded the settings on the game tools into a Settings section you can open and close, with its arrow in a small gradient box, which starts closed and remembers how you left it
 

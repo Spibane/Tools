@@ -26,7 +26,7 @@ const LOCAL_TZ=(()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone
 const ZONES=(()=>{let z=[];try{z=Intl.supportedValuesOf('timeZone');}catch(_){}return [...new Set(['UTC',LOCAL_TZ,...z])];})();
 const WEEKDAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
-// Saved data. groups: {id, name, open, kind, items}. kind is 'tasks' or 'events'.
+// Saved data. groups: {id, name, open, kind, color, items}. kind is 'tasks' or 'events'; color is '#rrggbb', or empty for the site's colors.
 // Task groups also have rule, when the group resets:
 // {every: 'day'|'week'|'month', time: 'HH:MM', weekday: 0-6 (Sunday first), day: 1-31, tz: a time zone name}.
 // The time is kept with its zone, so a reset at your midnight stays at your midnight when the clocks change.
@@ -151,7 +151,7 @@ function eventGroup(g,now){
     '<div class="g-buttons"><button type="button" data-act="add-item" id="add-'+g.id+'">Add an event</button>';
 }
 function renderGroups(now){
-  $('groups').innerHTML=state.groups.map(g=>'<details class="group" data-g="'+g.id+'"'+(g.open?' open':'')+'><summary id="sum-'+g.id+'">'+
+  $('groups').innerHTML=state.groups.map(g=>'<details class="group'+(hexColor(g.color)?' colored" style="'+colorVars(hexColor(g.color)):'')+'" data-g="'+g.id+'"'+(g.open?' open':'')+'><summary id="sum-'+g.id+'">'+
     (g.kind==='events'?eventGroup(g,now):taskGroup(g,now))+
     '<button type="button" data-act="edit-group" id="edit-'+g.id+'">Edit group</button></div></details>').join('');
 }
@@ -252,6 +252,7 @@ function openForm(kind,obj,opener){
     const r=obj.rule||{every:'day',time:'00:00',weekday:1,day:1,tz:LOCAL_TZ},events=obj.kind==='events';
     h='<h2 id="form-h">'+(isNew?events?'Add an event group':'Add a group':'Edit group')+'</h2>'+
       row('Name','<input name="name" required maxlength="80" value="'+v('name')+'">')+
+      colorField('color',obj.color,{none:'Site colors'})+
       (events?'':ruleFields(r,[['day','Every day'],['week','Every week'],['month','Every month']],'At')+
       row('Time zone','<select name="tz">'+zoneOpts(r.tz)+'</select>'));
   }else if(kind==='task'){
@@ -309,6 +310,7 @@ $('form').addEventListener('submit',e=>{
   if(kind==='group'){
     const g=isNew?Object.assign({id:uid(),open:true,items:[]},obj):obj;
     g.name=d.name.trim();
+    g.color=colorFieldValue(e.target.querySelector('.color-field'));
     if(g.kind==='tasks')g.rule=ruleFrom(d);
     if(isNew){state.groups.push(g);focus='add-'+g.id;}
   }else{
