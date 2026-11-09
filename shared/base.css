@@ -33,7 +33,8 @@
   /* Page widths: prose for tool pages, a grid for hubs. */
   --measure: 760px;
   --wide: 1100px;
-  --read: 52ch;   /* long copy only: the intro and the privacy notes */
+  --read: 52ch;   /* long copy only: the privacy notes. Chakra Petch tires at a
+                     wide measure; 400 weight and more leading read cleanly. */
   /* Motion: short and quick off the mark, so it still feels mechanical rather than
      soft, but continuous. Stepping it looked like a repaint bug, not a decision. */
   --motion: 140ms cubic-bezier(0.2, 0.8, 0.3, 1);
@@ -264,10 +265,12 @@ dialog::backdrop { background: rgb(0 0 0 / 0.55); }
 .opts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin-bottom: 12px; }
 .opts .toggle { margin: 0; }
 
-/* Tool pages: the intro under the title, and option groups with a gradient bar down the side */
-/* Long copy is the one place Chakra Petch gets tiring, and it is the measure doing it,
-   not the face: a narrower column at 400 weight with more leading reads cleanly. */
-.intro { color: var(--muted); max-width: var(--read); font-weight: 400; line-height: 1.65; }
+/* Tool pages: option groups with a bar down the side, under a title that now
+   carries the description on its own. */
+/* The one-line description under a title. Hidden: the heading and the panel
+   under it already say what the tool is. It stays in the markup because it is
+   also the page's <meta name="description">, and is one line from coming back. */
+.intro { display: none; }
 fieldset { position: relative; border: 0; padding: 4px 0 4px 18px; margin: 0 0 18px; }
 fieldset::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--rim); }
 legend { font-weight: 700; padding: 0; margin-bottom: 4px; }
@@ -335,9 +338,6 @@ button.roll:hover { filter: brightness(1.08); }
 .pill.is-played { text-decoration: line-through; }
 /* .results.stack: on phones, each row's buttons go under the pick and share the width */
 @media (max-width: 560px) {
-  /* The one-line description under the title: on a phone it costs a screenful of
-     the tool itself, and every page's panel says the same thing in its own words. */
-  .intro { display: none; }
   .results.stack .result { grid-template-columns: 1fr; }
   .results.stack .r-buttons { justify-content: flex-start; margin-top: 4px; }
   .results.stack .r-buttons button { flex: 1 1 auto; }
