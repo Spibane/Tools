@@ -25,14 +25,19 @@
 </section>
 <fieldset>
 <legend>Players</legend>
+<label class="field"><span class="hint" id="need"></span>
+<textarea id="names" rows="10" spellcheck="false"></textarea></label>
+<button type="button" class="roll" id="make">New bracket</button>
+</fieldset>
+<details class="settings"><summary><h2>Settings</h2></summary>
+<fieldset>
+<legend>Bracket</legend>
 <div class="opts">
 <label class="format">Format <select id="format"><option value="single">Single elimination</option><option value="double">Double elimination</option><option value="robin">Round robin</option></select></label>
 <label class="toggle"><input type="checkbox" id="shuffle"> Shuffle the order</label>
 </div>
-<label class="field">Players <span class="hint" id="need"></span>
-<textarea id="names" rows="10" spellcheck="false"></textarea></label>
-<button type="button" class="roll" id="make">New bracket</button>
 </fieldset>
+</details>
 </main>
 <script>
 const BYE=-1;
@@ -162,6 +167,7 @@ function render(){
   $('make').disabled=have.length<2||have.length>limit;
   $('b-h').textContent=b?FORMATS[b.format]:'Brackets';
   $('clear').hidden=!b||!Object.keys(state.results).length;
+  $('panel').classList.toggle('empty',!b);
   if(!b){$('view').innerHTML='';$('status').innerHTML='<p class="muted">Add players below, then press New bracket.</p>';return;}
   const out=b.format==='robin'?renderRobin(b):renderElim(b);
   save();

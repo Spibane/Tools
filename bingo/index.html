@@ -26,14 +26,19 @@
 <fieldset>
 <legend>Card</legend>
 <label class="field">Title <input type="text" id="title" autocomplete="off"></label>
-<div class="opts">
-<label class="size">Size <select id="size"><option value="3">3 × 3</option><option value="4">4 × 4</option><option value="5">5 × 5</option></select></label>
-<label class="toggle"><input type="checkbox" id="free"> Free middle square</label>
-</div>
 <label class="field">Squares <span class="hint" id="need"></span>
 <textarea id="entries" rows="12" spellcheck="false"></textarea></label>
 <div class="share-row"><button type="button" id="share">Copy share link</button><span class="muted" id="share-msg" aria-live="polite"></span></div>
 </fieldset>
+<details class="settings"><summary><h2>Settings</h2></summary>
+<fieldset>
+<legend>Card</legend>
+<div class="opts">
+<label class="size">Size <select id="size"><option value="3">3 × 3</option><option value="4">4 × 4</option><option value="5">5 × 5</option></select></label>
+<label class="toggle"><input type="checkbox" id="free"> Free middle square</label>
+</div>
+</fieldset>
+</details>
 </main>
 <script>
 // Saved data: title, entries (one per line), size (3-5), free (a free middle square on odd sizes),
