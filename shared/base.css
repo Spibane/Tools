@@ -109,15 +109,15 @@ a { color: var(--ink); text-decoration-thickness: 2px; text-underline-offset: 3p
 @supports (corner-shape: bevel) {
   :where(button, .button, .back, .pill, .sw span, .meter, .to-top, .result,
          input[type="text"], input[type="number"], input[type="search"], select, textarea,
-         .panel, dialog, .warn, .link-list a) {
+         .panel, dialog, .warn, .link-list a, .crumbs, .switcher) {
     corner-shape: bevel;
   }
   :where(.pill, .sw span, .meter, .result,
          input[type="text"], input[type="number"], input[type="search"], select, textarea) {
     border-radius: var(--cut-s) 0 var(--cut-s) 0;
   }
-  :where(button, .button, .back, .to-top, .link-list a) { border-radius: var(--cut-m) 0 var(--cut-m) 0; }
-  :where(.panel, dialog, .warn) { border-radius: var(--cut-l) 0 var(--cut-l) 0; }
+  :where(button, .button, .back, .to-top, .link-list a, .crumbs) { border-radius: var(--cut-m) 0 var(--cut-m) 0; }
+  :where(.panel, dialog, .warn, .switcher) { border-radius: var(--cut-l) 0 var(--cut-l) 0; }
   /* Hovering a tile opens its cut. The geometry is the hover state — no new colour,
      no new element, and it reads the same in light and dark. */
   .link-list a:hover, .link-list a:focus-visible { border-radius: 22px 0 22px 0; }
@@ -152,6 +152,42 @@ button:active, .button:active, .back:active { transform: translate(1px, 1px); }
 .back:hover { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .backs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
 .backs .back { margin-bottom: 0; }
+
+/* Breadcrumb bar (built by site.js): where you are, and a switcher for every other
+   tool. It replaces the .back links, which stay in the markup for when JS is off. */
+.crumbs {
+  position: relative;
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 18px; padding: 7px 8px 7px 10px;
+  background: var(--surface); border: var(--rim-2) solid var(--rim);
+}
+.crumbs .mark { flex: none; width: 22px; height: 22px; }
+.crumbs ol {
+  flex: 1 1 auto; min-width: 0; margin: 0; padding: 0; list-style: none;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  font-weight: 600; font-size: 0.95rem;
+}
+.crumbs > ol li + li::before { content: "/" / ""; color: var(--muted); margin-right: 6px; }
+.crumbs a { color: var(--muted); text-decoration: none; }
+.crumbs a:hover, .crumbs a:focus-visible { color: var(--ink); text-decoration: underline; }
+.crumbs [aria-current="page"] { color: var(--ink); font-weight: 700; }
+.crumbs .switch { flex: none; }
+.crumbs .switch::after { content: " \25BE" / ""; }
+/* The switcher, open: the hub's groups, with the page you are on named but not linked */
+.switcher {
+  position: absolute; z-index: 40; top: calc(100% + 6px); right: -2px; left: -2px;
+  background: var(--surface); border: var(--rim-3) solid var(--rim); padding: 12px 14px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px;
+}
+.switcher section { min-width: 0; }
+.switcher h2 {
+  margin: 0 0 6px; padding-bottom: 3px; font-size: 0.78rem; letter-spacing: 0.1em;
+  text-transform: uppercase; border-bottom: var(--rim-2) solid var(--rim);
+}
+.switcher ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-weight: 600; }
+.switcher a { color: var(--ink); text-decoration: none; }
+.switcher a:hover, .switcher a:focus-visible { text-decoration: underline; }
+.switcher [aria-current="page"] { color: var(--muted); }
 code { font-size: 0.92em; background: var(--surface); border: 1.5px solid var(--rim); padding: 0 4px; }
 
 /* Buttons. .button styles a label the same way, like the one for a hidden file picker. */

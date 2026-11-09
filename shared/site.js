@@ -302,6 +302,66 @@ function backups({ what, keys, file, renamed = {}, legacy, merge, title, intro, 
   };
   hexTile();
 
+
+  // Every tool on the site, in the hub's own groups. The breadcrumb bar's switcher
+  // is built from this, so adding a tool means adding it here and in index.html.
+  const TOOLS = [
+    ["Pick at random", [["randomizer/", "Randomizer"], ["dice/", "Dice Roller"], ["bingo/", "Bingo Cards"]]],
+    ["Run a session", [["turns/", "Turn Tracker"], ["score/", "Score Pad"], ["brackets/", "Brackets"]]],
+    ["Keep track", [["tasks/", "Tasks and Events"], ["odds/", "Drop Odds"]]],
+    ["Games", [["games/aniimo/", "Aniimo"], ["games/dbd/", "Dead by Daylight"],
+               ["games/ffxiv/", "Final Fantasy XIV"], ["games/marvel-rivals/", "Marvel Rivals"],
+               ["games/outlast-trials/", "The Outlast Trials"]]],
+  ];
+
+  // The breadcrumb bar: where you are, and a way to any other tool. It is built from
+  // the page's own back links, so ancestors stay right without a per-page list, and it
+  // replaces them in place. The <a class="back"> markup stays in the HTML as the
+  // fallback for when this script doesn't run.
+  const crumbBar = () => {
+    const backs = [...document.querySelectorAll("main .back")];
+    const main = document.querySelector("main");
+    if (!backs.length || !main) return;
+
+    const trail = backs.map(a => ({ href: a.getAttribute("href"), name: a.textContent.replace(/^Back to /, "") }));
+    trail[0].name = "Tools"; // the first back link always points at the hub
+    const h1 = document.querySelector("h1");
+    const here = (h1 ? h1.textContent : document.title).trim();
+
+    const path = location.pathname;
+    const entry = ([href, name]) => {
+      const to = new URL(href, root).pathname;
+      return path.startsWith(to)
+        ? `<li><span aria-current="page">${name}</span></li>`
+        : `<li><a href="${to}">${name}</a></li>`;
+    };
+
+    const nav = document.createElement("nav");
+    nav.className = "crumbs";
+    nav.setAttribute("aria-label", "Breadcrumb");
+    nav.innerHTML =
+      `<img class="mark" src="${root}shared/logo.svg" alt="" width="22" height="22">` +
+      `<ol>${trail.map(c => `<li><a href="${c.href}"></a></li>`).join("")}<li><span aria-current="page"></span></li></ol>` +
+      `<button type="button" class="switch" aria-expanded="false">Switch tool</button>` +
+      `<div class="switcher" hidden>${TOOLS.map(([group, items]) =>
+        `<section><h2>${group}</h2><ul>${items.map(entry).join("")}</ul></section>`).join("")}</div>`;
+    // Names out of the page go in as text, not markup
+    nav.querySelectorAll("ol a").forEach((a, i) => { a.textContent = trail[i].name; });
+    nav.querySelector('ol [aria-current="page"]').textContent = here;
+
+    const toggle = nav.querySelector(".switch");
+    const panel = nav.querySelector(".switcher");
+    const open = on => { panel.hidden = !on; toggle.setAttribute("aria-expanded", String(on)); };
+    toggle.addEventListener("click", () => open(panel.hidden));
+    document.addEventListener("click", e => { if (!nav.contains(e.target)) open(false); });
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape" && !panel.hidden) { open(false); toggle.focus(); }
+    });
+
+    (backs[0].closest(".backs") || backs[0]).replaceWith(nav);
+    backs.forEach(a => a.remove());
+  };
+
   const home = `<a href="${root}"><img src="${root}shared/logo.svg" alt="" width="32" height="32">${SITE_NAME}</a>`;
 
   document.addEventListener("DOMContentLoaded", () => {
@@ -319,6 +379,8 @@ function backups({ what, keys, file, renamed = {}, legacy, merge, title, intro, 
     system.addEventListener("change", label);
     label();
     document.body.append(footer);
+
+    crumbBar();
 
     // To the top: shows once the page is scrolled down a little
     const top = document.createElement("button");
