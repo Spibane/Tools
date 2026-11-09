@@ -16,8 +16,25 @@
   --brand: linear-gradient(90deg, var(--lime), var(--mint));
   --brand-v: linear-gradient(var(--lime), var(--mint)); /* the same, top to bottom, for side bars */
   --focus: #121212;
+  --focus-inner: var(--lime); /* the band inside the focus ring, so it reads against light grey */
   --hex: var(--hex-light); /* background texture tiles, built by site.js */
   color-scheme: light;
+
+  /* Geometry, taken from the logo: corners are cut, never rounded. The logo is a
+     hexagon and Chakra Petch is drawn with cut corners; this is the same angle,
+     at three sizes scaled to the element. */
+  --cut-s: 6px;   /* pills, swatches, inputs, rows */
+  --cut-m: 10px;  /* buttons and tiles */
+  --cut-l: 16px;  /* panels and dialogs */
+  /* The rim, ranked. One ink at three weights, so hierarchy never needs grey. */
+  --rim-1: 1px;   /* rows, inputs, pills */
+  --rim-2: 2px;   /* tiles and buttons */
+  --rim-3: 3px;   /* panels, dialogs, the main action */
+  /* Page widths: prose for tool pages, a grid for hubs. */
+  --measure: 760px;
+  --wide: 1100px;
+  --read: 52ch;   /* long copy only: the intro and the privacy notes */
+  --step: 90ms;   /* motion is a snap, not a fade */
 }
 /* Dark theme: follows the device setting unless the footer switch picked one (data-theme on <html>) */
 @media (prefers-color-scheme: dark) {
@@ -30,6 +47,7 @@
     --rim: #8a8a8a;
     --check: var(--lime);
     --focus: var(--lime);
+    --focus-inner: #121212;
     --hex: var(--hex-dark);
     color-scheme: dark;
   }
@@ -43,6 +61,7 @@
   --rim: #8a8a8a;
   --check: var(--lime);
   --focus: var(--lime);
+  --focus-inner: #121212;
   --hex: var(--hex-dark);
   color-scheme: dark;
 }
@@ -61,7 +80,9 @@ body {
   line-height: 1.5;
   padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
 }
-main { max-width: 760px; margin: 0 auto; padding: 32px 18px 64px; }
+main { max-width: var(--measure); margin: 0 auto; padding: 32px 18px 64px; }
+/* A hub page is a directory, not an essay, so its tile grid gets the wider measure. */
+body:has(.category) main { max-width: var(--wide); }
 h1 {
   font-size: clamp(1.7rem, 4.4vw, 2.6rem);
   font-weight: 700;
@@ -73,8 +94,45 @@ h1 {
 h2 { font-size: 1.25rem; margin: 0; }
 p { margin: 0 0 1em; }
 a { color: var(--ink); text-decoration-thickness: 2px; text-underline-offset: 3px; }
-:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+/* Two rings: the ink one carries the contrast, the lime band inside it makes the ring
+   impossible to miss. Light mode used to draw a black ring 2px outside a black border,
+   which all but disappeared; dark mode already used lime and was far clearer. */
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; box-shadow: 0 0 0 2px var(--focus-inner); }
 .muted { color: var(--muted); }
+
+/* The chamfer: the same cut as the logo's hexagon and the typeface's corners, on the
+   top-left and bottom-right of every surface. corner-shape turns the radius into a
+   bevel; a browser without it keeps today's square corners, which is the old look. */
+@supports (corner-shape: bevel) {
+  :where(button, .button, .back, .pill, .sw span, .meter, .to-top, .result,
+         input[type="text"], input[type="number"], input[type="search"], select, textarea,
+         .panel, dialog, .warn, .link-list a) {
+    corner-shape: bevel;
+  }
+  :where(.pill, .sw span, .meter, .result,
+         input[type="text"], input[type="number"], input[type="search"], select, textarea) {
+    border-radius: var(--cut-s) 0 var(--cut-s) 0;
+  }
+  :where(button, .button, .back, .to-top, .link-list a) { border-radius: var(--cut-m) 0 var(--cut-m) 0; }
+  :where(.panel, dialog, .warn) { border-radius: var(--cut-l) 0 var(--cut-l) 0; }
+  /* Hovering a tile opens its cut. The geometry is the hover state — no new colour,
+     no new element, and it reads the same in light and dark. */
+  .link-list a:hover, .link-list a:focus-visible { border-radius: 22px 0 22px 0; }
+  .link-list.grid a:hover, .link-list.grid a:focus-visible { border-radius: 18px 0 18px 0; }
+  .panel.full { border-radius: 0; } /* filling the screen, it has no corners to cut */
+}
+
+/* Motion is a snap, not a fade: two steps at 90ms reads as mechanical, like the rest. */
+button, .button, .back, .link-list a, .pill {
+  transition: background var(--step) steps(2, end), color var(--step) steps(2, end),
+              border-color var(--step) steps(2, end), transform var(--step) steps(2, end),
+              border-radius var(--step) steps(2, end);
+}
+button:active, .button:active, .back:active { transform: translate(1px, 1px); }
+@media (prefers-reduced-motion: reduce) {
+  button, .button, .back, .link-list a, .pill { transition: none; }
+  button:active, .button:active, .back:active { transform: none; }
+}
 /* Back link, drawn as an outlined button with an arrow */
 .back {
   display: inline-flex;
@@ -83,13 +141,13 @@ a { color: var(--ink); text-decoration-thickness: 2px; text-underline-offset: 3p
   margin-bottom: 18px;
   padding: 6px 14px 6px 10px;
   background: var(--surface);
-  border: 2px solid var(--rim);
+  border: var(--rim-2) solid var(--rim);
   color: var(--ink);
   font-weight: 600;
   text-decoration: none;
 }
 .back::before { content: "←" / ""; font-size: 1.15em; line-height: 1; }
-.back:hover { background: var(--brand); color: #121212; }
+.back:hover { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .backs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
 .backs .back { margin-bottom: 0; }
 code { font-size: 0.92em; background: var(--surface); border: 1.5px solid var(--rim); padding: 0 4px; }
@@ -101,11 +159,14 @@ button, .button {
   font-weight: 600;
   color: var(--ink);
   background: var(--tile);
-  border: 2px solid var(--rim);
+  border: var(--rim-2) solid var(--rim);
   padding: 4px 12px;
   cursor: pointer;
 }
-button:hover, .button:hover { background: var(--brand); color: #121212; border-color: #121212; }
+/* One hover language. A neutral button inverts to ink; a brand button stays brand and
+   just brightens. These two used to trade places — neutral buttons turned into the
+   gradient while the primary turned away from it, swapping identities under the cursor. */
+button:hover, .button:hover { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 button:disabled { opacity: 0.4; cursor: not-allowed; }
 button:disabled:hover { background: var(--tile); color: var(--ink); border-color: var(--rim); }
 /* A visually hidden input that still takes keyboard focus, which shows on the label after it */
@@ -113,14 +174,16 @@ button:disabled:hover { background: var(--tile); color: var(--ink); border-color
 .vh:focus-visible + .button { outline: 3px solid var(--focus); outline-offset: 2px; }
 /* A button that stays filled while it's pressed, like Done */
 .mark[aria-pressed="true"] { background: var(--brand); color: #121212; border-color: #121212; }
-.mark[aria-pressed="true"]:hover { background: var(--tile); color: var(--ink); border-color: var(--rim); }
+.mark[aria-pressed="true"]:hover { background: var(--brand); color: #121212; border-color: #121212; filter: brightness(1.08); }
 /* The main button of a form, like Save */
-button.primary { background: var(--brand); color: #121212; border-color: #121212; }
-button.primary:hover { background: var(--tile); color: var(--ink); border-color: var(--rim); }
+button.primary { background: var(--brand); color: #121212; border-color: #121212; border-width: var(--rim-3); }
+button.primary:hover { filter: brightness(1.08); }
 
 /* Dialogs: a panel over a dimmed page */
-dialog { width: min(520px, calc(100% - 32px)); max-height: calc(100% - 32px); background: var(--surface); color: var(--ink); border: 3px solid var(--rim); padding: 0 16px 16px; }
-dialog::before { content: ""; display: block; height: 6px; margin: 0 -16px 14px; background: var(--brand); }
+dialog { width: min(520px, calc(100% - 32px)); max-height: calc(100% - 32px); background: var(--surface); color: var(--ink); border: var(--rim-3) solid var(--rim); padding: 0 16px 16px; }
+/* Kept as the top spacer (full-screen panels hang their safe-area inset off it), but no
+   longer a gradient strip — the ranked rim and the cut corners carry the sheet now. */
+dialog::before { content: ""; display: block; height: 0; margin: 0 -16px 16px; }
 dialog::backdrop { background: rgb(0 0 0 / 0.55); }
 .color-dialog { width: min(460px, calc(100% - 32px)); }
 .color-dialog .button-row { display: flex; gap: 8px; margin-top: 14px; }
@@ -132,7 +195,7 @@ dialog::backdrop { background: rgb(0 0 0 / 0.55); }
 .swatches { display: flex; flex-wrap: wrap; gap: 8px; }
 .sw { position: relative; display: block; cursor: pointer; }
 .sw input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
-.sw span { display: grid; place-items: center; width: 34px; height: 34px; border: 2px solid var(--rim); }
+.sw span { display: grid; place-items: center; width: 34px; height: 34px; border: var(--rim-1) solid var(--rim); }
 .sw input:checked + span { outline: 3px solid var(--ink); outline-offset: 2px; }
 .sw input:checked + span::after { content: "✓" / ""; font-weight: 700; color: #121212; }
 .sw input:focus-visible + span { outline: 3px dashed var(--focus); outline-offset: 4px; }
@@ -146,8 +209,8 @@ dialog::backdrop { background: rgb(0 0 0 / 0.55); }
   font-weight: 400;
   color: var(--ink);
   background: var(--tile);
-  border: 2px solid var(--rim);
-  padding: 4px 8px;
+  border: var(--rim-1) solid var(--rim);
+  padding: 5px 9px;
   min-width: 0;
 }
 :where(textarea) { width: 100%; resize: vertical; }
@@ -164,16 +227,18 @@ dialog::backdrop { background: rgb(0 0 0 / 0.55); }
 .opts .toggle { margin: 0; }
 
 /* Tool pages: the intro under the title, and option groups with a gradient bar down the side */
-.intro { color: var(--muted); max-width: 60ch; }
+/* Long copy is the one place Chakra Petch gets tiring, and it is the measure doing it,
+   not the face: a narrower column at 400 weight with more leading reads cleanly. */
+.intro { color: var(--muted); max-width: var(--read); font-weight: 400; line-height: 1.65; }
 fieldset { position: relative; border: 0; padding: 4px 0 4px 18px; margin: 0 0 18px; }
-fieldset::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--brand-v); }
+fieldset::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--rim); }
 legend { font-weight: 700; padding: 0; margin-bottom: 4px; }
 .hint { color: var(--muted); font-size: 0.9rem; margin: 0 0 8px; }
 .warn { border: 3px solid var(--rim); border-left-width: 10px; border-left-color: var(--mint); padding: 10px 14px; margin: 0 0 14px; background: var(--surface); }
 
 /* A panel: an outlined sheet with a gradient strip along the top. Pages set its bottom padding and margin. */
-.panel { background: var(--surface); border: 3px solid var(--rim); padding: 0 12px 12px; margin-bottom: 22px; }
-.panel::before { content: ""; display: block; height: 6px; margin: 0 -12px 14px; background: var(--brand); }
+.panel { background: var(--surface); border: var(--rim-3) solid var(--rim); padding: 0 12px 12px; margin-bottom: 22px; }
+.panel::before { content: ""; display: block; height: 0; margin: 0 -12px 16px; }
 .panel h2 { font-size: 1.5rem; }
 
 /* Dropdowns (<details>) open and close with an arrow before the summary */
@@ -192,14 +257,14 @@ details[open] > summary::before { content: "▾" / ""; }
 .settings > summary:hover h2 { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
 
 /* A progress bar: set the inner span's width */
-.meter { display: inline-block; width: 80px; height: 10px; border: 2px solid var(--rim); background: var(--tile); }
+.meter { display: inline-block; width: 80px; height: 10px; border: var(--rim-1) solid var(--rim); background: var(--tile); }
 .meter span { display: block; height: 100%; background: var(--brand); }
 
 /* Tickbox pills, like the job and hero pickers, in groups under a small heading. Unticked pills fade. */
 .pill-group { margin-bottom: 8px; }
 .pill-group h3 { font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 0 0 4px; }
 .pills { display: flex; flex-wrap: wrap; gap: 6px; }
-.pill { display: inline-flex; align-items: center; gap: 6px; background: var(--tile); border: 2px solid var(--rim); padding: 3px 9px 3px 6px; font-weight: 600; font-size: 0.9rem; cursor: pointer; }
+.pill { display: inline-flex; align-items: center; gap: 6px; background: var(--tile); border: var(--rim-1) solid var(--rim); padding: 4px 10px 4px 7px; font-weight: 600; font-size: 0.9rem; cursor: pointer; }
 .pill input { width: 17px; height: 17px; margin: 0; accent-color: var(--check); }
 .pill:not(:has(input:checked)) { opacity: 0.55; }
 .button-row { margin-top: 10px; }
@@ -207,12 +272,12 @@ details[open] > summary::before { content: "▾" / ""; }
 /* Randomizers: a panel with the roll button in its header, one result row per pick, and a toggle line */
 .rolls { margin-bottom: 26px; }
 .roll-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-bottom: 8px; }
-button.roll { font-size: 1.1rem; font-weight: 700; padding: 8px 22px; border: 3px solid #121212; background: var(--brand); color: #121212; }
-button.roll:hover { background: var(--tile); color: var(--ink); border-color: var(--rim); }
+button.roll { font-size: 1.1rem; font-weight: 700; padding: 8px 22px; border: var(--rim-3) solid #121212; background: var(--brand); color: #121212; }
+button.roll:hover { filter: brightness(1.08); }
 .toggle { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
 .toggle input { width: 18px; height: 18px; margin: 0; flex: none; accent-color: var(--check); }
 .results { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.result { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px; background: var(--tile); border: 2px solid var(--rim); padding: 8px 10px; }
+.result { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px; background: var(--tile); border: var(--rim-1) solid var(--rim); padding: 9px 11px; }
 .r-name { font-weight: 700; }
 .r-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 1.05rem; }
 .result.empty .r-pick { font-size: 0.9rem; }
@@ -259,7 +324,7 @@ body.full-open { overflow: hidden; }
 .saves [aria-live] { margin: 8px 0 0; }
 
 /* Privacy note at the bottom of the hub page */
-.privacy { margin: 40px 0 0; font-size: 0.9rem; max-width: 65ch; }
+.privacy { margin: 40px 0 0; font-size: 0.9rem; max-width: var(--read); font-weight: 400; line-height: 1.65; }
 .privacy + .privacy { margin-top: 12px; }
 
 /* A list of links styled like tiles, used by hub pages */
@@ -268,28 +333,21 @@ body.full-open { overflow: hidden; }
   display: block;
   position: relative;
   background: var(--surface);
-  border: 3px solid var(--rim);
-  padding: 14px 16px 14px 24px;
+  border: var(--rim-2) solid var(--rim);
+  padding: 14px 16px;
   color: var(--ink);
   text-decoration: none;
 }
-.link-list a::before {
-  content: "";
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 8px;
-  background: var(--brand-v);
-}
-.link-list a:hover { border-color: var(--ink); }
-.link-list a:hover::before { width: 12px; }
+/* Hover opens the cut and lifts the surface a step. Two cues, both of which work in
+   either theme and neither of which needs colour: border-color alone was no use here,
+   since --rim and --ink are the same ink in light mode. Keyboard focus gets it too. */
+.link-list a:hover, .link-list a:focus-visible { background: var(--tile); border-color: var(--ink); }
 .link-list strong { display: block; font-size: 1.1rem; }
 .link-list span { color: var(--muted); font-size: 0.95rem; }
 /* A compact grid of smaller tiles, used by the main hub so it stays short as tools are added */
 /* Every tile is the same height, across categories too: names get up to two lines and descriptions three */
 .link-list.grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 155px), 1fr)); grid-auto-rows: 7.4rem; gap: 8px; }
-.link-list.grid a { height: 100%; padding: 8px 10px 8px 18px; border-width: 2px; overflow: hidden; }
-.link-list.grid a::before { width: 6px; }
-.link-list.grid a:hover::before { width: 9px; }
+.link-list.grid a { height: 100%; padding: 8px 10px; border-width: var(--rim-2); overflow: hidden; }
 .link-list.grid strong, .link-list.grid span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
 .link-list.grid span { -webkit-line-clamp: 3; line-clamp: 3; }
 .link-list.grid strong { font-size: 1rem; line-height: 1.25; }
