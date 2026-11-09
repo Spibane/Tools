@@ -34,7 +34,10 @@
   --measure: 760px;
   --wide: 1100px;
   --read: 52ch;   /* long copy only: the intro and the privacy notes */
-  --step: 90ms;   /* motion is a snap, not a fade */
+  /* Motion: short and quick off the mark, so it still feels mechanical rather than
+     soft, but continuous. Stepping it looked like a repaint bug, not a decision. */
+  --motion: 140ms cubic-bezier(0.2, 0.8, 0.3, 1);
+  --motion-fast: 80ms cubic-bezier(0.2, 0.8, 0.3, 1); /* the press */
 }
 /* Dark theme: follows the device setting unless the footer switch picked one (data-theme on <html>) */
 @media (prefers-color-scheme: dark) {
@@ -122,11 +125,10 @@ a { color: var(--ink); text-decoration-thickness: 2px; text-underline-offset: 3p
   .panel.full { border-radius: 0; } /* filling the screen, it has no corners to cut */
 }
 
-/* Motion is a snap, not a fade: two steps at 90ms reads as mechanical, like the rest. */
+/* Quick and eased, not a long fade: 140ms with most of the movement up front. */
 button, .button, .back, .link-list a, .pill {
-  transition: background var(--step) steps(2, end), color var(--step) steps(2, end),
-              border-color var(--step) steps(2, end), transform var(--step) steps(2, end),
-              border-radius var(--step) steps(2, end);
+  transition: background var(--motion), color var(--motion), border-color var(--motion),
+              border-radius var(--motion), transform var(--motion-fast);
 }
 button:active, .button:active, .back:active { transform: translate(1px, 1px); }
 @media (prefers-reduced-motion: reduce) {
