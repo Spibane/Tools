@@ -335,6 +335,9 @@ button.roll:hover { filter: brightness(1.08); }
 .pill.is-played { text-decoration: line-through; }
 /* .results.stack: on phones, each row's buttons go under the pick and share the width */
 @media (max-width: 560px) {
+  /* The one-line description under the title: on a phone it costs a screenful of
+     the tool itself, and every page's panel says the same thing in its own words. */
+  .intro { display: none; }
   .results.stack .result { grid-template-columns: 1fr; }
   .results.stack .r-buttons { justify-content: flex-start; margin-top: 4px; }
   .results.stack .r-buttons button { flex: 1 1 auto; }
