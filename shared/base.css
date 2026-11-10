@@ -226,6 +226,10 @@ dialog::before { content: ""; display: block; height: 0; margin: 0 -16px 16px; }
 dialog::backdrop { background: rgb(0 0 0 / 0.55); }
 .color-dialog { width: min(460px, calc(100% - 32px)); }
 .color-dialog .button-row { display: flex; gap: 8px; margin-top: 14px; }
+/* A yes or no question (ask in site.js), used where confirm() would be */
+.ask-dialog { width: min(420px, calc(100% - 32px)); }
+.ask-dialog .ask-q { margin: 0; font-weight: 600; }
+.ask-dialog .button-row { display: flex; gap: 8px; margin-top: 16px; }
 
 /* A color choice (colorField in site.js): palette swatches as radio buttons, then Custom with a picker and a hex box */
 .color-field { padding: 0; margin: 0 0 10px; }

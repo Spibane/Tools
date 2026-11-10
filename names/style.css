@@ -1,0 +1,39 @@
+/* Character Names. Buttons, fields, the panel, result rows and locks come from shared/base.css.
+   Loaded after shared/base.css. */
+
+/* The pickers sit on the roll panel beside each other, and wrap on a phone */
+.opts .pickers{flex:1 1 14em;min-width:0;gap:4px}
+.opts .pickers select{width:100%}
+.toggle.off{opacity:.45}
+.parts .toggle{margin:0}
+.lore{margin:0 0 12px;font-size:.9rem}
+.after{display:flex;justify-content:flex-end;margin-top:12px}
+
+/* Forcing: the string, where it goes and how far it may wander, on one line until there isn't room */
+.force{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px}
+.force + .force{margin-top:14px;padding-top:14px;border-top:var(--rim-1) solid var(--rim)}
+.force .grow{flex:2 1 14em}
+.force .field{flex:1 1 10em;min-width:0;gap:4px}
+.force .vary{flex:0 0 7em}
+.force select,.force input{width:100%}
+/* The verdict is advice, not a rule, so it reads as a note rather than an error. The site has no
+   red or green, so the two states are told apart by their mark and by the words themselves. */
+.verdict{flex:1 1 100%;margin:0;font-size:.85rem;min-height:1.2em}
+.verdict.ok,.verdict.warn-text{color:var(--ink);font-weight:600}
+.verdict.ok::before{content:"\2713\00a0"}
+.verdict.warn-text::before{content:"\0021\00a0"}
+
+/* Your own races */
+.list-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.list-row select{flex:1 1 14em;min-width:0}
+.slot{margin-top:14px}
+.slot-body{margin-top:10px}
+.slot textarea{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9rem}
+
+.favourites{margin-top:28px}
+@media print{.after,.force,.settings,.list-row,#custom-editor{display:none}}
+
+/* The piece of a result that was forced in, underlined so a varied one can be checked by eye.
+   Underlined rather than coloured: the site's accent is only used as decoration or behind black
+   text, and the name itself has to keep its ordinary contrast. */
+.forced{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px;text-decoration-color:var(--mint)}

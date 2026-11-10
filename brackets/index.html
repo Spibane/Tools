@@ -177,13 +177,13 @@ function render(){
     '<p class="muted">'+out.played+' of '+out.total+(out.total===1?' match':' matches')+' played.'+(changed?' Your players or format changed: press New bracket to use them.':'')+'</p>';
 }
 
-$('make').addEventListener('click',()=>{
-  if(Object.keys(state.results).length&&!confirm('Make a new bracket? The results on this one will go.'))return;
+$('make').addEventListener('click',async()=>{
+  if(Object.keys(state.results).length&&!await ask('Make a new bracket? The results on this one will go.',{confirm:'New bracket'}))return;
   const p=names();
   if(state.shuffle)shuffle(p);
   state.built={format:state.format,players:p};state.results={};save();render();
 });
-$('clear').addEventListener('click',()=>{if(!confirm('Clear every result?'))return;state.results={};save();render();});
+$('clear').addEventListener('click',async()=>{if(!await ask('Clear every result?',{confirm:'Clear'}))return;state.results={};save();render();});
 // Clicking a player sends them through; clicking them again takes it back
 $('view').addEventListener('click',e=>{
   const s=e.target.closest('button.slot');if(!s)return;

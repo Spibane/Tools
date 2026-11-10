@@ -193,9 +193,9 @@ $('list-add').addEventListener('click',()=>{
   const l=blank('List '+(state.lists.length+1));
   state.lists.push(l);state.current=l.id;save();render();$('name').select();
 });
-$('list-delete').addEventListener('click',()=>{
+$('list-delete').addEventListener('click',async()=>{
   const l=L();
-  if(!confirm('Delete “'+(l.name||'Untitled')+'”?'))return;
+  if(!await ask('Delete “'+(l.name||'Untitled')+'”?'))return;
   state.lists=state.lists.filter(x=>x!==l);state.current=state.lists[0].id;save();render();
 });
 $('name').addEventListener('input',e=>{

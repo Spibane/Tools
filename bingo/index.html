@@ -91,8 +91,8 @@ function render(){
   renderCard();
 }
 
-$('new').addEventListener('click',()=>{
-  if(state.marked.length>(hasFree()?1:0)&&!confirm('Make a new card? Your marks on this one will go.'))return;
+$('new').addEventListener('click',async()=>{
+  if(state.marked.length>(hasFree()?1:0)&&!await ask('Make a new card? Your marks on this one will go.',{confirm:'New card'}))return;
   newCard();
 });
 $('clear').addEventListener('click',()=>{state.marked=state.card.flatMap((s,i)=>s===null?[i]:[]);save();renderCard();});
@@ -116,13 +116,13 @@ $('share').addEventListener('click',async()=>{
   try{await navigator.clipboard.writeText(url);$('share-msg').textContent='Copied.';}
   catch(_){prompt('Copy this link:',url);}
 });
-function openShared(){
+async function openShared(){
   const m=location.hash.match(/^#list=(.+)$/);if(!m)return;
   history.replaceState(null,'',location.pathname+location.search);
   let o;try{o=decode(m[1]);if(!Array.isArray(o.e))throw 0;}catch(_){$('share-msg').textContent='That share link didn’t work.';return;}
   const list=o.e.map(String).join('\n');
   if(list===entries().join('\n')&&o.t===state.title)return;
-  if(state.entries.trim()&&!confirm('Replace your squares with the shared list'+(o.t?' “'+o.t+'”':'')+'?'))return;
+  if(state.entries.trim()&&!await ask('Replace your squares with the shared list'+(o.t?' “'+o.t+'”':'')+'?',{confirm:'Replace'}))return;
   Object.assign(state,{title:String(o.t||'Bingo'),entries:list,size:[3,4,5].includes(o.s)?o.s:5,free:o.f!==false,card:[],marked:[]});
   save();render();newCard();
 }
