@@ -41,6 +41,7 @@
 <button type="button" id="reset">Reset scores</button>
 </div>
 </fieldset>
+<details class="settings"><summary><h2>Settings</h2></summary>
 <fieldset>
 <legend>Timer</legend>
 <div class="form-row">
@@ -49,6 +50,7 @@
 </div>
 <p class="hint" id="min-hint">Leave minutes empty to count up. Each player: a clock per player, passed on with Next turn or by tapping a clock.</p>
 </fieldset>
+</details>
 <section class="history" aria-labelledby="history-h">
 <div class="history-head"><h2 id="history-h">History</h2><button type="button" id="history-clear">Clear history</button></div>
 <ol class="h-list" id="history"></ol>
@@ -117,8 +119,8 @@ $('next').addEventListener('click',()=>{
   const i=state.players.findIndex(p=>p.id===T.turn);
   if(state.players.length)setTurn(state.players[(i+1)%state.players.length].id);
 });
-$('t-reset').addEventListener('click',()=>{
-  if(!confirm('Reset the timer?'))return;
+$('t-reset').addEventListener('click',async()=>{
+  if(!await ask('Reset the timer?',{confirm:'Reset'}))return;
   Object.assign(T,{running:false,used:0,done:[]});state.players.forEach(p=>p.time=0);save();render();
 });
 $('mode').addEventListener('change',e=>{bank();Object.assign(T,{mode:e.target.value,running:false,done:[]});save();render();});
@@ -195,8 +197,8 @@ function renderHistory(){
     '<li class="muted">Nothing yet.</li>';
   $('history-clear').disabled=!state.history.length;
 }
-$('history-clear').addEventListener('click',()=>{
-  if(!confirm('Clear the history? Scores stay as they are, and Undo will have nothing to take back.'))return;
+$('history-clear').addEventListener('click',async()=>{
+  if(!await ask('Clear the history? Scores stay as they are, and Undo will have nothing to take back.',{confirm:'Clear'}))return;
   state.history=[];save();render();
 });
 function render(){renderPad();renderHistory();$('step').value=state.step;$('mode').value=T.mode;$('minutes').value=T.minutes??'';$('start').value=state.start;}
@@ -222,7 +224,7 @@ $('step').addEventListener('change',e=>{state.step=+e.target.value;save();render
 $('players').addEventListener('input',e=>{
   const p=byId(e.target.closest('li').dataset.id);p.name=e.target.value;save();renderPad();renderHistory();
 });
-$('players').addEventListener('click',e=>{
+$('players').addEventListener('click',async e=>{
   const b=e.target.closest('[data-act]');if(!b)return;
   const id=b.closest('li').dataset.id,i=state.players.findIndex(p=>p.id===id),a=b.dataset.act;
   if(a==='color'){
@@ -232,7 +234,7 @@ $('players').addEventListener('click',e=>{
       $('players').querySelector('[data-id="'+id+'"] [data-act="color"]').focus();
     });
   }
-  if(a==='del'){if(!confirm('Remove '+nm(state.players[i])+'?'))return;bank();state.players.splice(i,1);}
+  if(a==='del'){if(!await ask('Remove '+nm(state.players[i])+'?',{confirm:'Remove'}))return;bank();state.players.splice(i,1);}
   else{const j=i+(a==='up'?-1:1);[state.players[i],state.players[j]]=[state.players[j],state.players[i]];}
   save();render();renderPlayers();
   const again=$('players').querySelector('[data-id="'+id+'"] [data-act="'+a+'"]');
@@ -245,8 +247,8 @@ $('add').addEventListener('submit',e=>{
   $('add-name').value='';save();render();renderPlayers();
 });
 $('start').addEventListener('change',e=>{state.start=num(+e.target.value||0);e.target.value=state.start;save();});
-$('reset').addEventListener('click',()=>{
-  if(!confirm('Reset every score to '+state.start+'? The history will be cleared.'))return;
+$('reset').addEventListener('click',async()=>{
+  if(!await ask('Reset every score to '+state.start+'? The history will be cleared.',{confirm:'Reset'}))return;
   state.players.forEach(p=>p.score=state.start);state.history=[];save();render();
 });
 

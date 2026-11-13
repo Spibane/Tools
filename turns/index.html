@@ -209,8 +209,8 @@ function shuffleOrder(number){
 }
 $('shuffle').addEventListener('click',()=>shuffleOrder(false));
 $('number').addEventListener('click',()=>shuffleOrder(true));
-$('restart').addEventListener('click',()=>{
-  if(!confirm('Start over at round 1? Holds, notes and conditions will be cleared.'))return;
+$('restart').addEventListener('click',async()=>{
+  if(!await ask('Start over at round 1? Holds, notes and conditions will be cleared.',{confirm:'Start over'}))return;
   act(()=>{state.round=1;state.current=null;state.entries.forEach(e=>{e.hold=false;e.conds=[];});});
 });
 

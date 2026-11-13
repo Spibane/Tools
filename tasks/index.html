@@ -175,7 +175,7 @@ function setCount(group,it,n){
   if(group.kind==='events'&&!it.repeat&&it.target>1&&it.count>=it.target)it.finished=now;
 }
 
-document.querySelector('main').addEventListener('click',e=>{
+document.querySelector('main').addEventListener('click',async e=>{
   const b=e.target.closest('button[data-act]');if(!b)return;
   const act=b.dataset.act,g=b.closest('[data-g]'),row=b.closest('[data-id]');
   if(act==='add-group')return openForm('group',{kind:'tasks'},b.id);
@@ -184,7 +184,7 @@ document.querySelector('main').addEventListener('click',e=>{
   if(act==='add-item')return openForm(kind,{group:group.id},b.id);
   if(act==='edit-group')return openForm('group',group,b.id);
   if(act==='clear-ended'){
-    if(!confirm('Delete every ended event in “'+group.name+'”? This can’t be undone.'))return;
+    if(!await ask('Delete every ended event in “'+group.name+'”? This can’t be undone.'))return;
     const now=Date.now();
     group.items=group.items.filter(ev=>!isEnded(ev,now));
     save();return render('add-'+group.id);
@@ -330,7 +330,7 @@ $('form').addEventListener('submit',e=>{
   }
   save();$('dialog').close();render(focus);
 });
-$('form').addEventListener('click',e=>{
+$('form').addEventListener('click',async e=>{
   const b=e.target.closest('button[data-f]');if(!b)return;
   const {kind,obj}=editing,f=b.dataset.f;
   if(f==='cancel')return $('dialog').close();
@@ -338,7 +338,7 @@ $('form').addEventListener('click',e=>{
   const i=list.indexOf(obj);
   if(f==='delete'){
     const n=kind==='group'&&obj.items.length,noun=obj.kind==='events'?'event':'task';
-    if(!confirm(n?'Delete “'+obj.name+'” and its '+plural(n,noun)+'?':'Delete “'+obj.name+'”?'))return;
+    if(!await ask(n?'Delete “'+obj.name+'” and its '+plural(n,noun)+'?':'Delete “'+obj.name+'”?'))return;
     list.splice(i,1);save();$('dialog').close();
     return render(kind==='group'?'add-group':'add-'+state.groups.find(g=>g.items===list).id);
   }

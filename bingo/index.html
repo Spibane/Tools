@@ -26,14 +26,19 @@
 <fieldset>
 <legend>Card</legend>
 <label class="field">Title <input type="text" id="title" autocomplete="off"></label>
-<div class="opts">
-<label class="size">Size <select id="size"><option value="3">3 × 3</option><option value="4">4 × 4</option><option value="5">5 × 5</option></select></label>
-<label class="toggle"><input type="checkbox" id="free"> Free middle square</label>
-</div>
 <label class="field">Squares <span class="hint" id="need"></span>
 <textarea id="entries" rows="12" spellcheck="false"></textarea></label>
 <div class="share-row"><button type="button" id="share">Copy share link</button><span class="muted" id="share-msg" aria-live="polite"></span></div>
 </fieldset>
+<details class="settings"><summary><h2>Settings</h2></summary>
+<fieldset>
+<legend>Card</legend>
+<div class="opts">
+<label class="size">Size <select id="size"><option value="3">3 × 3</option><option value="4">4 × 4</option><option value="5">5 × 5</option></select></label>
+<label class="toggle"><input type="checkbox" id="free"> Free middle square</label>
+</div>
+</fieldset>
+</details>
 </main>
 <script>
 // Saved data: title, entries (one per line), size (3-5), free (a free middle square on odd sizes),
@@ -86,8 +91,8 @@ function render(){
   renderCard();
 }
 
-$('new').addEventListener('click',()=>{
-  if(state.marked.length>(hasFree()?1:0)&&!confirm('Make a new card? Your marks on this one will go.'))return;
+$('new').addEventListener('click',async()=>{
+  if(state.marked.length>(hasFree()?1:0)&&!await ask('Make a new card? Your marks on this one will go.',{confirm:'New card'}))return;
   newCard();
 });
 $('clear').addEventListener('click',()=>{state.marked=state.card.flatMap((s,i)=>s===null?[i]:[]);save();renderCard();});
@@ -111,13 +116,13 @@ $('share').addEventListener('click',async()=>{
   try{await navigator.clipboard.writeText(url);$('share-msg').textContent='Copied.';}
   catch(_){prompt('Copy this link:',url);}
 });
-function openShared(){
+async function openShared(){
   const m=location.hash.match(/^#list=(.+)$/);if(!m)return;
   history.replaceState(null,'',location.pathname+location.search);
   let o;try{o=decode(m[1]);if(!Array.isArray(o.e))throw 0;}catch(_){$('share-msg').textContent='That share link didn’t work.';return;}
   const list=o.e.map(String).join('\n');
   if(list===entries().join('\n')&&o.t===state.title)return;
-  if(state.entries.trim()&&!confirm('Replace your squares with the shared list'+(o.t?' “'+o.t+'”':'')+'?'))return;
+  if(state.entries.trim()&&!await ask('Replace your squares with the shared list'+(o.t?' “'+o.t+'”':'')+'?',{confirm:'Replace'}))return;
   Object.assign(state,{title:String(o.t||'Bingo'),entries:list,size:[3,4,5].includes(o.s)?o.s:5,free:o.f!==false,card:[],marked:[]});
   save();render();newCard();
 }

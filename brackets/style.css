@@ -51,4 +51,7 @@ h3{font-size:.85rem;font-weight:700;color:var(--muted);margin:0 0 6px}
 
 /* Players. Fields and text boxes come from shared/base.css. */
 .format{display:flex;align-items:center;gap:8px;font-size:.9rem;font-weight:600}
+/* On a phone the whole first screen was chrome, so the panel waits until there is
+   a bracket in it, and the player list opens at a few lines instead of ten. */
+@media(max-width:560px){.b-panel.empty{display:none}#names{height:7.5em}}
 @media print{#full,.b-buttons{display:none}.scroller{overflow:visible}.bracket{flex-wrap:wrap;width:auto}}

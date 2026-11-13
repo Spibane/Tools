@@ -25,14 +25,19 @@
 </section>
 <fieldset>
 <legend>Players</legend>
+<label class="field"><span class="hint" id="need"></span>
+<textarea id="names" rows="10" spellcheck="false"></textarea></label>
+<button type="button" class="roll" id="make">New bracket</button>
+</fieldset>
+<details class="settings"><summary><h2>Settings</h2></summary>
+<fieldset>
+<legend>Bracket</legend>
 <div class="opts">
 <label class="format">Format <select id="format"><option value="single">Single elimination</option><option value="double">Double elimination</option><option value="robin">Round robin</option></select></label>
 <label class="toggle"><input type="checkbox" id="shuffle"> Shuffle the order</label>
 </div>
-<label class="field">Players <span class="hint" id="need"></span>
-<textarea id="names" rows="10" spellcheck="false"></textarea></label>
-<button type="button" class="roll" id="make">New bracket</button>
 </fieldset>
+</details>
 </main>
 <script>
 const BYE=-1;
@@ -162,6 +167,7 @@ function render(){
   $('make').disabled=have.length<2||have.length>limit;
   $('b-h').textContent=b?FORMATS[b.format]:'Brackets';
   $('clear').hidden=!b||!Object.keys(state.results).length;
+  $('panel').classList.toggle('empty',!b);
   if(!b){$('view').innerHTML='';$('status').innerHTML='<p class="muted">Add players below, then press New bracket.</p>';return;}
   const out=b.format==='robin'?renderRobin(b):renderElim(b);
   save();
@@ -171,13 +177,13 @@ function render(){
     '<p class="muted">'+out.played+' of '+out.total+(out.total===1?' match':' matches')+' played.'+(changed?' Your players or format changed: press New bracket to use them.':'')+'</p>';
 }
 
-$('make').addEventListener('click',()=>{
-  if(Object.keys(state.results).length&&!confirm('Make a new bracket? The results on this one will go.'))return;
+$('make').addEventListener('click',async()=>{
+  if(Object.keys(state.results).length&&!await ask('Make a new bracket? The results on this one will go.',{confirm:'New bracket'}))return;
   const p=names();
   if(state.shuffle)shuffle(p);
   state.built={format:state.format,players:p};state.results={};save();render();
 });
-$('clear').addEventListener('click',()=>{if(!confirm('Clear every result?'))return;state.results={};save();render();});
+$('clear').addEventListener('click',async()=>{if(!await ask('Clear every result?',{confirm:'Clear'}))return;state.results={};save();render();});
 // Clicking a player sends them through; clicking them again takes it back
 $('view').addEventListener('click',e=>{
   const s=e.target.closest('button.slot');if(!s)return;

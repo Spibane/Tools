@@ -2,6 +2,31 @@
 
 The site has no version numbers; changes are grouped by the day they were made.
 
+### 2026-11-12
+- Character Names is marked Beta, on its tile, beside its heading and in the tool switcher. The tag is a shared style, so any tool can carry one
+
+### 2026-11-09
+- Added a Character Names generator: names that fit a game's races, with a first name, a last name or both. Forty-six races and clans: all sixteen in FFXIV, eight in Skyrim and twenty-two in World of Warcraft
+- Every FFXIV clan is written out to Square Enix's own naming conventions, which means patterns rather than lists for most of them: Lalafell names are a syllable repeated to a shape, a Miqo'te Seeker carries a tribe letter and an apostrophe, a Sea Wolf forename is two words of Old Roegadyn and the surname is the father's name with -syn or -wyn. No convention was ever published for the Viera or the Hrothgar, so those four clans are shaped on the few canon names there are and say so
+- World of Warcraft surnames are now built from the words they are made of rather than learned whole, so Amberstill and Angerfang come out at the right length instead of running on into Fiendspeakheart
+- Added the allied races and the races added since, including the Skyborne of World of Warcraft: Forever, and a hand-written Troll, whose names the wiki files by tribe rather than by race
+- Skyrim and World of Warcraft name lists are built by `names/data/update.py` from UESP and Warcraft Wiki, both of which file their characters by race. A word list sorts names from jobs, so Alchemist and Adventurer are left out while Adalvald and J'zargo are kept. FFXIV has no race-tagged source and stays hand-written, which suits it: most of its races are built to a shape rather than learned from a list
+- A string can be forced into a name as the whole of it, its start, its end or somewhere inside, with a variance that gives near-misses of it instead: each step changes, adds or drops one letter, drawn from the letters that race actually uses, so a near-miss still fits
+- Variance can keep to the ends of what you typed, which is what it does by default, or work anywhere in it. Keeping to the ends never touches the middle, so Merl gives Merk or Berl and stays readable; changing a letter in the middle of a short word rarely leaves anything recognisable
+- Variance counts as a limit rather than a target, so a batch spends itself on the nearest misses first and only reaches further when it needs more names
+- What you forced in is underlined in each result, since once a string is inside a built name there is otherwise no way to see where it stops
+- A forced string that already works as a name of that race is used exactly as it is, and the page says so
+- Races are only data, so you can write your own, or copy one of the built-in ones and change it
+- A race part built from patterns can now split by set the same way a list of names does, so one part can be built differently for men and women: a Miqo'te surname is Tia or Nunh for a man and the tribe's name for a woman. In your own races, a line like [Masculine] under the patterns or word lists gives that set its own
+- Names starting with a letter outside a-z, like Élodie, Ægir or Þora, now keep their capital
+- A batch that came up short of what you asked for is now filled out rather than handed back with one or two names in it, which a small list of very unalike names used to do
+- A race part whose list of names is empty, or a pattern naming a word list that isn't there, no longer stops the generator or prints {the-list-name} into a name; the editor says which list it couldn't find
+- The page says so when the browser won't let it save, instead of letting you type a race in and lose it
+- Asking before something is deleted, cleared or replaced now uses a dialog of the site's own instead of the browser's confirm box, which some in-app and embedded browsers refuse to show at all, leaving the button looking broken. Every tool uses it, and Cancel starts focused so a stray Enter or Escape never confirms
+- Forcing a string that is one of a race's own building words, like Merl for a Roegadyn, now puts it in that word's place in the name (Merlwyb) instead of joining it on the outside (MerlKolbwyb), and picks a pattern that has somewhere to put it, so forcing cloak gives Wolfcloak rather than Grim-Shieldcloak
+- Variance now means the same thing for every race: letters change. It used to swap a whole word for another from the same list on races built that way, which kept nothing of what you typed, and those sibling words already come up on their own at variance 0. A varied word still goes in its own place in the name, so Merl at variance 1 gives Merswyb or Gerlulf
+- Forcing a string into a race whose names are built from words now says whether it is one of those words, a whole name, or neither, and lists some of the words when it is neither, so there is something to go on when they are invented ones like Bloef
+
 ### 2026-11-06
 - Task and event groups can have a color of their own, shown as a gradient like the site's
 - Picking a color, for groups and Score players, now offers the palette plus a custom color picker and hex box

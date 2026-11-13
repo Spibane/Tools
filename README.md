@@ -44,6 +44,7 @@ A static site with no build step, framework or server. Each tool is a folder wit
 | General | [Turn Tracker](https://spibane.com/turns/) | Turn order with skips, holds and notes |
 | General | [Score Pad](https://spibane.com/score/) | Scores with a turn clock or timer |
 | General | [Brackets](https://spibane.com/brackets/) | Elimination brackets and round robins |
+| General | [Character Names](https://spibane.com/names/) | Names that fit a game's races and clans (beta) |
 | Games | [Aniimo](https://spibane.com/games/aniimo/) | Collection boxes and checklists |
 | Games | [Dead by Daylight](https://spibane.com/games/dbd/) | Loadout randomizer |
 | Games | [Final Fantasy XIV](https://spibane.com/games/ffxiv/) | Relic checklists and roulette job picker |
@@ -65,6 +66,7 @@ A static site with no build step, framework or server. Each tool is a folder wit
 ├── turns/
 ├── score/
 ├── brackets/
+├── names/              # engine.js (the generator) + data/ (one file per game, plus harvested name lists)
 └── games/
     ├── aniimo/         # collection/, checklist/, data/ (forms, spawns, categories)
     ├── dbd/            # loadout/, data/ (loadout.js + update.py)
@@ -85,12 +87,13 @@ python3 -m http.server     # then open http://localhost:8000
 
 - **Dead by Daylight:** `python3 games/dbd/data/update.py` rebuilds `loadout.js` from the dbd.tricky.lol API. Check the diff before committing, since the API can list things from test builds early.
 - **Aniimo:** edited by hand from the official wiki and in-game checks. The wiki leaves some things out on purpose, so don't drop entries just because it's missing them.
+- **Character Names:** `python3 names/data/update.py [skyrim|wow]` rebuilds `skyrim.names.js` and `wow.names.js`, the harvested lists of names, from UESP and Warcraft Wiki. Check the diff before committing: both wikis gain and lose pages, and the script guesses at what is a name, so a bad run shows as a race suddenly losing half its list. It only writes those two files; the race definitions beside them are hand-written and never touched. FFXIV has no race-tagged source and is hand-written throughout, to Square Enix's own naming conventions; no convention was ever published for the Viera or the Hrothgar, so those four clans are shaped on the few canon names there are. Forty-six races and clans in all. `names/data/*.js` holds one file per game. Names that are a sound (Elezen, Nord) are a list the generator learns from; names that are built to a shape (Roegadyn compounds, Nord surnames, Argonian deed names, the apostrophe in Miqo'te) are patterns and word lists, which a list of finished names can never reproduce. A race is plain data and the engine has no game knowledge, so a new race or game is a data change only. Name lists want roughly 150–300 entries each to generate well; much under thirty and the generator mostly hands back names already in the list.
 
 ## Adding a Tool
 
 1. Make a folder (games go in `games/`) with an `index.html` that loads `shared/base.css` and `shared/site.js` in `<head>`.
 2. Call `backups({...})` with the tool's storage keys.
-3. Add an `<li>` for it under the right category in the hub's `index.html`.
+3. Add an `<li>` for it under the right category in the hub's `index.html`, and the same entry to `TOOLS` in `shared/site.js` so it appears in the breadcrumb bar's tool switcher. A third item on the `TOOLS` entry, and a `<span class="tag">`, marks a tool as beta in the switcher, on its tile and beside its heading.
 4. Add a line to [CHANGELOG.md](./CHANGELOG.md).
 
 ## Deployment

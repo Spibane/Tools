@@ -172,8 +172,8 @@ $('pages').addEventListener('click',async e=>{
   catch(_){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');b.textContent='Copied';}catch(__){b.textContent='Copy failed';}a.remove();}
   setTimeout(()=>b.textContent=old,1600);
 });
-$('reset').addEventListener('click',()=>{
-  if(!Object.keys(owned).length||!confirm('Clear the owned marks on every page?'))return;
+$('reset').addEventListener('click',async()=>{
+  if(!Object.keys(owned).length||!await ask('Clear the owned marks on every page?',{confirm:'Clear'}))return;
   Object.keys(owned).forEach(k=>delete owned[k]);
   store.save(OWN_KEY,owned);render();
 });

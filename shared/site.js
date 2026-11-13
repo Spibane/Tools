@@ -101,6 +101,29 @@ function pickColor(value, label) {
   });
 }
 
+// Asks a yes or no question in a small dialog, and resolves true only when it is confirmed.
+// This exists because the browser's own confirm() is suppressed in some embedded and in-app
+// browsers: it returns false at once without ever showing anything, so the button it guards
+// looks broken. A dialog of our own always shows. Cancel takes focus, so a stray Enter or
+// Escape cancels rather than confirming something that can't be undone.
+function ask(question, { confirm = "Delete", cancel = "Cancel" } = {}) {
+  return new Promise(done => {
+    const d = document.createElement("dialog");
+    d.className = "ask-dialog";
+    d.innerHTML = `<form method="dialog"><p class="ask-q"></p>` +
+      `<div class="button-row"><button value="ok" class="primary"></button><button value="" formnovalidate></button></div></form>`;
+    // Set as text, never markup: the question carries names people typed in
+    d.querySelector(".ask-q").textContent = question;
+    const [yes, no] = d.querySelectorAll("button");
+    yes.textContent = confirm;
+    no.textContent = cancel;
+    d.addEventListener("close", () => { done(d.returnValue === "ok"); d.remove(); });
+    document.body.append(d);
+    d.showModal();
+    no.focus();
+  });
+}
+
 // A lock button for a randomizer's result row: an open padlock, or a closed one when locked.
 // attrs is the data attribute that says which row it's on, like 'data-s="rig"'.
 const padlock = shackle => '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">' +
@@ -136,9 +159,12 @@ function fullScreen(panel, button, onChange) {
 // get/set keep plain strings; load/save keep JSON, and load gives back fallback when nothing is saved.
 const store = {
   get(key) { try { return localStorage.getItem(key); } catch (_) { return null; } },
-  set(key, value) { try { localStorage.setItem(key, value); } catch (_) {} },
+  // set and save say whether it worked. A browser can refuse to store, by blocking it outright or
+  // by being full, and the tools that keep a lot (lists of names, big checklists) should be able
+  // to say so rather than let someone keep typing into something that isn't being kept.
+  set(key, value) { try { localStorage.setItem(key, value); return true; } catch (_) { return false; } },
   load(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch (_) { return fallback; } },
-  save(key, value) { store.set(key, JSON.stringify(value)); },
+  save(key, value) { return store.set(key, JSON.stringify(value)); },
   remove(key) { try { localStorage.removeItem(key); } catch (_) {} },
   // Moves saved data from old key names to new ones, given as {old: new}. Run it before reading anything.
   rename(names) {
@@ -216,8 +242,8 @@ function backups({ what, keys, file, renamed = {}, legacy, merge, title, intro, 
   section.querySelector("#saves-file").addEventListener("change", async e => {
     const entries = await read(e);
     if (!entries) return;
-    if (!confirm(keys ? `Replace your ${what} with this backup? Save yours to a file first if you might want it back.`
-      : "Replace everything saved on every page of this site with this backup? Save your current progress first if you might want it back.")) return;
+    if (!await ask(keys ? `Replace your ${what} with this backup? Save yours to a file first if you might want it back.`
+      : "Replace everything saved on every page of this site with this backup? Save your current progress first if you might want it back.", { confirm: "Replace" })) return;
     try {
       if (keys) [...keys, ...Object.keys(renamed)].forEach(store.remove); else localStorage.clear();
       for (const [k, v] of entries) localStorage.setItem(k, v);
@@ -230,8 +256,8 @@ function backups({ what, keys, file, renamed = {}, legacy, merge, title, intro, 
     try { msg(merge(Object.fromEntries(entries))); }
     catch (_) { msg("That file isn’t a backup from this site."); }
   });
-  if (keys) section.querySelector(".b-clear").addEventListener("click", () => {
-    if (!confirm(`Clear your ${what} on this page? Save it to a file first if you might want it back.`)) return;
+  if (keys) section.querySelector(".b-clear").addEventListener("click", async () => {
+    if (!await ask(`Clear your ${what} on this page? Save it to a file first if you might want it back.`, { confirm: "Clear" })) return;
     keys.forEach(store.remove);
     reload(`Cleared your ${what}.`);
   });
@@ -302,6 +328,72 @@ function backups({ what, keys, file, renamed = {}, legacy, merge, title, intro, 
   };
   hexTile();
 
+
+  // Every tool on the site, in the hub's own groups. The breadcrumb bar's switcher
+  // is built from this, so adding a tool means adding it here and in index.html.
+  const TOOLS = [
+    ["Pick at random", [["randomizer/", "Randomizer"], ["dice/", "Dice Roller"], ["bingo/", "Bingo Cards"],
+                        ["names/", "Character Names", "Beta"]]],
+    ["Run a session", [["turns/", "Turn Tracker"], ["score/", "Score Pad"], ["brackets/", "Brackets"]]],
+    ["Keep track", [["tasks/", "Tasks and Events"], ["odds/", "Drop Odds"]]],
+    ["Games", [["games/aniimo/", "Aniimo"], ["games/dbd/", "Dead by Daylight"],
+               ["games/ffxiv/", "Final Fantasy XIV"], ["games/marvel-rivals/", "Marvel Rivals"],
+               ["games/outlast-trials/", "The Outlast Trials"]]],
+  ];
+
+  // The breadcrumb bar: where you are, and a way to any other tool. It is built from
+  // the page's own back links, so ancestors stay right without a per-page list, and it
+  // replaces them in place. The <a class="back"> markup stays in the HTML as the
+  // fallback for when this script doesn't run.
+  const crumbBar = () => {
+    const backs = [...document.querySelectorAll("main .back")];
+    const main = document.querySelector("main");
+    if (!backs.length || !main) return;
+
+    const trail = backs.map(a => ({ href: a.getAttribute("href"), name: a.textContent.replace(/^Back to /, "") }));
+    trail[0].name = "Tools"; // the first back link always points at the hub
+    const h1 = document.querySelector("h1");
+    // Without the tag: the crumb is the page's name, not "Character Names Beta"
+    const title = h1 && h1.cloneNode(true);
+    if (title) title.querySelectorAll(".tag").forEach(t => t.remove());
+    const here = (title ? title.textContent : document.title).trim();
+
+    const path = location.pathname;
+    // A third item on a TOOLS entry is a tag to show beside its name, like Beta
+    const entry = ([href, name, tag]) => {
+      const to = new URL(href, root).pathname;
+      const label = name + (tag ? ` <span class="tag">${tag}</span>` : "");
+      return path.startsWith(to)
+        ? `<li><span aria-current="page">${label}</span></li>`
+        : `<li><a href="${to}">${label}</a></li>`;
+    };
+
+    const nav = document.createElement("nav");
+    nav.className = "crumbs";
+    nav.setAttribute("aria-label", "Breadcrumb");
+    nav.innerHTML =
+      `<img class="mark" src="${root}shared/logo.svg" alt="" width="22" height="22">` +
+      `<ol>${trail.map(c => `<li><a href="${c.href}"></a></li>`).join("")}<li><span aria-current="page"></span></li></ol>` +
+      `<button type="button" class="switch" aria-expanded="false">Switch tool</button>` +
+      `<div class="switcher" hidden>${TOOLS.map(([group, items]) =>
+        `<section><h2>${group}</h2><ul>${items.map(entry).join("")}</ul></section>`).join("")}</div>`;
+    // Names out of the page go in as text, not markup
+    nav.querySelectorAll("ol a").forEach((a, i) => { a.textContent = trail[i].name; });
+    nav.querySelector('ol [aria-current="page"]').textContent = here;
+
+    const toggle = nav.querySelector(".switch");
+    const panel = nav.querySelector(".switcher");
+    const open = on => { panel.hidden = !on; toggle.setAttribute("aria-expanded", String(on)); };
+    toggle.addEventListener("click", () => open(panel.hidden));
+    document.addEventListener("click", e => { if (!nav.contains(e.target)) open(false); });
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape" && !panel.hidden) { open(false); toggle.focus(); }
+    });
+
+    (backs[0].closest(".backs") || backs[0]).replaceWith(nav);
+    backs.forEach(a => a.remove());
+  };
+
   const home = `<a href="${root}"><img src="${root}shared/logo.svg" alt="" width="32" height="32">${SITE_NAME}</a>`;
 
   document.addEventListener("DOMContentLoaded", () => {
@@ -319,6 +411,8 @@ function backups({ what, keys, file, renamed = {}, legacy, merge, title, intro, 
     system.addEventListener("change", label);
     label();
     document.body.append(footer);
+
+    crumbBar();
 
     // To the top: shows once the page is scrolled down a little
     const top = document.createElement("button");

@@ -1,0 +1,514 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Character Names</title>
+<meta name="description" content="Character names that fit a game's races, with strings you can force in.">
+<meta property="og:title" content="Character Names">
+<meta property="og:description" content="Character names that fit a game's races, with strings you can force in.">
+<meta property="og:url" content="https://spibane.com/names/">
+<meta property="og:site_name" content="Spibane's Tools for Everything">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://spibane.com/shared/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../shared/base.css">
+<script src="../shared/site.js"></script>
+<link rel="stylesheet" href="style.css"></head><body><main>
+<a class="back" href="../">Back to All Tools</a>
+<h1>Character Names <span class="tag">Beta</span></h1>
+<p class="intro">Character names that fit a game's races, with strings you can force in.</p>
+<p class="warn" id="save-warn" hidden></p>
+
+<details class="settings"><summary><h2>Settings</h2></summary>
+<fieldset>
+<legend>Names</legend>
+<div class="form-row">
+<label class="field">How many <input type="number" id="count" min="1" max="50" inputmode="numeric"></label>
+</div>
+<label class="toggle"><input type="checkbox" id="avoid"> Skip names the game already has</label>
+<p class="hint">Generated names are built from real ones, so without this you will sometimes get a name straight out of the game, or one letter off it.</p>
+</fieldset>
+</details>
+
+<section class="rolls panel" aria-labelledby="rolls-h">
+<div class="roll-head"><h2 id="rolls-h">Your names</h2><button type="button" class="roll" id="roll">Generate</button></div>
+<div class="opts">
+<label class="field pickers">Race <select id="race"></select></label>
+<label class="field pickers" id="set-wrap" hidden>Names <select id="set"></select></label>
+</div>
+<p class="parts">Include
+<label class="toggle"><input type="checkbox" id="use-first"> First name</label>
+<label class="toggle"><input type="checkbox" id="use-last"> Last name</label>
+</p>
+<p class="lore muted" id="lore"></p>
+<ol class="results stack" id="results" aria-live="polite"></ol>
+<div class="after"><button type="button" id="copy">Copy all</button></div>
+</section>
+
+<fieldset>
+<legend>Force a string</legend>
+<p class="hint">Put something of your own into the name. Variance gives you near-misses of it instead: each step changes, adds or drops one letter, keeping to letters the race actually uses. What you forced in is underlined in the results.</p>
+<div id="forces"></div>
+</fieldset>
+
+<fieldset>
+<legend>Your own races</legend>
+<p class="hint">The races above are only data, and yours work the same way. Copy one to see how it is put together.</p>
+<div class="list-row">
+<select id="custom-pick" aria-label="Your races"></select>
+<button type="button" id="custom-new">New race</button>
+<button type="button" id="custom-copy">Copy the chosen race</button>
+<button type="button" id="custom-delete">Delete</button>
+</div>
+<div id="custom-editor" hidden></div>
+</fieldset>
+
+<section class="favourites" id="favourites" aria-labelledby="fav-h" hidden>
+<div class="history-head"><h2 id="fav-h">Kept names</h2><button type="button" id="fav-clear">Clear</button></div>
+<ul class="results stack" id="fav-list"></ul>
+</section>
+</main>
+<script src="engine.js"></script>
+<!-- The harvested name lists load first: the race files below read from them -->
+<script src="data/skyrim.names.js"></script>
+<script src="data/wow.names.js"></script>
+<script src="data/ffxiv.js"></script>
+<script src="data/skyrim.js"></script>
+<script src="data/wow.js"></script>
+<script>
+// Saved under one key. custom holds races written here, in exactly the shape the packs in data/ use,
+// so the engine can't tell them apart. result and locked keep the last batch across a reload.
+const BUILT_IN=[...FFXIV_RACES,...SKYRIM_RACES,...WOW_RACES];
+const blankForce=()=>({text:'',where:'whole',vary:0,scope:'ends'});
+let state=Object.assign({
+  raceId:BUILT_IN[0].id,set:'',count:10,avoid:true,
+  slots:{first:true,last:true},
+  force:{first:blankForce(),last:blankForce()},
+  result:[],locked:[],favourites:[],custom:[],editing:null,
+},store.load('names'));
+// Saving can fail: a browser may be full or may refuse to store at all. Silence would mean
+// someone typing a race in for ten minutes and losing it, so the page says so, once.
+let saveFailed=false;
+function save(){
+  const ok=store.save('names',state);
+  const failed=!ok;
+  if(failed!==saveFailed){
+    saveFailed=failed;
+    const warn=$('save-warn');
+    warn.hidden=ok;
+    warn.textContent=ok?'':'This browser isn’t letting the page save. Your races and kept names will go when you close the tab, so save them to a file below.';
+  }
+  return ok;
+}
+const races=()=>[...BUILT_IN,...state.custom];
+const R=()=>races().find(r=>r.id===state.raceId)||BUILT_IN[0];
+const SLOTS=[['first','First name'],['last','Last name']];
+const label=r=>r.race+' — '+r.game;
+const full=row=>[row.first,row.last].filter(Boolean).join(' ');
+// Marks the piece of a name that was forced in. Once a string is inside a built name there is
+// otherwise no telling where it stops, which makes a varied one impossible to check by eye.
+function markForced(name,from){
+  if(!from||from.length>=name.length)return esc(name);
+  const at=name.toLowerCase().indexOf(from.toLowerCase());
+  if(at<0)return esc(name);
+  return esc(name.slice(0,at))+'<span class="forced">'+esc(name.slice(at,at+from.length))+'</span>'+esc(name.slice(at+from.length));
+}
+const nameHTML=row=>SLOTS.map(([key])=>row[key]&&markForced(row[key],(row.from||{})[key])).filter(Boolean).join(' ');
+
+// ---------------------------------------------------------------- generating
+
+function generate(){
+  const race=R();
+  // Locked rows keep their place; everything else is replaced, so you can hold a name you like
+  // and keep pressing Generate for the rest.
+  const keep=state.result.map((row,i)=>state.locked.includes(i)?row:null).slice(0,state.count);
+  const fresh=makeNames(race,{
+    slots:state.slots,set:state.set,count:state.count,
+    avoidCanon:state.avoid,force:state.force,
+  });
+  let next=0;
+  state.result=Array.from({length:state.count},(unused,i)=>keep[i]||fresh[next++]).filter(Boolean);
+  state.locked=state.locked.filter(i=>i<state.result.length);
+  save();
+}
+
+function renderResults(){
+  const rows=state.result;
+  const none=!state.slots.first&&!state.slots.last;
+  $('results').innerHTML=rows.length?rows.map((row,i)=>{
+    const name=full(row),locked=state.locked.includes(i),kept=state.favourites.includes(name);
+    return '<li class="result'+(locked?' locked':'')+'"><span class="r-pick"><b>'+nameHTML(row)+'</b></span>'+
+      '<span class="r-buttons">'+
+      '<button type="button" class="keep mark" data-name="'+esc(name)+'" aria-pressed="'+kept+'" title="'+(kept?'Kept':'Keep this name')+'">'+(kept?'Kept':'Keep')+'</button>'+
+      lockButton('data-i="'+i+'"',name,locked)+'</span></li>';
+  }).join(''):'<li class="result empty"><span class="r-pick"><span class="muted">'+
+    (none?'Switch on a first or last name above':'Not generated yet')+'</span></span></li>';
+  $('copy').disabled=!rows.length;
+  $('roll').disabled=none;
+}
+
+function renderFavourites(){
+  const list=state.favourites;
+  $('favourites').hidden=!list.length;
+  $('fav-list').innerHTML=list.map(name=>
+    '<li class="result"><span class="r-pick"><b>'+esc(name)+'</b></span>'+
+    '<span class="r-buttons"><button type="button" class="drop" data-name="'+esc(name)+'">Remove</button></span></li>').join('');
+}
+
+// ---------------------------------------------------------------- forcing
+
+// One row per slot the race has. where is only offered where it means something.
+const WHERES=[['whole','is the whole name'],['start','starts the name'],['end','ends the name'],['anywhere','is somewhere in it']];
+// Which letters variance may touch. Keeping to the ends leaves the middle of the word as typed,
+// so it still reads as the word you asked for; changing a letter in the middle rarely does.
+const SCOPES=[['ends','only at the ends'],['any','anywhere in it']];
+function renderForces(){
+  const race=R();
+  $('forces').innerHTML=SLOTS.filter(([key])=>race.slots[key]).map(([key,name])=>{
+    const f=state.force[key];
+    return '<div class="force" data-k="'+key+'">'+
+      '<label class="field grow">'+name+' <input type="text" id="f-'+key+'" value="'+esc(f.text)+'" spellcheck="false" autocomplete="off" placeholder="Leave empty to generate it"></label>'+
+      '<label class="field">Where <select id="w-'+key+'">'+WHERES.map(([v,t])=>
+        '<option value="'+v+'"'+(f.where===v?' selected':'')+'>'+t+'</option>').join('')+'</select></label>'+
+      '<label class="field vary">Variance <input type="number" id="v-'+key+'" min="0" max="3" value="'+f.vary+'" inputmode="numeric"></label>'+
+      '<label class="field">Change <select id="s-'+key+'"'+(f.vary?'':' disabled')+'>'+SCOPES.map(([v,t])=>
+        '<option value="'+v+'"'+((f.scope||'ends')===v?' selected':'')+'>'+t+'</option>').join('')+'</select></label>'+
+      '<p class="verdict muted" id="verdict-'+key+'"></p></div>';
+  }).join('')||'<p class="muted">This race has no name parts.</p>';
+  SLOTS.forEach(([key])=>verdict(key));
+}
+
+// A few of the words a pools race builds names from, in the order its first pattern uses them.
+// Without this the verdict says a string isn't built from the race's words while never saying
+// what any of them are, which is no help at all when the words are invented ones like Bloef.
+function poolExamples(slot){
+  const seen=[];
+  ((slot.patterns||[])[0]||'').replace(/\{(\w+)\}/g,(whole,key)=>{
+    const pool=slot.pools[key];
+    if(pool&&pool.length&&!seen.includes(key))seen.push(key);
+    return whole;
+  });
+  return seen.map(key=>slot.pools[key].slice(0,3).join(', ')).join(' + ');
+}
+
+// Says whether the string could already be a name of this race, and why. It only ever advises:
+// a string that doesn't fit is still used, because forcing one in is the point of the box.
+function verdict(key){
+  const box=$('verdict-'+key);
+  if(!box)return;
+  const race=R(),f=state.force[key];
+  if(!f.text.trim()){box.textContent='';box.className='verdict muted';return;}
+  const report=forceReport(race,key,state.set,f.text);
+  if(!report){box.textContent='';return;}
+  const where=f.where==='whole';
+  const a=/^[aeiou]/i.test(race.race)?'an ':'a ';
+  if(report.ok){
+    box.className='verdict ok';
+    box.textContent=report.kind==='pools'
+      ?'Already '+a+race.race+' name: '+report.parts.join(' + ')+'. Used as it is.'
+      :'Already reads as '+a+race.race+' name. Used as it is.';
+  }else{
+    box.className='verdict warn-text';
+    if(report.kind!=='pools'){
+      box.textContent='Doesn’t read as '+a+race.race+' name. '+(where?'Used as it is.':'The rest will be built around it.');
+    }else if(report.word){
+      // One of the race's words, just not a whole name on its own. It still goes in its own place
+      // in the name rather than being stuck on, so this is nearly as good as a match.
+      box.className='verdict ok';
+      box.textContent='A '+race.race+' word, though not a whole name by itself. '+
+        (where?'Used as it is.':'It takes its place in the name, and the rest is built around it.');
+    }else{
+      box.textContent=race.race+' names are built from words like '+poolExamples(prepare(race.slots[key],state.set,race.id+':'+key))+
+        '. Yours isn’t one of them, so it can’t be varied by word. '+(where?'Used as it is.':'It will be joined on.');
+    }
+  }
+}
+
+// ---------------------------------------------------------------- your own races
+
+// Names can be split into sets with a [Masculine] line, the same way the built-in races split theirs.
+// A [Set] line splits a box into sections. Lines above the first header belong to no set and are
+// the fallback. The same spelling works for names, for patterns and for word lists, so a race whose
+// men and women are built differently is written the same way whichever kind the part is.
+function sections(text){
+  const base=[],sets={};let current=null;
+  for(const line of splitLines(text)){
+    const head=line.match(/^\[(.+)\]$/);
+    if(head){current=head[1].trim();sets[current]=sets[current]||[];continue;}
+    (current?sets[current]:base).push(line);
+  }
+  return {base,sets};
+}
+function parseNames(text){
+  const {base,sets}=sections(text);
+  if(!Object.keys(sets).length)return {names:base};
+  // names above the first header join every set, so a shared list needn't be typed twice
+  const out={};
+  for(const [name,list] of Object.entries(sets))out[name]=base.concat(list);
+  return {sets:out};
+}
+const unparseNames=slot=>slot.sets
+  ?Object.entries(slot.sets).map(([k,v])=>'['+k+']\n'+v.join('\n')).join('\n\n')
+  :(slot.names||[]).join('\n');
+// "a: Storm, Battle" per line
+function parsePools(text){
+  const pools={};
+  for(const line of splitLines(text)){
+    const at=line.search(/[:=]/);
+    if(at<1)continue;
+    const key=line.slice(0,at).trim().replace(/[^\w]/g,'');
+    const values=line.slice(at+1).split(',').map(s=>s.trim()).filter(Boolean);
+    if(key&&values.length)pools[key]=values;
+  }
+  return pools;
+}
+const unparsePools=pools=>Object.entries(pools||{}).map(([k,v])=>k+': '+v.join(', ')).join('\n');
+// Patterns and word lists written back out, with each set's own under its header
+const unparseSections=(base,sets,of)=>[base,...Object.entries(sets||{})
+  .map(([k,v])=>{const body=of(v);return body?'['+k+']\n'+body:'';})].filter(Boolean).join('\n\n');
+const unparsePatterns=slot=>unparseSections((slot.patterns||[]).join('\n'),slot.sets,v=>(v.patterns||[]).join('\n'));
+const unparseWordlists=slot=>unparseSections(unparsePools(slot.pools),slot.sets,v=>unparsePools(v.pools));
+
+const C=()=>state.custom.find(r=>r.id===state.editing);
+const slotEditor=(key,name,slot)=>
+  '<fieldset class="slot" data-k="'+key+'"><legend>'+name+'</legend>'+
+  '<label class="toggle"><input type="checkbox" class="c-on"'+(slot?' checked':'')+'> The race has one</label>'+
+  '<div class="slot-body"'+(slot?'':' hidden')+'>'+
+  '<label class="field">Built from <select class="c-kind">'+
+    '<option value="corpus"'+(!slot||slot.kind==='corpus'?' selected':'')+'>A list of real names</option>'+
+    '<option value="pools"'+(slot&&slot.kind==='pools'?' selected':'')+'>Patterns and word lists</option></select>'+
+  '<span class="hint">A list copies the sound of names you paste in. Patterns build a name out of words, which is the only way to do compounds like Stormcloak or Lifts-Her-Tail.</span></label>'+
+  '<label class="field c-corpus"'+(slot&&slot.kind==='pools'?' hidden':'')+'>Names <span class="hint">One per line. Thirty is about the least that works; under that you mostly get your own list back. Split them with a line like [Masculine] to offer a choice.</span>'+
+    '<textarea class="c-names" rows="8" spellcheck="false">'+esc(slot&&slot.kind!=='pools'?unparseNames(slot):'')+'</textarea></label>'+
+  '<label class="field c-pools"'+(slot&&slot.kind==='pools'?'':' hidden')+'>Patterns <span class="hint">One per line. {word} takes one from the list of that name below, and anything else is kept, so {a}-{b} gives Battle-Born, and {t}&rsquo;{g} gives Y&rsquo;shtola. A line like [Masculine] below them gives that set its own patterns.</span>'+
+    '<textarea class="c-patterns" rows="4" spellcheck="false">'+esc(slot&&slot.kind==='pools'?unparsePatterns(slot):'')+'</textarea></label>'+
+  '<label class="field c-pools"'+(slot&&slot.kind==='pools'?'':' hidden')+'>Word lists <span class="hint">One per line, like a: Storm, Battle, Gray. A line like [Masculine] below them gives that set its own lists, replacing the ones above by name.</span>'+
+    '<textarea class="c-wordlists" rows="7" spellcheck="false">'+esc(slot&&slot.kind==='pools'?unparseWordlists(slot):'')+'</textarea></label>'+
+  '<p class="warn pool-warn" hidden></p>'+
+  '</div></fieldset>';
+
+function renderCustom(){
+  // A remembered id can outlive the race it points at (after a backup is loaded, say). Left alone,
+  // Delete stays enabled and quietly does nothing, so the id is dropped once it leads nowhere.
+  if(state.editing&&!C())state.editing=null;
+  const pick=$('custom-pick');
+  pick.innerHTML='<option value="">Choose one of yours…</option>'+
+    state.custom.map(r=>'<option value="'+r.id+'"'+(r.id===state.editing?' selected':'')+'>'+esc(label(r))+'</option>').join('');
+  pick.disabled=!state.custom.length;
+  $('custom-delete').disabled=!C();
+  const race=C();
+  $('custom-editor').hidden=!race;
+  if(!race)return;
+  $('custom-editor').innerHTML=
+    '<div class="form-row"><label class="field grow">Game <input type="text" class="c-game" value="'+esc(race.game)+'"></label>'+
+    '<label class="field grow">Race <input type="text" class="c-race" value="'+esc(race.race)+'"></label></div>'+
+    '<label class="field">Note <span class="hint">Shown above the names, to remind you how the race works.</span>'+
+    '<input type="text" class="c-note" value="'+esc(race.note||'')+'"></label>'+
+    SLOTS.map(([key,name])=>slotEditor(key,name,race.slots[key])).join('');
+  warnPools();
+}
+
+// A pattern can name a word list that doesn't exist, usually a typo or a list not written yet.
+// The name simply comes out with a gap where that word would go, which is impossible to work out
+// from the result alone, so the editor says which names it couldn't find.
+function warnPools(){
+  const race=C();if(!race)return;
+  for(const [key] of SLOTS){
+    const box=$('custom-editor').querySelector('.slot[data-k="'+key+'"] .pool-warn');
+    const slot=race.slots[key];
+    if(!box)continue;
+    const missing=slot&&slot.kind==='pools'?unknownPools(slot):[];
+    box.textContent=missing.length
+      ?'No word list called '+missing.map(m=>'“'+m+'”').join(' or ')+', so that part of the name comes out empty.'
+      :'';
+    box.hidden=!missing.length;
+  }
+}
+
+// Reads the whole editor back into the race. Everything is rebuilt from the boxes each time, which
+// keeps the saved race and what is on screen in step without tracking changes field by field.
+function readCustom(){
+  const race=C();if(!race)return;
+  const box=$('custom-editor');
+  race.game=box.querySelector('.c-game').value.trim()||'My game';
+  race.race=box.querySelector('.c-race').value.trim()||'My race';
+  race.note=box.querySelector('.c-note').value.trim();
+  race.slots={};
+  const sets=new Set();
+  box.querySelectorAll('.slot').forEach(f=>{
+    const key=f.dataset.k;
+    if(!f.querySelector('.c-on').checked)return;
+    if(f.querySelector('.c-kind').value==='pools'){
+      const pat=sections(f.querySelector('.c-patterns').value);
+      const words=sections(f.querySelector('.c-wordlists').value);
+      const slot={kind:'pools',
+        patterns:pat.base.length?pat.base:['{a}'],
+        pools:parsePools(words.base.join('\n'))};
+      const named=new Set([...Object.keys(pat.sets),...Object.keys(words.sets)]);
+      if(named.size){
+        slot.sets={};
+        for(const name of named){
+          const over={};
+          if((pat.sets[name]||[]).length)over.patterns=pat.sets[name];
+          if((words.sets[name]||[]).length)over.pools=parsePools(words.sets[name].join('\n'));
+          slot.sets[name]=over;
+          sets.add(name);
+        }
+      }
+      race.slots[key]=slot;
+    }else{
+      const parsed=parseNames(f.querySelector('.c-names').value);
+      race.slots[key]=Object.assign({kind:'corpus'},parsed);
+      if(parsed.sets)Object.keys(parsed.sets).forEach(s=>sets.add(s));
+    }
+  });
+  race.sets=sets.size?[...sets]:undefined;
+  clearCache();
+  save();
+}
+
+// ---------------------------------------------------------------- drawing it all
+
+function render(){
+  const race=R();state.raceId=race.id;
+  const groups={};
+  for(const r of races())(groups[r.game]=groups[r.game]||[]).push(r);
+  $('race').innerHTML=Object.entries(groups).map(([game,list])=>
+    '<optgroup label="'+esc(game)+'">'+list.map(r=>
+      '<option value="'+r.id+'"'+(r.id===race.id?' selected':'')+'>'+esc(r.race)+'</option>').join('')+'</optgroup>').join('');
+  const sets=race.sets||[];
+  $('set-wrap').hidden=!sets.length;
+  if(sets.length){
+    if(!sets.includes(state.set))state.set=sets[0];
+    $('set').innerHTML=sets.map(s=>'<option'+(s===state.set?' selected':'')+'>'+esc(s)+'</option>').join('');
+  }
+  $('lore').textContent=race.note||'';
+  SLOTS.forEach(([key])=>{
+    const box=$('use-'+key);
+    box.checked=!!(state.slots[key]&&race.slots[key]);
+    box.disabled=!race.slots[key];
+    box.closest('.toggle').classList.toggle('off',!race.slots[key]);
+  });
+  $('count').value=state.count;
+  $('avoid').checked=state.avoid;
+  renderForces();renderResults();renderFavourites();renderCustom();
+}
+
+$('roll').addEventListener('click',()=>{generate();renderResults();});
+$('race').addEventListener('change',e=>{
+  state.raceId=e.target.value;state.set='';
+  state.result=[];state.locked=[];
+  save();render();
+});
+$('set').addEventListener('change',e=>{state.set=e.target.value;save();renderForces();});
+SLOTS.forEach(([key])=>$('use-'+key).addEventListener('change',e=>{
+  state.slots[key]=e.target.checked;state.result=[];state.locked=[];save();render();
+}));
+$('count').addEventListener('change',e=>{
+  state.count=Math.max(1,Math.min(50,Math.round(+e.target.value)||1));
+  e.target.value=state.count;save();
+});
+$('avoid').addEventListener('change',e=>{state.avoid=e.target.checked;save();});
+$('results').addEventListener('click',e=>{
+  const lock=e.target.closest('.lock');
+  if(lock){state.locked=toggleIn(state.locked,+lock.dataset.i);save();renderResults();return;}
+  const keep=e.target.closest('.keep');
+  if(!keep)return;
+  const name=keep.dataset.name;
+  if(!state.favourites.includes(name))state.favourites.push(name);
+  save();renderResults();renderFavourites();
+});
+$('fav-list').addEventListener('click',e=>{
+  const drop=e.target.closest('.drop');if(!drop)return;
+  state.favourites=state.favourites.filter(n=>n!==drop.dataset.name);
+  save();renderResults();renderFavourites();
+});
+$('fav-clear').addEventListener('click',async()=>{
+  if(!await ask('Clear every kept name?',{confirm:'Clear'}))return;
+  state.favourites=[];save();renderResults();renderFavourites();
+});
+$('copy').addEventListener('click',()=>lockButtonCopy($('copy'),state.result.map(full).join('\n')));
+// Copies text and says so on the button for a moment
+function lockButtonCopy(button,text){
+  const was=button.textContent;
+  navigator.clipboard.writeText(text).then(()=>{
+    button.textContent='Copied';
+    setTimeout(()=>{button.textContent=was;},1200);
+  },()=>{button.textContent='Couldn’t copy';setTimeout(()=>{button.textContent=was;},1200);});
+}
+$('forces').addEventListener('input',e=>{
+  const row=e.target.closest('.force');if(!row)return;
+  const key=row.dataset.k,f=state.force[key];
+  if(e.target.id==='f-'+key)f.text=e.target.value;
+  else if(e.target.id==='w-'+key)f.where=e.target.value;
+  else if(e.target.id==='s-'+key)f.scope=e.target.value;
+  else if(e.target.id==='v-'+key){
+    f.vary=Math.max(0,Math.min(3,Math.round(+e.target.value)||0));
+    $('s-'+key).disabled=!f.vary;
+  }
+  save();verdict(key);
+});
+$('forces').addEventListener('change',e=>{
+  if(e.target.type==='number'){const row=e.target.closest('.force');e.target.value=state.force[row.dataset.k].vary;}
+});
+
+$('custom-new').addEventListener('click',()=>{
+  const race={id:'custom-'+uid(),game:'My game',race:'My race',note:'',
+    slots:{first:{kind:'corpus',names:[]}}};
+  state.custom.push(race);state.editing=race.id;state.raceId=race.id;
+  save();render();
+});
+$('custom-copy').addEventListener('click',()=>{
+  const from=R();
+  const copy=JSON.parse(JSON.stringify(from));
+  copy.id='custom-'+uid();copy.race=from.race+' (mine)';
+  state.custom.push(copy);state.editing=copy.id;state.raceId=copy.id;
+  save();render();
+});
+$('custom-delete').addEventListener('click',async()=>{
+  const race=C();if(!race)return;
+  if(!await ask('Delete “'+label(race)+'”? This can’t be undone.'))return;
+  state.custom=state.custom.filter(r=>r!==race);
+  state.editing=null;
+  if(state.raceId===race.id){state.raceId=BUILT_IN[0].id;state.result=[];state.locked=[];}
+  clearCache();save();render();
+});
+$('custom-pick').addEventListener('change',e=>{
+  state.editing=e.target.value||null;
+  if(state.editing){state.raceId=state.editing;state.result=[];state.locked=[];}
+  save();render();
+});
+// The editor saves as you type. Switching a slot on, off or over redraws just that slot's boxes.
+$('custom-editor').addEventListener('input',e=>{
+  if(e.target.classList.contains('c-kind')||e.target.classList.contains('c-on')){
+    const slot=e.target.closest('.slot');
+    slot.querySelector('.slot-body').hidden=!slot.querySelector('.c-on').checked;
+    const pools=slot.querySelector('.c-kind').value==='pools';
+    slot.querySelectorAll('.c-pools').forEach(x=>{x.hidden=!pools;});
+    slot.querySelectorAll('.c-corpus').forEach(x=>{x.hidden=pools;});
+  }
+  readCustom();
+  warnPools();
+  // The race being edited may be the one on show, so its name and parts can change under the results
+  if(state.raceId===state.editing){
+    const race=R(),sets=race.sets||[];
+    $('lore').textContent=race.note||'';
+    $('set-wrap').hidden=!sets.length;
+    if(sets.length){
+      if(!sets.includes(state.set))state.set=sets[0];
+      $('set').innerHTML=sets.map(s=>'<option'+(s===state.set?' selected':'')+'>'+esc(s)+'</option>').join('');
+    }
+    SLOTS.forEach(([key])=>{
+      const box=$('use-'+key);
+      box.disabled=!race.slots[key];
+      box.closest('.toggle').classList.toggle('off',!race.slots[key]);
+      if(!race.slots[key])box.checked=false;
+    });
+    const option=[...$('race').options].find(o=>o.value===race.id);
+    if(option){option.textContent=race.race;option.parentNode.label=race.game;}
+  }
+});
+
+render();
+backups({what:'races and kept names',keys:['names'],file:'character-names.json'});
+</script></body></html>
