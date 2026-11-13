@@ -333,7 +333,7 @@ function backups({ what, keys, file, renamed = {}, legacy, merge, title, intro, 
   // is built from this, so adding a tool means adding it here and in index.html.
   const TOOLS = [
     ["Pick at random", [["randomizer/", "Randomizer"], ["dice/", "Dice Roller"], ["bingo/", "Bingo Cards"],
-                        ["names/", "Character Names"]]],
+                        ["names/", "Character Names", "Beta"]]],
     ["Run a session", [["turns/", "Turn Tracker"], ["score/", "Score Pad"], ["brackets/", "Brackets"]]],
     ["Keep track", [["tasks/", "Tasks and Events"], ["odds/", "Drop Odds"]]],
     ["Games", [["games/aniimo/", "Aniimo"], ["games/dbd/", "Dead by Daylight"],
@@ -353,14 +353,19 @@ function backups({ what, keys, file, renamed = {}, legacy, merge, title, intro, 
     const trail = backs.map(a => ({ href: a.getAttribute("href"), name: a.textContent.replace(/^Back to /, "") }));
     trail[0].name = "Tools"; // the first back link always points at the hub
     const h1 = document.querySelector("h1");
-    const here = (h1 ? h1.textContent : document.title).trim();
+    // Without the tag: the crumb is the page's name, not "Character Names Beta"
+    const title = h1 && h1.cloneNode(true);
+    if (title) title.querySelectorAll(".tag").forEach(t => t.remove());
+    const here = (title ? title.textContent : document.title).trim();
 
     const path = location.pathname;
-    const entry = ([href, name]) => {
+    // A third item on a TOOLS entry is a tag to show beside its name, like Beta
+    const entry = ([href, name, tag]) => {
       const to = new URL(href, root).pathname;
+      const label = name + (tag ? ` <span class="tag">${tag}</span>` : "");
       return path.startsWith(to)
-        ? `<li><span aria-current="page">${name}</span></li>`
-        : `<li><a href="${to}">${name}</a></li>`;
+        ? `<li><span aria-current="page">${label}</span></li>`
+        : `<li><a href="${to}">${label}</a></li>`;
     };
 
     const nav = document.createElement("nav");

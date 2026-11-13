@@ -2,6 +2,9 @@
 
 The site has no version numbers; changes are grouped by the day they were made.
 
+### 2026-11-12
+- Character Names is marked Beta, on its tile, beside its heading and in the tool switcher. The tag is a shared style, so any tool can carry one
+
 ### 2026-11-09
 - Added a Character Names generator: names that fit a game's races, with a first name, a last name or both. Forty-six races and clans: all sixteen in FFXIV, eight in Skyrim and twenty-two in World of Warcraft
 - Every FFXIV clan is written out to Square Enix's own naming conventions, which means patterns rather than lists for most of them: Lalafell names are a syllable repeated to a shape, a Miqo'te Seeker carries a tribe letter and an apostrophe, a Sea Wolf forename is two words of Old Roegadyn and the surname is the father's name with -syn or -wyn. No convention was ever published for the Viera or the Hrothgar, so those four clans are shaped on the few canon names there are and say so

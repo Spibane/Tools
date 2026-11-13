@@ -44,7 +44,7 @@ A static site with no build step, framework or server. Each tool is a folder wit
 | General | [Turn Tracker](https://spibane.com/turns/) | Turn order with skips, holds and notes |
 | General | [Score Pad](https://spibane.com/score/) | Scores with a turn clock or timer |
 | General | [Brackets](https://spibane.com/brackets/) | Elimination brackets and round robins |
-| General | [Character Names](https://spibane.com/names/) | Names that fit a game's races and clans |
+| General | [Character Names](https://spibane.com/names/) | Names that fit a game's races and clans (beta) |
 | Games | [Aniimo](https://spibane.com/games/aniimo/) | Collection boxes and checklists |
 | Games | [Dead by Daylight](https://spibane.com/games/dbd/) | Loadout randomizer |
 | Games | [Final Fantasy XIV](https://spibane.com/games/ffxiv/) | Relic checklists and roulette job picker |
@@ -93,7 +93,7 @@ python3 -m http.server     # then open http://localhost:8000
 
 1. Make a folder (games go in `games/`) with an `index.html` that loads `shared/base.css` and `shared/site.js` in `<head>`.
 2. Call `backups({...})` with the tool's storage keys.
-3. Add an `<li>` for it under the right category in the hub's `index.html`, and the same entry to `TOOLS` in `shared/site.js` so it appears in the breadcrumb bar's tool switcher.
+3. Add an `<li>` for it under the right category in the hub's `index.html`, and the same entry to `TOOLS` in `shared/site.js` so it appears in the breadcrumb bar's tool switcher. A third item on the `TOOLS` entry, and a `<span class="tag">`, marks a tool as beta in the switcher, on its tile and beside its heading.
 4. Add a line to [CHANGELOG.md](./CHANGELOG.md).
 
 ## Deployment
