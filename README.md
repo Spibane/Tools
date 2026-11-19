@@ -27,7 +27,7 @@ A static site with no build step, framework or server. Each tool is a folder wit
 ```
 
 - **No accounts or tracking.** Everything a tool saves stays in the browser's `localStorage`.
-- **Shared helpers.** `shared/site.js` has the small pieces tools reuse (`shuffle`, `uid`, `slug`, `plural`, `splitLines`, `toggleIn`, `lockButton`, `fullScreen`, `PALETTE`, and for colors `colorField`, `pickColor`, `colorVars`, `hexColor`, `inkOn`), and `shared/base.css` styles form fields, dialogs, color choices, result rows, locks and played lists. Check there before writing one into a page.
+- **Shared helpers.** `shared/site.js` has the small pieces tools reuse (`shuffle`, `uid`, `okId`, `slug`, `plural`, `splitLines`, `toggleIn`, `ask`, `copyText`, `lockButton`, `fullScreen`, `PALETTE`, and for colors `colorField`, `pickColor`, `colorVars`, `hexColor`, `inkOn`), and `shared/base.css` styles form fields, dialogs, color choices, result rows, locks and played lists. Check there before writing one into a page.
 - **Backups.** `backups()` in `shared/site.js` gives each tool Save, Load and Clear buttons for its own keys, plus Import when the tool passes `merge`. The hub's backup holds every tool's data in one file, and a tool can load its part out of that file.
 - **Settings.** Put a tool's settings fieldsets right under the intro, wrapped in `<details class="settings"><summary><h2>Settings</h2></summary>…</details>`. `shared/site.js` starts it closed and remembers how it was left on each page. Keep main inputs (entries, players, lists) and the toggles beside the roll button outside it.
 - **Game data** lives in plain JS files under each game's `data/` folder.
@@ -82,6 +82,10 @@ Any static file server works:
 ```bash
 python3 -m http.server     # then open http://localhost:8000
 ```
+
+## Tests
+
+`node --test tasks/` checks the Tasks reset times, including the days the clocks change. There's no other test suite.
 
 ## Updating Data
 

@@ -203,15 +203,14 @@ $('history-clear').addEventListener('click',async()=>{
 });
 function render(){renderPad();renderHistory();$('step').value=state.step;$('mode').value=T.mode;$('minutes').value=T.minutes??'';$('start').value=state.start;}
 
-$('grid').addEventListener('click',e=>{
+$('grid').addEventListener('click',async e=>{
   const cell=e.target.closest('.p');if(!cell)return;
   const p=byId(cell.dataset.id),b=e.target.closest('button');if(!b)return;
   if(b.dataset.d)change(p,+b.dataset.d*state.step);
   else if(b.classList.contains('p-clock'))setTurn(p.id);
   else if(b.classList.contains('p-score')){
-    const v=prompt('Add to '+nm(p)+'’s score. Use - to take away, or = to set it, like =20.','');
-    if(v==null)return;
-    const m=v.trim().replace(/,/g,'').match(/^(=)?\s*([+-]?\d*\.?\d+)$/);
+    const v=await ask('Add to '+nm(p)+'’s score. Use - to take away, or = to set it, like =20.',{input:'',confirm:'OK'});
+    const m=v!=null&&v.trim().replace(/,/g,'').match(/^(=)?\s*([+-]?\d*\.?\d+)$/);
     if(m)change(p,+m[2],!!m[1]);
   }
   const again=$('grid').querySelector('[data-id="'+p.id+'"] '+(b.dataset.d?'[data-d="'+b.dataset.d+'"]':'.'+b.className.split(' ')[0]));

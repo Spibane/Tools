@@ -340,13 +340,6 @@ function variants(prepared, str, vary, want = 40, scope = "ends") {
   return [str, ...(capital ? list.map(v => v.charAt(0).toUpperCase() + v.slice(1)) : list)];
 }
 
-// `count` distinct indexes below n
-function pickIndexes(n, count) {
-  const all = [...Array(n).keys()];
-  for (let i = all.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [all[i], all[j]] = [all[j], all[i]]; }
-  return all.slice(0, count);
-}
-
 // Capitals go after hyphens and spaces too, because a generated Jel name is "Raj-Deesei", not
 // "Raj-deesei". Pool values carry their own case and already match this.
 // Matched by Unicode letter case, not a-z: a race whose names start with E, AE or TH is not

@@ -228,6 +228,7 @@ dialog::backdrop { background: rgb(0 0 0 / 0.55); }
 /* A yes or no question (ask in site.js), used where confirm() would be */
 .ask-dialog { width: min(420px, calc(100% - 32px)); }
 .ask-dialog .ask-q { margin: 0; font-weight: 600; }
+.ask-dialog .ask-in { width: 100%; margin-top: 12px; }
 .ask-dialog .button-row { display: flex; gap: 8px; margin-top: 16px; }
 
 /* A color choice (colorField in site.js): palette swatches as radio buttons, then Custom with a picker and a hex box */

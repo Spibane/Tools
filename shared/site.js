@@ -14,6 +14,9 @@ const shuffle = a => {
 };
 // A short random id for saved things
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+// Whether an id from a file looks like one of ours. Ids go into the page's markup unescaped, so an
+// imported file's ids are checked with this and replaced when they don't pass.
+const okId = s => typeof s === "string" && /^[a-z0-9-]+$/.test(s);
 // A name as an id: "X-Ray Vision" becomes "x-ray-vision". Saved ids come from this, so don't change it.
 const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 const plural = (n, word) => n + " " + word + (n === 1 ? "" : "s");
@@ -106,22 +109,48 @@ function pickColor(value, label) {
 // browsers: it returns false at once without ever showing anything, so the button it guards
 // looks broken. A dialog of our own always shows. Cancel takes focus, so a stray Enter or
 // Escape cancels rather than confirming something that can't be undone.
-function ask(question, { confirm = "Delete", cancel = "Cancel" } = {}) {
+// Give input (the starting text) to ask for some text instead, in place of prompt(), which those
+// browsers suppress the same way: it then resolves with what was typed, or null when cancelled.
+function ask(question, { confirm = "Delete", cancel = "Cancel", input } = {}) {
   return new Promise(done => {
     const d = document.createElement("dialog");
     d.className = "ask-dialog";
     d.innerHTML = `<form method="dialog"><p class="ask-q"></p>` +
+      (input != null ? `<input type="text" class="ask-in" autocomplete="off" spellcheck="false">` : "") +
       `<div class="button-row"><button value="ok" class="primary"></button><button value="" formnovalidate></button></div></form>`;
     // Set as text, never markup: the question carries names people typed in
     d.querySelector(".ask-q").textContent = question;
-    const [yes, no] = d.querySelectorAll("button");
+    const [yes, no] = d.querySelectorAll("button"), field = d.querySelector(".ask-in");
     yes.textContent = confirm;
     no.textContent = cancel;
-    d.addEventListener("close", () => { done(d.returnValue === "ok"); d.remove(); });
+    if (field) { field.value = input; field.setAttribute("aria-label", question); }
+    d.addEventListener("close", () => {
+      const ok = d.returnValue === "ok";
+      done(field ? (ok ? field.value : null) : ok);
+      d.remove();
+    });
     document.body.append(d);
     d.showModal();
-    no.focus();
+    if (field) { field.focus(); field.select(); } else no.focus();
   });
+}
+
+// Copies text and says so on the button for a moment. Where the clipboard API is blocked it falls
+// back to the older copy command. Resolves whether it worked.
+async function copyText(button, text) {
+  const was = button.dataset.label ??= button.textContent; // a second click mid-"Copied" mustn't keep that as the label
+  button.style.minWidth = button.offsetWidth + "px";
+  let ok = true;
+  try { await navigator.clipboard.writeText(text); }
+  catch (_) {
+    const a = document.createElement("textarea");
+    a.value = text; document.body.append(a); a.select();
+    try { ok = document.execCommand("copy"); } catch (__) { ok = false; }
+    a.remove(); button.focus();
+  }
+  button.textContent = ok ? "Copied" : "Couldn’t copy";
+  setTimeout(() => { button.textContent = was; }, 1600);
+  return ok;
 }
 
 // A lock button for a randomizer's result row: an open padlock, or a closed one when locked.

@@ -394,7 +394,11 @@ function render(){
   renderForces();renderResults();renderFavourites();renderCustom();
 }
 
-$('roll').addEventListener('click',()=>{generate();renderResults();});
+$('roll').addEventListener('click',()=>{
+  generate();renderResults();
+  // A race with nothing in it yet makes no names, which would otherwise look like a button that does nothing
+  if(!state.result.length)$('results').innerHTML='<li class="result empty"><span class="r-pick"><span class="muted">This race has no names or words yet.</span></span></li>';
+});
 $('race').addEventListener('change',e=>{
   state.raceId=e.target.value;state.set='';
   state.result=[];state.locked=[];
@@ -427,15 +431,7 @@ $('fav-clear').addEventListener('click',async()=>{
   if(!await ask('Clear every kept name?',{confirm:'Clear'}))return;
   state.favourites=[];save();renderResults();renderFavourites();
 });
-$('copy').addEventListener('click',()=>lockButtonCopy($('copy'),state.result.map(full).join('\n')));
-// Copies text and says so on the button for a moment
-function lockButtonCopy(button,text){
-  const was=button.textContent;
-  navigator.clipboard.writeText(text).then(()=>{
-    button.textContent='Copied';
-    setTimeout(()=>{button.textContent=was;},1200);
-  },()=>{button.textContent='Couldn’t copy';setTimeout(()=>{button.textContent=was;},1200);});
-}
+$('copy').addEventListener('click',()=>copyText($('copy'),state.result.map(full).join('\n')));
 $('forces').addEventListener('input',e=>{
   const row=e.target.closest('.force');if(!row)return;
   const key=row.dataset.k,f=state.force[key];

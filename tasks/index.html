@@ -13,6 +13,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="../shared/base.css">
 <script src="../shared/site.js"></script>
+<script src="time.js"></script>
 <link rel="stylesheet" href="style.css"></head><body><main>
 <a class="back" href="../">Back to All Tools</a>
 <h1>Tasks and Events</h1>
@@ -36,55 +37,28 @@ const WEEKDAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Sat
 // An event is {id, name, notes, tz, start, startTime, end, endTime, repeat: null or {every, time, weekday}, target, count, at, finished}.
 // Dates are 'YYYY-MM-DD' in the event's zone; an empty end time means the event lasts the whole end day.
 // finished is when it was marked finished, which moves it to the Ended list early.
+// A group or event that can't be drawn (from a damaged or hand-edited file) would stop the whole page, Clear button
+// and all, so it's left out: a task group needs a reset rule that works, an event an end date.
+const works=f=>{try{return !isNaN(f());}catch(_){return false;}};
+const eventWorks=ev=>works(()=>endOf(ev)+(ev.repeat?resetWindow(Object.assign({day:1,tz:ev.tz},ev.repeat)).next:0));
 // Events used to sit in one list of their own; they become an event group
 function upgrade(s){
   s=Object.assign({groups:[]},s);
-  s.groups.forEach(g=>{g.kind=g.kind||'tasks';});
-  if(s.events){if(s.events.length)s.groups.push({id:uid(),name:'Events',open:true,kind:'events',items:s.events});delete s.events;}
+  if(!Array.isArray(s.groups))s.groups=[];
+  if(Array.isArray(s.events)){if(s.events.length)s.groups.push({id:uid(),name:'Events',open:true,kind:'events',items:s.events});delete s.events;}
+  s.groups=s.groups.filter(g=>g&&Array.isArray(g.items));
+  s.groups.forEach(g=>{g.kind=g.kind==='events'?'events':'tasks';g.items=g.items.filter(it=>it&&typeof it==='object');});
+  s.groups.forEach(g=>{if(g.kind==='events')g.items=g.items.filter(eventWorks);});
+  s.groups=s.groups.filter(g=>g.kind==='events'||works(()=>resetWindow(g.rule).next));
   return s;
 }
 let state=upgrade(store.load('tasks'));
 const save=()=>store.save('tasks',state);
 
-// Time zone maths. partsIn gives the wall-clock date and time in a zone at an instant.
-const fmts={};
-function partsIn(ts,tz){
-  const f=fmts[tz]||(fmts[tz]=new Intl.DateTimeFormat('en-US',{timeZone:tz,hourCycle:'h23',year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric',second:'numeric'}));
-  const p={};f.formatToParts(ts).forEach(x=>{if(x.type!=='literal')p[x.type]=+x.value;});
-  return p;
-}
-const offset=(ts,tz)=>{const p=partsIn(ts,tz);return Date.UTC(p.year,p.month-1,p.day,p.hour%24,p.minute,p.second)-Math.floor(ts/1000)*1000;};
-// The instant a wall-clock time happens in a zone. Days past the month's end roll into the next month.
-function zoned(y,m,d,time,tz){
-  const [h,min]=time.split(':').map(Number),guess=Date.UTC(y,m-1,d,h,min);
-  return guess-offset(guess-offset(guess,tz),tz);
-}
-const civil=(y,m,d)=>{const t=new Date(Date.UTC(y,m-1,d));return {y:t.getUTCFullYear(),m:t.getUTCMonth()+1,d:t.getUTCDate()};};
-const daysIn=(y,m)=>new Date(Date.UTC(y,m,0)).getUTCDate();
-
-// When a rule last reset (at or before now) and when it resets next.
-// A monthly reset on a day the month doesn't have (the 31st in April) happens on its last day.
-function resetWindow(rule,now=Date.now()){
-  const p=partsIn(now,rule.tz);
-  const at=k=>{
-    if(rule.every==='month'){const c=civil(p.year,p.month+k,1);return zoned(c.y,c.m,Math.min(rule.day,daysIn(c.y,c.m)),rule.time,rule.tz);}
-    const back=rule.every==='week'?(new Date(Date.UTC(p.year,p.month-1,p.day)).getUTCDay()-rule.weekday+7)%7:0;
-    const c=civil(p.year,p.month,p.day-back+k*(rule.every==='week'?7:1));
-    return zoned(c.y,c.m,c.d,rule.time,rule.tz);
-  };
-  let k=0;
-  while(at(k)>now)k--;
-  while(at(k+1)<=now)k++;
-  return {last:at(k),next:at(k+1)};
-}
-
 const countOf=(it,since)=>it.at>=since?it.count:0;
 const isDone=(it,since)=>countOf(it,since)>=(it.target||1);
 const eventRule=ev=>Object.assign({day:1,tz:ev.tz},ev.repeat);
 const eventSince=(ev,now)=>ev.repeat?resetWindow(eventRule(ev),now).last:0;
-const dateParts=s=>s.split('-').map(Number);
-const startOf=ev=>{const [y,m,d]=dateParts(ev.start);return zoned(y,m,d,ev.startTime||'00:00',ev.tz);};
-const endOf=ev=>{const [y,m,d]=dateParts(ev.end);return ev.endTime?zoned(y,m,d,ev.endTime,ev.tz):zoned(y,m,d+1,'00:00',ev.tz);};
 const isEnded=(ev,now)=>!!ev.finished||now>=endOf(ev);
 
 // Text
@@ -220,7 +194,7 @@ const opts=(list,val)=>list.map(([v,t])=>'<option value="'+esc(v)+'"'+(String(v)
 function zoneLabel(z,now){
   const m=Math.round(offset(now,z)/6e4);
   // US English names American zones (PST), British English names European ones (CET)
-  const name=loc=>new Intl.DateTimeFormat(loc,{timeZone:z,timeZoneName:'short'}).formatToParts(now).find(p=>p.type==='timeZoneName').value;
+  const name=loc=>{try{return new Intl.DateTimeFormat(loc,{timeZone:z,timeZoneName:'short'}).formatToParts(now).find(p=>p.type==='timeZoneName').value;}catch(_){return 'GMT';}};
   const abbr=[name('en-US'),name('en-GB')].find(a=>!/^(GMT|UTC)/.test(a))||'GMT';
   const off=z==='UTC'?'UTC':'UTC'+(m<0?'−':'+')+String(Math.floor(Math.abs(m)/60)).padStart(2,'0')+':'+String(Math.abs(m)%60).padStart(2,'0');
   return {m,text:off+(z==='UTC'?'':' · '+zoneName(z.split('/').pop()))+(/^(GMT|UTC)/.test(abbr)?'':' ('+abbr+')')+(z===LOCAL_TZ?' · yours':'')};
@@ -356,16 +330,17 @@ render();
 // Importing adds a file's groups after yours. A group you already have (the same one, from your own backup) only gets the
 // tasks and events it's missing. Imported ones start with no progress, since it was someone else's.
 function importTasks(data){
-  const add=upgrade(JSON.parse(data.tasks));
-  if(!Array.isArray(add.groups))throw 0;
+  const raw=JSON.parse(data.tasks);
+  if(!raw||!Array.isArray(raw.groups)&&!Array.isArray(raw.events))throw 0;
+  const add=upgrade(raw);
   const have=new Set(state.groups.flatMap(g=>g.items.map(it=>it.id)));
   let groups=0,items=0;
   for(const g of add.groups){
-    if(!g||!Array.isArray(g.items))continue;
-    const fresh=g.items.filter(it=>it&&!have.has(it.id)).map(it=>Object.assign(it,{count:0,at:0},g.kind==='events'?{finished:null}:{}));
+    // Ids go into the page's markup, so ones that don't look like ours are replaced
+    const fresh=g.items.filter(it=>!have.has(it.id)).map(it=>Object.assign(it,{id:okId(it.id)?it.id:uid(),count:0,at:0},g.kind==='events'?{finished:null}:{}));
     const mine=groupById(g.id);
     if(mine&&mine.kind===g.kind)mine.items.push(...fresh);
-    else if(fresh.length||!g.items.length){state.groups.push(Object.assign(g,{id:mine?uid():g.id,items:fresh}));groups++;}
+    else if(fresh.length||!g.items.length){state.groups.push(Object.assign(g,{id:mine||!okId(g.id)?uid():g.id,items:fresh}));groups++;}
     items+=fresh.length;
   }
   if(!groups&&!items)return 'You already have everything in that file.';

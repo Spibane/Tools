@@ -6,6 +6,11 @@ The site has no version numbers; changes are grouped by the day they were made.
 - Every page is now as wide as the main page, up to 1100px, and narrows with the window the same way. Long text still wraps at a comfortable line length
 - The game pages list their tools as tiles, the same as the main page
 - On phones, the Score Pad's player list no longer runs off the right edge
+- A damaged or hand-edited Tasks file can no longer leave the page blank. A group or event that can't be shown is left out, and a time zone this browser doesn't know counts as UTC
+- Importing a Tasks or Randomizer file someone else made can no longer run code on the page
+- Typing an amount into the Score Pad uses a box of the site's own, so it works in in-app browsers that block the browser's own
+- Copy buttons share one helper, and say when copying didn't work instead of always saying Copied. When Bingo can't copy its share link, it shows the link to copy by hand
+- Generating from a race with nothing in it yet says so, instead of looking like nothing happened
 
 ### 2026-11-12
 - Character Names is marked Beta, on its tile, beside its heading and in the tool switcher. The tag is a shared style, so any tool can carry one

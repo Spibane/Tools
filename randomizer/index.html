@@ -220,7 +220,7 @@ function importLists(data){
       mine.text=appendLines(mine.text,fresh);
       lines+=fresh.length;
     }
-    else{state.lists.push(Object.assign(blank(String(l.name||'Untitled')),{id:typeof l.id==='string'&&l.id?l.id:uid(),text:l.text,count:+l.count||1,cycle:!!l.cycle}));lists++;}
+    else{state.lists.push(Object.assign(blank(String(l.name||'Untitled')),{id:okId(l.id)?l.id:uid(),text:l.text,count:+l.count||1,cycle:!!l.cycle}));lists++;}
   }
   if(!lists&&!lines)return 'You already have everything in that file.';
   save();render();
