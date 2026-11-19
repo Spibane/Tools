@@ -2,6 +2,11 @@
 
 The site has no version numbers; changes are grouped by the day they were made.
 
+### 2026-11-18
+- Every page is now as wide as the main page, up to 1100px, and narrows with the window the same way. Long text still wraps at a comfortable line length
+- The game pages list their tools as tiles, the same as the main page
+- On phones, the Score Pad's player list no longer runs off the right edge
+
 ### 2026-11-12
 - Character Names is marked Beta, on its tile, beside its heading and in the tool switcher. The tag is a shared style, so any tool can carry one
 

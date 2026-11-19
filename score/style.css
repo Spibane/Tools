@@ -43,7 +43,7 @@
 /* Players */
 .players{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:6px}
 .players:empty{display:none}
-.players li{display:flex;gap:4px}
+.players li{display:flex;gap:4px;min-width:0} /* min-width: lets the name box shrink on phones instead of pushing the row off screen */
 .pl-name{flex:1;font-weight:600}
 .swatch{width:36px;background:var(--pc);border-color:#121212}
 .swatch:hover{background:var(--pc);outline:2px solid var(--ink);outline-offset:1px}
