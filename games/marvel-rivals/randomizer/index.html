@@ -47,7 +47,7 @@ const SLOTS=[{id:'vanguard',name:'Vanguard',role:'vanguard'},{id:'duelist',name:
 const HEROES=[
   ...['Angela','Captain America','Devil Dinosaur','Doctor Strange','Emma Frost','Groot','Hulk','Magneto','Peni Parker','Rogue','The Hood','The Thing','Thor','Venom'].map(n=>({name:n,role:'vanguard'})),
   ...['Black Cat','Black Panther','Black Widow','Blade','Cyclops','Daredevil','Elsa Bloodstone','Gorr','Hawkeye','Hela','Human Torch','Iron Fist','Iron Man','Magik','Mister Fantastic','Moon Knight','Namor','Phoenix','Psylocke','Scarlet Witch','Spider-Man','Squirrel Girl','Star-Lord','Storm','The Punisher','Winter Soldier','Wolverine'].map(n=>({name:n,role:'duelist'})),
-  ...['Adam Warlock','Cloak & Dagger','Gambit','Invisible Woman','Jeff the Land Shark','Jubilee','Loki','Luna Snow','Mantis','Rocket Raccoon','Ultron','White Fox'].map(n=>({name:n,role:'strategist'})),
+  ...['Adam Warlock','Cloak & Dagger','Gambit','Invisible Woman','Jeff the Land Shark','Jubilee','Loki','Luna Snow','Mantis','Nightcrawler','Rocket Raccoon','Ultron','White Fox'].map(n=>({name:n,role:'strategist'})),
   ...['vanguard','duelist','strategist'].map(r=>({name:'Deadpool',role:r,id:'deadpool-'+r}))
 ].map(h=>({...h,hero:slug(h.name),id:h.id||slug(h.name)})).sort((a,b)=>a.name.localeCompare(b.name));
 // The anchor hero of each hero's two team-ups as of Season 10.5. Rolled team-ups are saved by anchor name.

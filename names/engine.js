@@ -340,13 +340,6 @@ function variants(prepared, str, vary, want = 40, scope = "ends") {
   return [str, ...(capital ? list.map(v => v.charAt(0).toUpperCase() + v.slice(1)) : list)];
 }
 
-// `count` distinct indexes below n
-function pickIndexes(n, count) {
-  const all = [...Array(n).keys()];
-  for (let i = all.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [all[i], all[j]] = [all[j], all[i]]; }
-  return all.slice(0, count);
-}
-
 // Capitals go after hyphens and spaces too, because a generated Jel name is "Raj-Deesei", not
 // "Raj-deesei". Pool values carry their own case and already match this.
 // Matched by Unicode letter case, not a-z: a race whose names start with E, AE or TH is not
@@ -399,6 +392,19 @@ function slotNames(prepared, { force, avoidCanon = true, want = 1 } = {}) {
   // Which of the race's words the forced string is, if any. Taken from the text as typed: its
   // varied forms are not in any pool, but they still belong in that word's place.
   const seat = text && !isCorpus(prepared) ? poolWord(prepared, text) : null;
+  // The places in a pattern the forced word can take. For "start" and "end" a place only counts at
+  // that end of the name: forcing Merl to end a Sea Wolf name used to give Merlulf, because Merl is a
+  // head word and its place is at the front.
+  const seatsIn = pattern => {
+    const seats = poolSeats(prepared, pattern, seat.pool), last = patternParts(pattern).length - 1;
+    return where === "start" && !seats.includes(0) || where === "end" && !seats.includes(last) ? [] : seats;
+  };
+  // A forced string joined to a word takes the case of where it lands, so Ra and Brook give Rabrook
+  // rather than RaBrook. Only the join is touched: words like McCoy keep the capitals they were written with.
+  const lower = s => s.toLowerCase();
+  const caseOf = (s, like) => /^\p{Lu}/u.test(like) ? s.charAt(0).toUpperCase() + lower(s.slice(1)) : lower(s);
+  // The string put in front of rest: it takes rest's first capital, if rest had one
+  const joinBefore = (s, rest) => caseOf(s, rest) + lower(rest.charAt(0)) + rest.slice(1);
   for (let attempt = 0; attempt < want * 120 && results.length < want; attempt++) {
     const stem = stems[attempt % stems.length];
     let name;
@@ -408,7 +414,7 @@ function slotNames(prepared, { force, avoidCanon = true, want = 1 } = {}) {
       // the end and give Grim-Shieldcloak.
       let choices = patternsOf(prepared);
       if (seat) {
-        const fit = choices.filter(p => poolSeats(prepared, p, seat.pool).length);
+        const fit = choices.filter(p => seatsIn(p).length);
         if (fit.length) choices = fit;
       }
       const pattern = choices[Math.floor(Math.random() * choices.length)];
@@ -418,10 +424,12 @@ function slotNames(prepared, { force, avoidCanon = true, want = 1 } = {}) {
         // If the string is one of the race's own words it takes that word's place in the pattern,
         // so forcing "Merl" on a Roegadyn gives Merlwyb rather than MerlKolbwyb. A varied Merl goes
         // in the same place, which is why the seat is worked out from the string as it was typed.
-        const seats = seat ? poolSeats(prepared, pattern, seat.pool) : [];
+        const seats = seat ? seatsIn(pattern) : [];
         if (seats.length) {
-          // Every place that pool fills, since a token used twice means the same word twice
-          for (const at of seats) pieces[at] = stem;
+          // Every place that pool fills, since a token used twice means the same word twice. Typed as it
+          // is in the pool, it takes the pool's spelling; a varied form takes the pool word's case.
+          const word = lower(stem) === lower(seat.value) ? seat.value : caseOf(stem, seat.value);
+          for (const at of seats) pieces[at] = word;
           add(pieces.join(""), true, stem);
           continue;
         }
@@ -430,11 +438,11 @@ function slotNames(prepared, { force, avoidCanon = true, want = 1 } = {}) {
         const low = name.toLowerCase(), want = stem.toLowerCase();
         const has = where === "start" ? low.startsWith(want) : where === "end" ? low.endsWith(want) : low.includes(want);
         if (!has) {
-          if (where === "start") name = stem + name;
-          else if (where === "end") name = name + stem;
+          if (where === "start") name = joinBefore(stem, name);
+          else if (where === "end") name = name + lower(stem);
           else {
             const seam = 1 + Math.floor(Math.random() * Math.max(1, pieces.length - 1));
-            name = pieces.slice(0, seam).join("") + stem + pieces.slice(seam).join("");
+            name = pieces.slice(0, seam).join("") + joinBefore(stem, pieces.slice(seam).join(""));
           }
         }
       }

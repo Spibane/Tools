@@ -63,8 +63,11 @@ TITLE_RE = re.compile(r"^(?:%s)\s+" % "|".join(t.strip() for t in TITLES.split("
 # it throws out Alchemist, Adventurer, Airship and Ascendant while keeping Adalvald, Aayndia and
 # J'zargo. Where there is no word list to read, the names below do what they can on their own.
 WORDLIST = next((w for w in ("/usr/share/dict/words", "/usr/dict/words") if pathlib.Path(w).exists()), None)
-WORDS = {w.strip().lower() for w in pathlib.Path(WORDLIST).read_text(errors="replace").splitlines()
-         if w.strip()} if WORDLIST else set()
+# Only lowercase, letters-only entries count. Big word lists (Fedora's holds 480,000) also carry proper names
+# -- Colette, Caius, Agna -- and hyphenated fragments, and reading those as ordinary words threw real names out
+# of the lists. Capitalised entries are exactly the names, so leaving them out keeps any word list honest.
+WORDS = {w.strip() for w in pathlib.Path(WORDLIST).read_text(errors="replace").splitlines()
+         if w.strip().isalpha() and w.strip()[0].islower()} if WORDLIST else set()
 
 
 def ordinary(name, compounds=True):
@@ -228,6 +231,10 @@ def seam(name):
     joins exactly two and the result reads like the real thing."""
     low, best = name.lower(), None
     for i in range(3, len(low) - 2):
+        # A plural head whose singular is a word is the seam one letter too late: Dawnsinger is Dawn + singer,
+        # not Dawns + inger. Word lists that carry plurals make that split look as good as the real one.
+        if low[i - 1] == "s" and low[:i - 1] in WORDS:
+            continue
         if low[:i] in WORDS and low[i:] in WORDS:
             score = abs(len(low) - 2 * i)          # the most even seam is usually the real one
             if best is None or score < best[0]:

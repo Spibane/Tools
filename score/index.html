@@ -63,6 +63,8 @@ const STEPS=[1,2,5,10,25,50,100];
 // timer: {mode ('off', 'turn' or 'shared'), minutes (counts down from this, or null to count up), running, since (ms timestamp
 // the clock last started), used (ms on the shared clock), turn (whose clock runs in 'turn' mode), done (clocks that ran out)}.
 let state=Object.assign({players:[],start:0,step:1,history:[],timer:{}},store.load('score'));
+// Ids go into the page's markup, so ones that don't look like ours (from a backup someone else made) are replaced
+state.players.forEach(p=>{if(!okId(p.id))p.id=uid();});
 state.timer=Object.assign({mode:'off',minutes:null,running:false,since:0,used:0,turn:null,done:[]},state.timer);
 if(!state.players.length)state.players=[1,2].map(i=>({id:uid(),name:'Player '+i,score:0,time:0,color:PALETTE[i-1]}));
 // Colors used to be a place in PALETTE
@@ -203,15 +205,14 @@ $('history-clear').addEventListener('click',async()=>{
 });
 function render(){renderPad();renderHistory();$('step').value=state.step;$('mode').value=T.mode;$('minutes').value=T.minutes??'';$('start').value=state.start;}
 
-$('grid').addEventListener('click',e=>{
+$('grid').addEventListener('click',async e=>{
   const cell=e.target.closest('.p');if(!cell)return;
   const p=byId(cell.dataset.id),b=e.target.closest('button');if(!b)return;
   if(b.dataset.d)change(p,+b.dataset.d*state.step);
   else if(b.classList.contains('p-clock'))setTurn(p.id);
   else if(b.classList.contains('p-score')){
-    const v=prompt('Add to '+nm(p)+'’s score. Use - to take away, or = to set it, like =20.','');
-    if(v==null)return;
-    const m=v.trim().replace(/,/g,'').match(/^(=)?\s*([+-]?\d*\.?\d+)$/);
+    const v=await ask('Add to '+nm(p)+'’s score. Use - to take away, or = to set it, like =20.',{input:'',confirm:'OK'});
+    const m=v!=null&&v.trim().replace(/,/g,'').match(/^(=)?\s*([+-]?\d*\.?\d+)$/);
     if(m)change(p,+m[2],!!m[1]);
   }
   const again=$('grid').querySelector('[data-id="'+p.id+'"] '+(b.dataset.d?'[data-d="'+b.dataset.d+'"]':'.'+b.className.split(' ')[0]));

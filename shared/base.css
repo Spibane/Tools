@@ -30,8 +30,7 @@
   --rim-1: 1px;   /* rows, inputs, pills */
   --rim-2: 2px;   /* tiles and buttons */
   --rim-3: 3px;   /* panels, dialogs, the main action */
-  /* Page widths: prose for tool pages, a grid for hubs. */
-  --measure: 760px;
+  /* Page width, the same on every page; long copy wraps at its own measure. */
   --wide: 1100px;
   --read: 52ch;   /* long copy only: the privacy notes. Chakra Petch tires at a
                      wide measure; 400 weight and more leading read cleanly. */
@@ -84,9 +83,7 @@ body {
   line-height: 1.5;
   padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
 }
-main { max-width: var(--measure); margin: 0 auto; padding: 32px 18px 64px; }
-/* A hub page is a directory, not an essay, so its tile grid gets the wider measure. */
-body:has(.category) main { max-width: var(--wide); }
+main { max-width: var(--wide); margin: 0 auto; padding: 32px 18px 64px; }
 h1 {
   font-size: clamp(1.7rem, 4.4vw, 2.6rem);
   font-weight: 700;
@@ -231,6 +228,7 @@ dialog::backdrop { background: rgb(0 0 0 / 0.55); }
 /* A yes or no question (ask in site.js), used where confirm() would be */
 .ask-dialog { width: min(420px, calc(100% - 32px)); }
 .ask-dialog .ask-q { margin: 0; font-weight: 600; }
+.ask-dialog .ask-in { width: 100%; margin-top: 12px; }
 .ask-dialog .button-row { display: flex; gap: 8px; margin-top: 16px; }
 
 /* A color choice (colorField in site.js): palette swatches as radio buttons, then Custom with a picker and a hex box */
@@ -313,7 +311,7 @@ details[open] > summary::before { content: "▾" / ""; }
 .pills { display: flex; flex-wrap: wrap; gap: 6px; }
 .pill { display: inline-flex; align-items: center; gap: 6px; background: var(--tile); border: var(--rim-1) solid var(--rim); padding: 4px 10px 4px 7px; font-weight: 600; font-size: 0.9rem; cursor: pointer; }
 .pill input { width: 17px; height: 17px; margin: 0; accent-color: var(--check); }
-.pill:not(:has(input:checked)) { opacity: 0.55; }
+.pill:not(:has(input:checked)) { opacity: 0.6; } /* 0.6 is the faintest that keeps 4.5:1 text on a panel */
 .button-row { margin-top: 10px; }
 
 /* Randomizers: a panel with the roll button in its header, one result row per pick, and a toggle line */
@@ -413,11 +411,11 @@ body.full-open { overflow: hidden; }
 .link-list.grid a > span { font-size: 0.82rem; line-height: 1.35; margin-top: 2px; }
 .category:has(.grid) { margin-top: 18px; }
 .category:has(.grid) h2 { margin-bottom: 6px; }
-/* The hub's groups are small, so cap its rows at three tiles once there is room.
+/* Hub groups are small, so cap its rows at three tiles once there is room.
    A group of two or five then breaks into even rows instead of trailing one tile
    alone on a row of six. Narrower than this, the auto-fill above still applies. */
 @media (min-width: 720px) {
-  body:has(.category) .link-list.grid { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 4.6rem; }
+  .link-list.grid { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 4.6rem; }
 }
 
 /* Site header (hub page) and footer (project pages). The logo lives at
@@ -426,7 +424,7 @@ body.full-open { overflow: hidden; }
 .site-head .logo { width: clamp(56px, 12vw, 80px); height: auto; flex: none; }
 .site-head h1 { margin: 0; }
 .site-footer {
-  max-width: 760px;
+  max-width: var(--wide);
   margin: 0 auto;
   padding: 20px 18px 32px;
   border-top: 3px solid var(--rim);
@@ -460,4 +458,4 @@ body.full-open { overflow: hidden; }
 body.full-open .to-top { display: none; }
 @media (prefers-reduced-motion: reduce) { .to-top { transition: none; } }
 /* Printing leaves out settings and buttons, keeping just the results */
-@media print { .site-footer, .to-top, .back, .backs, .saves, .settings, fieldset, button.roll, .r-buttons, .rolls .toggle, .rolls .opts, .rolls .parts, .played button { display: none; } }
+@media print { .site-footer, .to-top, .back, .backs, .crumbs, .saves, .settings, fieldset, button.roll, .r-buttons, .rolls .toggle, .rolls .opts, .rolls .parts, .played button { display: none; } }

@@ -20,7 +20,7 @@ h3{font-size:.85rem;font-weight:700;color:var(--muted);margin:0 0 6px}
 .round{display:flex;flex-direction:column;flex:0 0 172px}
 .matches{flex:1;display:flex;flex-direction:column;justify-content:space-around;gap:10px}
 .match{display:grid;background:var(--tile);border:2px solid var(--rim)}
-.match.auto{opacity:.55}
+.match.auto{opacity:.6}
 .slot{display:flex;align-items:center;gap:8px;min-height:32px;padding:3px 8px;border:0;background:none;text-align:left;font-size:.9rem;font-weight:600;overflow-wrap:anywhere}
 .slot+.slot{border-top:2px solid var(--rim)}
 .slot.won{background:var(--brand);color:#121212}

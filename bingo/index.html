@@ -113,8 +113,7 @@ const encode=o=>btoa(String.fromCharCode(...new TextEncoder().encode(JSON.string
 const decode=s=>JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0))));
 $('share').addEventListener('click',async()=>{
   const url=location.href.split('#')[0]+'#list='+encode({t:state.title,e:entries(),s:state.size,f:state.free});
-  try{await navigator.clipboard.writeText(url);$('share-msg').textContent='Copied.';}
-  catch(_){prompt('Copy this link:',url);}
+  if(!await copyText($('share'),url))await ask('Copy this link:',{input:url,confirm:'Done',cancel:'Close'});
 });
 async function openShared(){
   const m=location.hash.match(/^#list=(.+)$/);if(!m)return;

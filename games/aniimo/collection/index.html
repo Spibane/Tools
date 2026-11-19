@@ -167,10 +167,7 @@ $('pages').addEventListener('click',async e=>{
     PAGES[m.dataset.page].forEach(f=>{if(m.dataset.on)owned[tileKey(f)]=true;else delete owned[tileKey(f)];});
     store.save(OWN_KEY,owned);render();return;
   }
-  const b=e.target.closest('.copy');if(!b)return;const t=b.dataset.text,old=b.textContent;b.style.minWidth=b.offsetWidth+'px';
-  try{await navigator.clipboard.writeText(t);b.textContent='Copied';}
-  catch(_){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');b.textContent='Copied';}catch(__){b.textContent='Copy failed';}a.remove();}
-  setTimeout(()=>b.textContent=old,1600);
+  const b=e.target.closest('.copy');if(b)copyText(b,b.dataset.text);
 });
 $('reset').addEventListener('click',async()=>{
   if(!Object.keys(owned).length||!await ask('Clear the owned marks on every page?',{confirm:'Clear'}))return;

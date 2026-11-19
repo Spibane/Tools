@@ -23,7 +23,7 @@
 .order.no-num .entry{grid-template-columns:1fr auto}
 .entry.now{border-width:3px}
 .entry.now::before{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;background:var(--brand-v)}
-.entry.held>:not(.e-buttons){opacity:.55}
+.entry.held>:not(.e-buttons){opacity:.6}
 .entry .conds{grid-column:1/-1}
 .e-name{min-width:0;font-weight:600}
 .e-buttons{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px}

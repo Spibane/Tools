@@ -50,6 +50,8 @@
 // current is the id of the list on show, and wheel is whether Roll spins a wheel.
 const blank=name=>({id:uid(),name,text:'',count:1,cycle:false,used:[],result:[],locked:[]});
 let state=Object.assign({lists:[],current:null,wheel:false},store.load('randomizer'));
+// Ids go into the page's markup, so ones that don't look like ours (from a backup someone else made) are replaced
+state.lists.forEach(l=>{if(!okId(l.id))l.id=uid();});
 if(!state.lists.length)state.lists.push(blank('My list'));
 const save=()=>store.save('randomizer',state);
 const L=()=>state.lists.find(l=>l.id===state.current)||state.lists[0];
@@ -220,7 +222,7 @@ function importLists(data){
       mine.text=appendLines(mine.text,fresh);
       lines+=fresh.length;
     }
-    else{state.lists.push(Object.assign(blank(String(l.name||'Untitled')),{id:typeof l.id==='string'&&l.id?l.id:uid(),text:l.text,count:+l.count||1,cycle:!!l.cycle}));lists++;}
+    else{state.lists.push(Object.assign(blank(String(l.name||'Untitled')),{id:okId(l.id)?l.id:uid(),text:l.text,count:+l.count||1,cycle:!!l.cycle}));lists++;}
   }
   if(!lists&&!lines)return 'You already have everything in that file.';
   save();render();
