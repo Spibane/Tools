@@ -50,6 +50,8 @@
 // current is the id of the list on show, and wheel is whether Roll spins a wheel.
 const blank=name=>({id:uid(),name,text:'',count:1,cycle:false,used:[],result:[],locked:[]});
 let state=Object.assign({lists:[],current:null,wheel:false},store.load('randomizer'));
+// Ids go into the page's markup, so ones that don't look like ours (from a backup someone else made) are replaced
+state.lists.forEach(l=>{if(!okId(l.id))l.id=uid();});
 if(!state.lists.length)state.lists.push(blank('My list'));
 const save=()=>store.save('randomizer',state);
 const L=()=>state.lists.find(l=>l.id===state.current)||state.lists[0];

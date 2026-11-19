@@ -48,6 +48,8 @@ function upgrade(s){
   if(Array.isArray(s.events)){if(s.events.length)s.groups.push({id:uid(),name:'Events',open:true,kind:'events',items:s.events});delete s.events;}
   s.groups=s.groups.filter(g=>g&&Array.isArray(g.items));
   s.groups.forEach(g=>{g.kind=g.kind==='events'?'events':'tasks';g.items=g.items.filter(it=>it&&typeof it==='object');});
+  // Ids go into the page's markup, so ones that don't look like ours (from a file someone else made) are replaced
+  s.groups.forEach(g=>{if(!okId(g.id))g.id=uid();g.items.forEach(it=>{if(!okId(it.id))it.id=uid();});});
   s.groups.forEach(g=>{if(g.kind==='events')g.items=g.items.filter(eventWorks);});
   s.groups=s.groups.filter(g=>g.kind==='events'||works(()=>resetWindow(g.rule).next));
   return s;
@@ -336,11 +338,10 @@ function importTasks(data){
   const have=new Set(state.groups.flatMap(g=>g.items.map(it=>it.id)));
   let groups=0,items=0;
   for(const g of add.groups){
-    // Ids go into the page's markup, so ones that don't look like ours are replaced
-    const fresh=g.items.filter(it=>!have.has(it.id)).map(it=>Object.assign(it,{id:okId(it.id)?it.id:uid(),count:0,at:0},g.kind==='events'?{finished:null}:{}));
+    const fresh=g.items.filter(it=>!have.has(it.id)).map(it=>Object.assign(it,{count:0,at:0},g.kind==='events'?{finished:null}:{}));
     const mine=groupById(g.id);
     if(mine&&mine.kind===g.kind)mine.items.push(...fresh);
-    else if(fresh.length||!g.items.length){state.groups.push(Object.assign(g,{id:mine||!okId(g.id)?uid():g.id,items:fresh}));groups++;}
+    else if(fresh.length||!g.items.length){state.groups.push(Object.assign(g,{id:mine?uid():g.id,items:fresh}));groups++;}
     items+=fresh.length;
   }
   if(!groups&&!items)return 'You already have everything in that file.';

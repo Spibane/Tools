@@ -311,7 +311,7 @@ details[open] > summary::before { content: "▾" / ""; }
 .pills { display: flex; flex-wrap: wrap; gap: 6px; }
 .pill { display: inline-flex; align-items: center; gap: 6px; background: var(--tile); border: var(--rim-1) solid var(--rim); padding: 4px 10px 4px 7px; font-weight: 600; font-size: 0.9rem; cursor: pointer; }
 .pill input { width: 17px; height: 17px; margin: 0; accent-color: var(--check); }
-.pill:not(:has(input:checked)) { opacity: 0.55; }
+.pill:not(:has(input:checked)) { opacity: 0.6; } /* 0.6 is the faintest that keeps 4.5:1 text on a panel */
 .button-row { margin-top: 10px; }
 
 /* Randomizers: a panel with the roll button in its header, one result row per pick, and a toggle line */
@@ -458,4 +458,4 @@ body.full-open { overflow: hidden; }
 body.full-open .to-top { display: none; }
 @media (prefers-reduced-motion: reduce) { .to-top { transition: none; } }
 /* Printing leaves out settings and buttons, keeping just the results */
-@media print { .site-footer, .to-top, .back, .backs, .saves, .settings, fieldset, button.roll, .r-buttons, .rolls .toggle, .rolls .opts, .rolls .parts, .played button { display: none; } }
+@media print { .site-footer, .to-top, .back, .backs, .crumbs, .saves, .settings, fieldset, button.roll, .r-buttons, .rolls .toggle, .rolls .opts, .rolls .parts, .played button { display: none; } }

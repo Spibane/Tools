@@ -94,6 +94,10 @@ $('kinds').addEventListener('click',e=>{
   save();render();
 });
 
+// The Loadout Randomizer marks trials played in this same setting; picking up its changes keeps a roll here
+// from saving an older copy over them
+addEventListener('storage',e=>{if(e.key==='outlast'){state=loadTrialSettings();render();}});
+
 render();
 backups({what:'trial settings',keys:['outlast'],file:'outlast-trials-settings.json'});
 </script></body></html>

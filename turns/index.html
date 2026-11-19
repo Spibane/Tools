@@ -60,6 +60,8 @@
 // conds: [{id, text, turns (left, or null to keep until removed), skip (skips their turns), fresh (added on their own turn,
 // so that turn doesn't count down)}]}. current is the id of whose turn it is (null before Start), and round counts up.
 let state=Object.assign({entries:[],current:null,round:1},store.load('turns'));
+// Ids go into the page's markup, so ones that don't look like ours (from a backup someone else made) are replaced
+state.entries.forEach(e=>{if(!okId(e.id))e.id=uid();(e.conds||[]).forEach(c=>{if(!okId(c.id))c.id=uid();});});
 const save=()=>store.save('turns',state);
 const byId=id=>state.entries.find(e=>e.id===id);
 const at=id=>state.entries.findIndex(e=>e.id===id);

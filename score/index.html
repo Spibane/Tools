@@ -63,6 +63,8 @@ const STEPS=[1,2,5,10,25,50,100];
 // timer: {mode ('off', 'turn' or 'shared'), minutes (counts down from this, or null to count up), running, since (ms timestamp
 // the clock last started), used (ms on the shared clock), turn (whose clock runs in 'turn' mode), done (clocks that ran out)}.
 let state=Object.assign({players:[],start:0,step:1,history:[],timer:{}},store.load('score'));
+// Ids go into the page's markup, so ones that don't look like ours (from a backup someone else made) are replaced
+state.players.forEach(p=>{if(!okId(p.id))p.id=uid();});
 state.timer=Object.assign({mode:'off',minutes:null,running:false,since:0,used:0,turn:null,done:[]},state.timer);
 if(!state.players.length)state.players=[1,2].map(i=>({id:uid(),name:'Player '+i,score:0,time:0,color:PALETTE[i-1]}));
 // Colors used to be a place in PALETTE

@@ -13,6 +13,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="../shared/base.css">
 <script src="../shared/site.js"></script>
+<script src="build.js"></script>
 <link rel="stylesheet" href="style.css"></head><body><main>
 <a class="back" href="../">Back to All Tools</a>
 <h1>Brackets</h1>
@@ -40,7 +41,6 @@
 </details>
 </main>
 <script>
-const BYE=-1;
 const FORMATS={single:'Single elimination',double:'Double elimination',robin:'Round robin'},LIMIT={single:128,double:128,robin:32};
 // Saved data: text (players, one per line), format and shuffle as set below, built (the bracket on show: {format,
 // players}, frozen when it was made) and results. Elimination results are {match id: [winner, loser]} as player indexes;
@@ -48,58 +48,6 @@ const FORMATS={single:'Single elimination',double:'Double elimination',robin:'Ro
 let state=Object.assign({text:'',format:'single',shuffle:false,built:null,results:{}},store.load('brackets'));
 const save=()=>store.save('brackets',state);
 const names=()=>splitLines(state.text);
-
-// Elimination brackets. Seeds are placed the usual way (1 v 8, 4 v 5, 2 v 7, 3 v 6), so byes go to the top seeds.
-function seedOrder(S){let o=[0];while(o.length<S){const L=o.length*2;o=o.flatMap(x=>[x,L-1-x]);}return o;}
-// Every match is {a, b}, each fed by a seed, or the winner or loser of another match. W and L are the winners' and
-// losers' rounds (lists of match ids). Double elimination ends with a grand final (g0) and a reset (g1), played only
-// if the losers' bracket player wins g0.
-function elim(n,double){
-  let S=2;while(S<n)S*=2;
-  const k=Math.log2(S),M={},W=[],L=[],order=seedOrder(S);
-  for(let r=0;r<k;r++){
-    const ids=[];
-    for(let i=0;i<S>>(r+1);i++){
-      const id='w'+r+'-'+i;ids.push(id);
-      M[id]=r?{a:{win:'w'+(r-1)+'-'+2*i},b:{win:'w'+(r-1)+'-'+(2*i+1)}}:{a:{seed:order[2*i]},b:{seed:order[2*i+1]}};
-    }
-    W.push(ids);
-  }
-  if(!double)return {M,W,L};
-  let lbChamp={lose:'w0-0'};
-  if(k>1){
-    const round=(make,c)=>{const r=L.length,ids=[];for(let i=0;i<c;i++){const id='l'+r+'-'+i;M[id]=make(i);ids.push(id);}L.push(ids);return ids;};
-    let prev=round(i=>({a:{lose:'w0-'+2*i},b:{lose:'w0-'+(2*i+1)}}),S/4);
-    for(let j=1;j<k;j++){
-      // Losers from the winners' round drop in, in reverse order so early opponents don't meet again straight away
-      const c=S>>(j+1),p=prev,w=W[j];
-      prev=round(i=>({a:{win:p[i]},b:{lose:w[c-1-i]}}),c);
-      if(j<k-1){const q=prev;prev=round(i=>({a:{win:q[2*i]},b:{win:q[2*i+1]}}),c/2);}
-    }
-    lbChamp={win:prev[0]};
-  }
-  M.g0={a:{win:W[k-1][0]},b:lbChamp};
-  M.g1={a:{win:'g0'},b:{lose:'g0'}};
-  return {M,W,L};
-}
-// Works out who's in each match and who won. undefined means not known yet. A bye sends the other player through.
-// Results that no longer fit their match (an earlier result changed) are dropped.
-function solve(M,n){
-  const memo={},used=new Set();
-  const val=s=>s.seed!=null?(s.seed<n?s.seed:BYE):s.win?res(s.win).w:res(s.lose).l;
-  function res(id){
-    if(memo[id])return memo[id];
-    const m=M[id],a=val(m.a),b=val(m.b);let w,l;
-    if(a!==undefined&&b!==undefined){
-      if(a===BYE||b===BYE){w=a===BYE?b:a;l=BYE;}
-      else{const r=state.results[id];if(r&&(r[0]===a&&r[1]===b||r[0]===b&&r[1]===a)){[w,l]=r;used.add(id);}}
-    }
-    return memo[id]={a,b,w,l};
-  }
-  Object.keys(M).forEach(res);
-  for(const id of Object.keys(state.results))if(!used.has(id))delete state.results[id];
-  return res;
-}
 
 const roundTitle=(i,count)=>count-i===1?'Final':count-i===2?'Semifinals':count-i===3?'Quarterfinals':'Round '+(i+1);
 function matchHTML(id,m,players){
@@ -113,7 +61,7 @@ function matchHTML(id,m,players){
 const column=(title,ids,res,players)=>'<div class="round"><h3>'+title+'</h3><div class="matches">'+ids.map(id=>matchHTML(id,res(id),players)).join('')+'</div></div>';
 
 function renderElim(b){
-  const n=b.players.length,double=b.format==='double',{M,W,L}=elim(n,double),res=solve(M,n),k=W.length;
+  const n=b.players.length,double=b.format==='double',{M,W,L}=elim(n,double),res=solve(M,n,state.results),k=W.length;
   let champ,html='';
   if(!double){
     champ=res(W[k-1][0]).w;
@@ -132,16 +80,6 @@ function renderElim(b){
   return {html,champ:champ>=0?b.players[champ]:null,played:real.filter(m=>m.w!==undefined).length,total:real.filter(m=>m.w!==undefined).length+left};
 }
 
-// Round robin: everyone plays everyone, in rounds made by the circle method. With an odd count, one player sits out each round.
-function robin(n){
-  const a=[...Array(n).keys()];if(n%2)a.push(BYE);
-  const m=a.length,rounds=[];
-  for(let r=0;r<m-1;r++){
-    const pairs=[];for(let i=0;i<m/2;i++)pairs.push([a[i],a[m-1-i]]);
-    rounds.push(pairs);a.splice(1,0,a.pop());
-  }
-  return rounds;
-}
 function renderRobin(b){
   const P=b.players,n=P.length,rounds=robin(n),key=(x,y)=>Math.min(x,y)+'-'+Math.max(x,y);
   const rec=P.map(()=>({w:0,d:0,l:0}));let played=0,total=0;

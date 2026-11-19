@@ -11,6 +11,12 @@ The site has no version numbers; changes are grouped by the day they were made.
 - Typing an amount into the Score Pad uses a box of the site's own, so it works in in-app browsers that block the browser's own
 - Copy buttons share one helper, and say when copying didn't work instead of always saying Copied. When Bingo can't copy its share link, it shows the link to copy by hand
 - Generating from a race with nothing in it yet says so, instead of looking like nothing happened
+- Loading a backup someone else made can no longer run code on the page either, in any tool
+- With both Outlast Trials pages open, rolling in the Trial Randomizer no longer undoes a trial marked played in the Loadout Randomizer
+- Added Nightcrawler to the Marvel Rivals Strategists
+- Faded text is easier to read: unticked pills, held players in the Turn Tracker, bye matches in Brackets, and the scores of players waiting their turn in the Score Pad all keep at least 4.5:1 contrast now
+- Printing a page leaves out the breadcrumb bar
+- The Character Names list builder no longer throws out real names on computers with a large word list, like Fedora's, which carries proper names such as Colette and Caius alongside ordinary words
 
 ### 2026-11-12
 - Character Names is marked Beta, on its tile, beside its heading and in the tool switcher. The tag is a shared style, so any tool can carry one

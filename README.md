@@ -85,7 +85,7 @@ python3 -m http.server     # then open http://localhost:8000
 
 ## Tests
 
-`node --test tasks/` checks the Tasks reset times, including the days the clocks change. There's no other test suite.
+`node --test tasks/ brackets/` checks the Tasks reset times, including the days the clocks change, and plays brackets of every size through with random winners. There's no other test suite.
 
 ## Updating Data
 

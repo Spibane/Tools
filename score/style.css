@@ -21,7 +21,7 @@
 .p.now>.p-score{border:2px solid #121212;border-width:0 2px}
 .p.now>.p-buttons{border:2px solid #121212;border-top:0;background:#121212}
 .p-turn{margin-right:auto;font-size:clamp(.65rem,4.5cqmin,.9rem);font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:0 6px;background:#121212;color:var(--lime)}
-.grid.turns .p:not(.now)>.p-head,.grid.turns .p:not(.now)>.p-score{opacity:.45}
+.grid.turns .p:not(.now)>.p-head,.grid.turns .p:not(.now)>.p-score{opacity:.75}
 /* The name sits on a band of the player's color (--pc), with black or white text (--pc-ink) and a black line under it, like role tags */
 .p-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;min-width:0;background:var(--pc);color:var(--pc-ink);border-bottom:2px solid #121212}
 .p-name{font-weight:700;font-size:clamp(.9rem,7cqmin,1.6rem);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
