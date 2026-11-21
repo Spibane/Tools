@@ -13,6 +13,7 @@
   --check: #121212;   /* checkbox and radio accent */
   --lime: #b9fc58;
   --mint: #48f7a3;
+  --warn: #f2385a; /* warning stripe: 3.3:1 on the light panel, 4.5:1 on the dark one */
   --brand: linear-gradient(90deg, var(--lime), var(--mint));
   --brand-v: linear-gradient(var(--lime), var(--mint)); /* the same, top to bottom, for side bars */
   --focus: #121212;
@@ -279,7 +280,8 @@ fieldset { position: relative; border: 0; padding: 4px 0 4px 18px; margin: 0 0 1
 fieldset::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--rim); }
 legend { font-weight: 700; padding: 0; margin-bottom: 4px; }
 .hint { color: var(--muted); font-size: 0.9rem; margin: 0 0 8px; }
-.warn { border: 3px solid var(--rim); border-left-width: 10px; border-left-color: var(--mint); padding: 10px 14px; margin: 0 0 14px; background: var(--surface); }
+/* The stripe is painted inside an even border, so the cut corner trims both along one line */
+.warn { border: 3px solid var(--rim); padding: 10px 14px 10px 22px; margin: 0 0 14px; background: linear-gradient(var(--warn), var(--warn)) left / 8px 100% no-repeat, var(--surface); }
 
 /* A panel: an outlined sheet with a gradient strip along the top. Pages set its bottom padding and margin. */
 .panel { background: var(--surface); border: var(--rim-3) solid var(--rim); padding: 0 12px 12px; margin-bottom: 22px; }
