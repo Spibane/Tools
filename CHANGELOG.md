@@ -2,6 +2,10 @@
 
 The site has no version numbers; changes are grouped by the day they were made.
 
+### 2026-11-20
+- Aniimo Collection Management has a Combat / Warehouse switch. The Warehouse lays forms out 5 rows of 6, keeps its own settings, and takes how many pages you have: it leaves out page breaks if that's what it takes to fit, and says how many pages you need when nothing fits
+- Warnings have a red stripe instead of a mint one, and the stripe no longer pokes out past the cut corner
+
 ### 2026-11-18
 - Every page is now as wide as the main page, up to 1100px, and narrows with the window the same way. Long text still wraps at a comfortable line length
 - The game pages list their tools as tiles, the same as the main page

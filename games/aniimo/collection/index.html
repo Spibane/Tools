@@ -18,8 +18,11 @@
 <nav class="backs"><a class="back" href="../../../">Back to All Tools</a><a class="back" href="../">Back to Aniimo</a></nav>
 <h1>Collection Management</h1>
 <p class="intro">Every form in Aniilog order, laid out as in-game boxes. Click a tile to mark it owned.</p>
+<div class="opt mode" role="radiogroup" aria-label="Layout"><span><input type="radio" name="mode" id="mode-combat" value="combat" checked><label for="mode-combat">Combat</label></span>
+<span><input type="radio" name="mode" id="mode-warehouse" value="warehouse"><label for="mode-warehouse">Warehouse</label></span></div>
 <details class="settings"><summary><h2>Settings</h2></summary>
 <fieldset><legend>What to show</legend>
+<div class="opt pages-opt" id="pages-opt"><label for="opt-pages">Pages you have<small>3 are free; the rest are bought.</small></label><input type="number" id="opt-pages" min="1" max="99" inputmode="numeric"></div>
 <div class="opt"><input type="checkbox" id="opt-breezy"><label for="opt-breezy">Breezy Plains<small>#001–#082 and their regional forms.</small></label></div>
 <div class="opt"><input type="checkbox" id="opt-whisperwake"><label for="opt-whisperwake">Whisperwake Isles<small>#001–#029 and their regional forms.</small></label></div>
 <div class="opt"><input type="checkbox" id="opt-unreleased"><label for="opt-unreleased">Unknown<small>Not in the game yet.</small></label></div>
@@ -37,6 +40,7 @@
 </fieldset>
 </details>
 <p class="warn" id="warn" hidden></p>
+<p class="warn" id="fit" hidden></p>
 <div class="count-row"><p class="count" id="count" aria-live="polite"></p><button type="button" id="reset">Reset all pages</button></div>
 <ul class="legend"><li><span style="background:var(--fire)"></span>Fire</li><li><span style="background:var(--water)"></span>Water</li><li><span style="background:var(--grass)"></span>Grass</li><li><span style="background:var(--electric)"></span>Lightning</li><li><span style="background:var(--ice)"></span>Ice</li><li><span style="background:var(--earth)"></span>Earth</li><li><span style="background:var(--wind)"></span>Wind</li><li><span style="background:var(--light)"></span>Light</li><li><span style="background:var(--dark)"></span>Dark</li><li><span style="background:var(--none)"></span>No element</li><li><span style="background:var(--unknown)"></span>Element unknown</li><li><span class="sw-two"></span>Two elements</li><li><span class="sw-pris"></span>Prismana</li><li><span class="sw-one"></span>One-time event</li><li><span class="sw-own"></span>Owned</li></ul>
 <nav aria-label="Pages" id="nav"></nav>
@@ -67,7 +71,6 @@ for(const group of (CATEGORIES.pickOne||[])){
 }
 const autoEvent=FORMS.filter(f=>f.region==="special"&&!IN[keyOf(f)]).map(keyOf);
 const EL={"fire": "Fire", "water": "Water", "grass": "Grass", "electric": "Lightning", "ice": "Ice", "earth": "Earth", "wind": "Wind", "light": "Light", "dark": "Dark", "none": "No element", "unknown": "Element unknown"};
-const ROWS=[4,5,6,5,4];
 const REGIONS=["breezy","whisperwake","unreleased"];
 const OPTS=[...REGIONS,"pris","prisgroup","gender","keep","event","eventgroup","break","joinregions","shared"];
 // Forms that come as both ♂ and ♀, from categories.js
@@ -91,8 +94,19 @@ function checklistOwned(){
 let shared=null;
 const isOwned=f=>shared?(shared.has(tileKey(f))||!f.gender&&GENDERED.includes(keyOf(f))&&['♂','♀'].some(g=>shared.has(keyOf(f)+' '+g))):!!owned[tileKey(f)];
 let PAGES=[];
-function chunk(a){const o=[];for(let i=0;i<a.length;i+=24)o.push(a.slice(i,i+24));return o;}
+// Combat boxes are a hex comb of 4-5-6-5-4; the Warehouse is 5 rows of 6
+const wh=()=>$('mode-warehouse').checked;
+const rowsOf=w=>w?[6,6,6,6,6]:[4,5,6,5,4];
+function chunk(a,n){const o=[];for(let i=0;i<a.length;i+=n)o.push(a.slice(i,i+n));return o;}
+function paginate(list,n,brk,join){
+  if(!brk)return chunk(list,n);
+  // With "Keep regions together", the regions count as one category for page breaks
+  const grp=c=>join&&REGIONS.includes(c)?'regions':c;
+  return [...new Set(ORDER.map(grp))].flatMap(g=>chunk(list.filter(f=>grp(f._c)===g),n));
+}
 function render(){
+  const w=wh(),ROWS=rowsOf(w),per=ROWS.reduce((a,b)=>a+b);
+  $('pages-opt').hidden=!w;$('pages').classList.toggle('grid',w);
   const o={};OPTS.forEach(k=>o[k]=$('opt-'+k).checked);
   $('opt-prisgroup').disabled=!o.pris;if(!o.pris)o.prisgroup=false;
   $('opt-eventgroup').disabled=!o.event;if(!o.event)o.eventgroup=false;
@@ -112,16 +126,22 @@ function render(){
     f._i=i;
   });
   list.sort((a,b)=>ORDER.indexOf(a._c)-ORDER.indexOf(b._c)||a._i-b._i);
-  let pages=[];
-  if(o.break){
-    // With "Keep regions together", the regions count as one category for page breaks
-    const grp=c=>o.joinregions&&REGIONS.includes(c)?'regions':c;
-    [...new Set(ORDER.map(grp))].forEach(g=>chunk(list.filter(f=>grp(f._c)===g)).forEach(p=>pages.push(p)));
+  let pages=paginate(list,per,o.break,o.joinregions),note='';
+  $('fit').hidden=true;
+  if(w){
+    // Fit the pages the player has, dropping page breaks only if that's what it takes
+    const have=havePages(),want=pages.length;
+    const fit=[[o.break,true],[false,false]].map(t=>paginate(list,per,...t)).find(p=>p.length<=have);
+    if(want>have&&fit){pages=fit;note=' Some page breaks left out to fit.';}
+    else if(want>have){
+      const min=chunk(list,per).length;
+      $('fit').hidden=false;
+      $('fit').textContent='Doesn’t fit in '+plural(have,'page')+'. Needs '+min+(want>min?', or '+want+' to keep the page breaks.':'.');
+    }
   }
-  else pages=chunk(list);
   PAGES=pages;
   const nOwned=list.filter(isOwned).length;
-  $('count').textContent=list.length+' forms over '+plural(pages.length,'page')+'. '+nOwned+' owned.';
+  $('count').textContent=list.length+' forms over '+plural(pages.length,'page')+'. '+nOwned+' owned.'+note;
   $('nav').innerHTML=pages.map((_,i)=>'<a href="#page-'+(i+1)+'">'+(i+1)+'</a>').join(' ');
   let slot=0;
   $('pages').innerHTML=pages.map((p,pi)=>{
@@ -140,16 +160,23 @@ function render(){
     return '<section class="page panel" id="page-'+(pi+1)+'" aria-labelledby="h'+(pi+1)+'"><header><h2 id="h'+(pi+1)+'">Page '+(pi+1)+'</h2><p>'+esc(cats)+'</p><span class="page-btns">'+(shared?'':'<button type="button" class="mark" data-page="'+pi+'" data-on="1">Select all</button><button type="button" class="mark" data-page="'+pi+'">Clear all</button>')+'<button type="button" class="copy" data-text="'+esc(text)+'">Copy as text</button></span></header><div class="comb">'+rows+'</div></section>';
   }).join('');
 }
-// Options are saved under aniimo-collection.<option>. Older versions saved them as opt-<option>, which move over on load.
+// Combat options are saved under aniimo-collection.<option>. Older versions saved them as opt-<option>, which move over on load.
+// The Warehouse keeps its own under aniimo-collection.warehouse.<option>. Owned marks are shared.
 const KEY=k=>'aniimo-collection.'+k;
+const WKEY=k=>KEY('warehouse.'+k);
+const optKey=k=>wh()?WKEY(k):KEY(k);
 const RENAMED=Object.fromEntries(OPTS.map(k=>['opt-'+k,KEY(k)]));
 store.rename(RENAMED);
-OPTS.forEach(k=>{
-  const el=$('opt-'+k);
-  el.checked=REGIONS.includes(k);
-  const v=store.get(KEY(k));if(v!==null)el.checked=v==='1';
-  el.addEventListener('change',()=>{store.set(KEY(k),el.checked?'1':'0');render();});
-});
+const havePages=()=>Math.max(1,parseInt($('opt-pages').value)||3);
+function loadOpts(){
+  OPTS.forEach(k=>{const v=store.get(optKey(k));$('opt-'+k).checked=v===null?REGIONS.includes(k):v==='1';});
+  $('opt-pages').value=store.get(WKEY('pages'))||3;
+}
+OPTS.forEach(k=>{const el=$('opt-'+k);el.addEventListener('change',()=>{store.set(optKey(k),el.checked?'1':'0');render();});});
+$('opt-pages').addEventListener('input',()=>{if($('opt-pages').value)store.set(WKEY('pages'),String(havePages()));render();});
+if(store.get(KEY('mode'))==='warehouse')$('mode-warehouse').checked=true;
+document.querySelectorAll('input[name="mode"]').forEach(el=>el.addEventListener('change',()=>{store.set(KEY('mode'),el.value);loadOpts();render();}));
+loadOpts();
 function toggle(t){
   const k=t.dataset.key;
   if(owned[k])delete owned[k];else owned[k]=true;
@@ -191,7 +218,7 @@ document.querySelectorAll('.ref').forEach(r=>{
 // The hover box sits inside a checkbox label, so stop clicks inside it from toggling the box
 document.addEventListener('click',e=>{if(e.target.closest('.tip'))e.preventDefault();});
 render();
-backups({what:'options and owned forms',keys:[...OPTS.map(KEY),OWN_KEY],file:'aniimo-collection-options.json',renamed:RENAMED});
+backups({what:'options and owned forms',keys:[...OPTS.map(KEY),...OPTS.map(WKEY),KEY('mode'),WKEY('pages'),OWN_KEY],file:'aniimo-collection-options.json',renamed:RENAMED});
 // Size tile text to the widest name and form name in the data, so every tile matches and nothing wraps
 function measureText(){
   const ctx=document.createElement('canvas').getContext('2d');
