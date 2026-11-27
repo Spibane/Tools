@@ -437,7 +437,14 @@ function slotNames(prepared, { force, avoidCanon = true, want = 1 } = {}) {
         // rather than waited for -- at a seam between words, which is where it reads as one of them.
         const low = name.toLowerCase(), want = stem.toLowerCase();
         const has = where === "start" ? low.startsWith(want) : where === "end" ? low.endsWith(want) : low.includes(want);
-        if (!has) {
+        // At the start or end of a name built from several words, the string takes the place of the
+        // word at that end, so "tusk" gives Wildtusk rather than Wildcrushtusk.
+        const parts = patternParts(pattern), at = where === "start" ? 0 : parts.length - 1;
+        if (!has && (where === "start" || where === "end") && /^\{\w+\}$/.test(parts[at])
+            && pieces.filter((p, i) => i !== at).join("")) {
+          pieces[at] = caseOf(stem, pieces[at]);
+          name = pieces.join("");
+        } else if (!has) {
           if (where === "start") name = joinBefore(stem, name);
           else if (where === "end") name = name + lower(stem);
           else {
