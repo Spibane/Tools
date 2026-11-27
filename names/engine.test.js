@@ -52,3 +52,13 @@ test("forced text goes where it was asked to", () => {
     }
   }
 });
+
+test("a forced end takes the last word's place instead of adding to a two-word surname", () => {
+  const orc = RACES.find(r => r.id === "wow-orc");
+  const names = makeNames(orc, { slots: { last: true }, force: { last: { text: "tusk", where: "end", vary: 0 } }, count: 20 }).map(r => r.last);
+  const tails = orc.slots.last.pools.tail.map(t => t.toLowerCase());
+  for (const name of names) {
+    const before = name.toLowerCase().slice(0, -4);
+    assert.ok(!tails.some(t => before.endsWith(t) && orc.slots.last.pools.head.some(h => h.toLowerCase() + t === before)), name);
+  }
+});
